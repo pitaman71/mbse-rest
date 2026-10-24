@@ -7,17 +7,18 @@ name = "mbse-rest"
 version = "0.1.0"
 description = "REST endpoints over an mbse-schemas store (VISUALIZATION.md, FEA-003)."
 requires-python = ">=3.11"
-dependencies = ["mbse-schemas>=0.24.0,<0.25"]
+dependencies = ["mbse-schemas>=0.24.0,<0.25", "fastapi>=0.115"]
 
 [tool.setuptools.packages.find]
 include = ["mbse*"]
 namespaces = true
 
 [dependency-groups]
-dev = ["pytest>=9.1.1"]
+dev = ["pytest>=9.1.1", "mbse-demo-apps>=0.1.0,<0.2", "httpx2>=2.16"]
 
 [tool.uv.sources]
 mbse-schemas = { path = "../../mbse-schemas/python3", editable = true }  # the sibling checkouts: ../mbse-basis/scripts/polyrepo.py
+mbse-demo-apps = { path = "../../mbse-demo-apps/python3", editable = true }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

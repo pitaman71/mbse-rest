@@ -1,0 +1,63 @@
+{
+ "label": {
+  "mutations": [
+   {
+    "map": {
+     "symbols": [
+      {
+       "symbols": {
+        "x": {}
+       }
+      }
+     ]
+    }
+   }
+  ]
+ },
+ "chip": {
+  "mutations": [
+   {
+    "map": {
+     "symbols": [
+      {
+       "symbols": {
+        "x": {}
+       }
+      }
+     ]
+    }
+   }
+  ]
+ },
+ "detail": {
+  "mutations": [
+   {
+    "map": {
+     "symbols": [
+      {
+       "symbols": {
+        "x": {}
+       }
+      }
+     ]
+    }
+   }
+  ]
+ },
+ "adjacency": {
+  "mutations": [
+   {
+    "map": {
+     "symbols": [
+      {
+       "symbols": {
+        "x": {},
+        "y": {}
+       }
+      }
+     ]
+    }
+   }
+  ]
+ }
+}
