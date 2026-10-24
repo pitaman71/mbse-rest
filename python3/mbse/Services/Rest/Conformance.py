@@ -56,7 +56,6 @@ CASES = [
     Case("schemas", "GET", "/schemas"),
     Case("schema-inspector", "GET", "/schemas/work.Project"),
     Case("schema-unknown", "GET", "/schemas/work.Nothing"),
-    Case("snapshot-schemas", "GET", "/snapshot/schemas"),
     Case("templates", "GET", "/views"),
     Case("label-capabilities", "POST", "/views/label",
          lambda store: _map(store, lambda s: {"x": s.work.Capability})),

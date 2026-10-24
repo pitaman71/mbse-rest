@@ -29,15 +29,15 @@ alone (`Plain`, `JSON`): a transaction is its expression (`Plain.ToPlain(store).
 
 | Method and path | For | Request | Response |
 |---|---|---|---|
-| `GET /schemas` | CAP-002 | none | `{"schemas": ["Schemas.OfBool", ..., "work.Plans"]}`: every named schema, framework's included, in the store's order |
+| `GET /schemas` | CAP-002 | none | the store's schema snapshot, while CAP-003 is blocked: the schemas transaction of `Plain.ToPlain(store).Snapshot()` |
 | `GET /schemas/{name}` | CAP-003 | none | 501 until mbse-schemas writes one schema object (Gaps, 1); 404 for a name the store lacks |
-| `GET /snapshot/schemas` | the client's store | none | the store's schemas: the first transaction of `Plain.ToPlain(store).Snapshot()` |
 | `GET /views` | CAP-004 | none | `{"label": T, "chip": T, "detail": T, "adjacency": T}`, each `T` a template, a transaction's expression |
 | `POST /views/{kind}` | CAP-012 | a template of `kind`, its symbols given: a transaction's expression | the frames, NDJSON; 404 for an unknown kind, 400 for a transaction refused |
 
-A client reads `GET /snapshot/schemas` into its own store first (`Client.loadSchemas`), since giving a template's
-symbol a schema, and reading a value of a value object schema, needs the app's schemas there. The frames themselves
-need only the framework's.
+A client reads `GET /schemas` into its own store first (`Client.loadSchemas`, which executes it with
+`Plain.FromPlain(store).Snapshot`): its store then holds every named schema, the framework's and the app's, and the
+list of their names is the store's own (`schemaNames(store)`). Giving a template's symbol a schema, and reading a value
+of a value object schema, needs the app's schemas there; the frames themselves need only the framework's.
 
 CAP-003's intended body, once mbse-schemas can write it: the schema as a document of one upsert, as the snapshot's
 first transaction writes each schema (a schema with no name of its own defined where it is linked, `{"def": ...}`;
@@ -167,39 +167,38 @@ Reported, not worked around (AGENTS.md):
 Where VISUALIZATION.md is silent, the simplest default consistent with it and with mbse-schemas:
 
 1. **Paths and methods** as in Endpoints; `POST` for a view, since its body is a transaction's expression.
-2. **CAP-002** lists every named schema, the framework's included, in the store's order; choosing which to show
-   (CAP-009 excludes `Schemas.*` and the like) is the UI's.
-3. **`GET /snapshot/schemas`**, not in VISUALIZATION.md: the client's store needs the app's schemas, and the
-   snapshot's first transaction is mbse-schemas' own form for them.
-4. **CAP-003** answers 501 with an error body until Gaps, 1 is closed; the path is fixed now.
-5. **Templates**: kinds `label`, `chip`, `detail`, `adjacency`; symbols `x` (the object viewed) and `y` (what `x`
+2. **CAP-002's names** are every named schema the client's store holds once it has read the snapshot, the
+   framework's included, in the store's order; choosing which to show (CAP-009 excludes `Schemas.*` and the like) is
+   the UI's.
+3. **CAP-003** answers 501 with an error body until Gaps, 1 is closed; the path is fixed now.
+4. **Templates**: kinds `label`, `chip`, `detail`, `adjacency`; symbols `x` (the object viewed) and `y` (what `x`
    links); each template one map of one pattern, its symbols unassigned (`{}`), which the executor refuses as such.
-6. **`adjacency`'s template has no spec.** The client adds `_.x.<adjacency>([_.y])` with `x` given (CAP-008 names the
+5. **`adjacency`'s template has no spec.** The client adds `_.x.<adjacency>([_.y])` with `x` given (CAP-008 names the
    adjacency in the spec, but a template without arguments cannot know `x`'s schema).
-7. **Relation entries (CAP-005, CAP-006 given a `References.OfEntry`)** have no template of their own: a pattern's
+6. **Relation entries (CAP-005, CAP-006 given a `References.OfEntry`)** have no template of their own: a pattern's
    symbol binds an object, never an entry. Entries arrive in `detail` and `adjacency` frames, with their properties,
    and the client labels them (`Views.entryLabel`).
-8. **"Declares" read as "holds"** for the label and summary properties (CAP-005): the first of the convention's
+7. **"Declares" read as "holds"** for the label and summary properties (CAP-005): the first of the convention's
    properties the object holds, so that the client, which receives only what is held, picks the same one; a declared
    property the object lacks falls back as an undeclared one does.
-9. **Label fallbacks** as in View kinds: the schema's name only where the caller knows it (a frame does not carry an
+8. **Label fallbacks** as in View kinds: the schema's name only where the caller knows it (a frame does not carry an
    object's schema), the last key of the object's path, and `relation: label, label` for an entry.
-10. **Chip**: "the first three other scalar properties" counts those the object holds, in the schema's order.
-11. **Detail** includes every named adjacency (anonymous ones are not members), entries in the schema's adjacency order
+9. **Chip**: "the first three other scalar properties" counts those the object holds, in the schema's order.
+10. **Detail** includes every named adjacency (anonymous ones are not members), entries in the schema's adjacency order
     and each adjacency's own, and the `label` view of each linked object, so that the inspector can show each entry
     without a second request (FEA-003, "sensibly nested").
-12. **Adjacency** witnesses every entry of `x`'s named adjacencies that links `y`, rather than reading the adjacency's
+11. **Adjacency** witnesses every entry of `x`'s named adjacencies that links `y`, rather than reading the adjacency's
     name from the request's spec; for the WorkTracker the two agree.
-13. **NDJSON** for the stream, its status decided before the first frame (the server computes the frames, then
+12. **NDJSON** for the stream, its status decided before the first frame (the server computes the frames, then
     writes them).
-14. **Writes through view endpoints** are accepted and journaled (CAP-013's flow), detected by an `upsert` or `update`
+13. **Writes through view endpoints** are accepted and journaled (CAP-013's flow), detected by an `upsert` or `update`
     term in the expression.
-15. **The plugin gives data, the service replays it** (`load` returns the snapshot and the journal), so that a plugin
+14. **The plugin gives data, the service replays it** (`load` returns the snapshot and the journal), so that a plugin
     is storage only; first start runs the installs, then snapshots (Gaps, 3); a snapshot every 100 journaled
     transactions.
-16. **One transaction at a time**: the service holds one lock over its store (transactions on one store do not nest).
-17. **The corpus** as above, one case per file pair, `.json` compared as JSON and `.ndjson` byte for byte.
-18. **Tests**: Node's test runner through `tsx` for TypeScript (`npm test`), since `@mbse/schemas` is TypeScript
+15. **One transaction at a time**: the service holds one lock over its store (transactions on one store do not nest).
+16. **The corpus** as above, one case per file pair, `.json` compared as JSON and `.ndjson` byte for byte.
+17. **Tests**: Node's test runner through `tsx` for TypeScript (`npm test`), since `@mbse/schemas` is TypeScript
     source; `httpx2` for FastAPI's test client, which deprecates `httpx`.
-19. **Pins**: mbse-schemas at 39bc8d8 as instructed, though development ran against its checkout five commits later
+18. **Pins**: mbse-schemas at 39bc8d8 as instructed, though development ran against its checkout five commits later
     (5599d11, which makes `References.OfObject` a value object; the wire is unchanged); mbse-demo-apps at 917beb0.

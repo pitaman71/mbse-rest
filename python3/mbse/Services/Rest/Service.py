@@ -6,9 +6,8 @@ persistence plugin holds, or, where it holds nothing, runs each install (an app'
 
 | Method and path | Capability | Response |
 |---|---|---|
-| `GET /schemas` | CAP-002 | `{"schemas": [name, ...]}`, every named schema in the store's order |
+| `GET /schemas` | CAP-002 | the store's schema snapshot, the first transaction of its snapshot, while CAP-003 is blocked |
 | `GET /schemas/{name}` | CAP-003 | 501 until mbse-schemas writes one schema object as a document (CONTRACT.md) |
-| `GET /snapshot/schemas` | (bootstrap) | the store's schemas, the first transaction of its snapshot |
 | `GET /views` | CAP-004 | `{kind: template, ...}`, each a transaction's expression |
 | `POST /views/{kind}` | CAP-012 | the frames, `References.OfFrame`, one JSON document a line (NDJSON) |
 
@@ -74,11 +73,12 @@ class Service:
         return frames
 
     def names(self) -> list[str]:
-        """CAP-002: every named schema."""
+        """Every named schema, by name."""
         return list(self.store.names())
 
     def schemas(self) -> PlainData:
-        """The store's schemas, the first transaction of its snapshot, so that a client's store holds them."""
+        """CAP-002, while CAP-003 is blocked: the store's schemas, the first transaction of its snapshot, from which a
+        client's store takes every schema."""
         with self._lock:
             return Plain.ToPlain(self.store).Snapshot()[0]
 
@@ -111,17 +111,13 @@ def app(installs: Iterable[Callable[[Any], Any]] = (), plugin: Plugin | None = N
 
     @api.get("/schemas")
     def schemas() -> Any:
-        return {"schemas": service.names()}
+        return service.schemas()
 
     @api.get("/schemas/{name}")
     def schema(name: str) -> Any:
         if name not in service.names():
             return _error(404, f"no schema is named {name!r}")
         return _error(501, UNWRITTEN)
-
-    @api.get("/snapshot/schemas")
-    def snapshot_schemas() -> Any:
-        return service.schemas()
 
     @api.get("/views")
     def templates() -> Any:

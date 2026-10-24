@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { describe, test } from "node:test";
 import { JSON as J, Plain } from "@mbse/schemas/Framework";
-import { Client, newStore, ServiceError, Views } from "../mbse/Services/Rest/Client.js";
+import { Client, newStore, schemaNames, ServiceError, Views } from "../mbse/Services/Rest/Client.js";
 
 const ROOT = new URL("../../conformance/", import.meta.url);
 const read = (name: string): string => readFileSync(new URL(name, ROOT), "utf8");
@@ -43,9 +43,11 @@ function reference(store: any, caseName: string, symbol = "x"): unknown {
 }
 
 describe("the calls", () => {
-  test("CAP-002: every named schema", async () => {
-    const names = await client.schemaNames();
+  test("CAP-002: every named schema, read from the schema snapshot", async () => {
+    const store = newStore();
+    const names = await client.loadSchemas(store);
     assert.ok(names.includes("work.Project") && names.includes("References.OfFrame"));
+    assert.deepEqual(schemaNames(store), names);
   });
 
   test("CAP-003: refused until mbse-schemas writes one schema object", async () => {

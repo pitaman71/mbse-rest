@@ -27,15 +27,6 @@
   "response": "schema-unknown.response.json"
  },
  {
-  "name": "snapshot-schemas",
-  "method": "GET",
-  "path": "/snapshot/schemas",
-  "request": null,
-  "status": 200,
-  "content_type": "application/json",
-  "response": "snapshot-schemas.response.json"
- },
- {
   "name": "templates",
   "method": "GET",
   "path": "/views",

@@ -37,10 +37,11 @@ def test_the_corpus_is_current():
     assert Conformance.check() == []
 
 
-def test_the_named_schema_list_holds_every_named_schema(client):
-    names = client.get("/schemas").json()["schemas"]
-    assert "work.Project" in names and "References.OfFrame" in names
-    assert names == list(store_of(client).names())
+def test_the_named_schema_list_is_the_schema_snapshot(client):
+    """CAP-002, while CAP-003 is blocked: a store reading it holds every named schema the service's store holds."""
+    store = Builders.Store()
+    Plain.FromPlain(store).Snapshot([client.get("/schemas").json()])
+    assert list(store.names()) == list(store_of(client).names())
 
 
 def test_the_schema_inspector_waits_on_mbse_schemas(client):
@@ -49,7 +50,7 @@ def test_the_schema_inspector_waits_on_mbse_schemas(client):
 
 
 def test_a_store_reads_the_schemas_a_client_needs():
-    served = TestClient(Service.work_tracker()).get("/snapshot/schemas").json()
+    served = TestClient(Service.work_tracker()).get("/schemas").json()
     store = Builders.Store()
     Plain.FromPlain(store).Snapshot([served])
     assert list(store.registered("work.Plans").entry.properties) == ["original", "forecast", "completed", "progress"]

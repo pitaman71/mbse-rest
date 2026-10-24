@@ -14,6 +14,12 @@ export function newStore(): any {
   return new Builders.Store();
 }
 
+/** CAP-002: every named schema `store` holds, by name, in its order: the framework's, and the app's once
+ * `Client.loadSchemas` has read them. */
+export function schemaNames(store: any): string[] {
+  return [...store.names()];
+}
+
 /** A response the service refused: its status and its error, `{"error": message}`. */
 export class ServiceError extends Error {
   constructor(readonly status: number, readonly body: string) {
@@ -45,22 +51,18 @@ export class Client {
     return response;
   }
 
-  /** CAP-002: every named schema, by name. */
-  async schemaNames(): Promise<string[]> {
-    const body = await (await this.call("GET", "/schemas")).json() as { schemas: string[] };
-    return body.schemas;
-  }
-
   /** CAP-003: one schema in full. Refused (501) until mbse-schemas writes one schema object as a document. */
   async schema(name: string): Promise<Plain.PlainData> {
     return J.loads(await (await this.call("GET", `/schemas/${encodeURIComponent(name)}`)).text());
   }
 
-  /** Reads the service's schemas into `store`, so that it can give a template's symbol a schema, and read any value a
-   * frame assigns. */
-  async loadSchemas(store: any): Promise<void> {
-    const text = await (await this.call("GET", "/snapshot/schemas")).text();
+  /** CAP-002, while CAP-003 is blocked: reads the service's schema snapshot into `store`, which then holds every
+   * named schema, so that it can give a template's symbol a schema and read any value a frame assigns. Gives the names
+   * of every named schema it holds (`schemaNames`). */
+  async loadSchemas(store: any): Promise<string[]> {
+    const text = await (await this.call("GET", "/schemas")).text();
     Plain.FromPlain(store).Snapshot([J.loads(text)]);
+    return schemaNames(store);
   }
 
   /** CAP-004: each kind's template, a transaction's expression, by kind. */
