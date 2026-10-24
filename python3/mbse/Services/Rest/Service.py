@@ -1,8 +1,10 @@
 """The REST service over an mbse-schemas store (VISUALIZATION.md, CAP-002 to CAP-004, CAP-012 and CAP-013).
 
-`app(installs, plugin)` gives a FastAPI application holding one store in memory: at startup it replays what the
-persistence plugin holds, or, where it holds nothing, runs each install (an app's `Schemas.install`, then its
-`Seed.seed`) and gives the plugin a snapshot of what they wrote. The endpoints are `docs/CONTRACT.md`'s:
+`app(installs, plugin)` gives a FastAPI application over any MBSE app: one store held in memory, which at startup
+replays what the persistence plugin holds, or, where it holds nothing, runs each install (the app's `Schemas.install`,
+then, optionally, its `Seed.seed`) and gives the plugin a snapshot of what they wrote. `installs_of(module)` finds an
+app's installs by that convention; `from_environment()` builds the application from `MBSE_REST_*` variables, as
+`python -m mbse.Services.Rest` serves it. The endpoints are `docs/CONTRACT.md`'s:
 
 | Method and path | Capability | Response |
 |---|---|---|
@@ -12,29 +14,51 @@ persistence plugin holds, or, where it holds nothing, runs each install (an app'
 | `POST /views/{kind}` | CAP-012 | the frames, `References.OfFrame`, one JSON document a line (NDJSON) |
 
 A view's request is a transaction's expression (`Plain.ToPlain(store).Transaction`). The service reads it
-(`Plain.FromPlain(store).Transaction`), executes it, journals it if it writes, and fills each frame's `assigns` and
-`entries` as the kind defines (`Views.witness`).
+(`JSON.loads`, `Plain.FromPlain(store).Transaction`), executes it, journals it if it writes, and fills each frame's
+`assigns` and `entries` as the kind defines (`Views.witness`). One transaction runs at a time. What the plugin has not
+journaled is undone: where a transaction that writes is refused after it commits, or its journal fails, the store is
+read back from the plugin (`Service.restore`). Every refusal is `{"error": message}` (CONTRACT.md, Wire format).
 """
 
 from __future__ import annotations
 
+import importlib
+import logging
+import os
 import threading
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Iterator, Mapping
+from types import ModuleType
 from typing import Any
 
-from fastapi import Body, FastAPI
-from fastapi.responses import JSONResponse, Response
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, StreamingResponse
+from starlette.concurrency import run_in_threadpool
+from starlette.exceptions import HTTPException
 
 from mbse.Schemas.Framework import JSON, Builders, Plain
 
 from . import Views
 from .Persistence import Memory, Plugin, PlainData, replay
 
-__all__ = ["NDJSON", "Service", "app", "writes"]
+__all__ = ["NDJSON", "Install", "Refused", "Unavailable", "Service", "app", "installs_of", "plugin_of",
+           "from_environment", "work_tracker", "writes"]
 
 NDJSON = "application/x-ndjson"
 UNWRITTEN = ("mbse-schemas writes no schema object as a document of its own: Plain.ToPlain(store).OfObject refuses "
              "one, owned through an anonymous adjacency (docs/CONTRACT.md, CAP-003)")
+WORK_TRACKER = "mbse.Demos.Apps.WorkTracker"
+
+Install = Callable[[Any], Any]
+"""An install: a callback given a transaction, `store.transaction(install)`, as an app's `Schemas.install` and
+`Seed.seed` are."""
+
+log = logging.getLogger("mbse.Services.Rest")
+
+# What the executor and mbse-schemas' readers raise for a transaction they refuse: `DecodeError` is a `ValueError`,
+# `ReadOnlyError` a `TypeError`, a symbol or path to nothing a `LookupError`.
+REFUSALS = (ValueError, TypeError, LookupError)
 
 
 def writes(plain: PlainData) -> bool:
@@ -46,100 +70,264 @@ def writes(plain: PlainData) -> bool:
     return False
 
 
+class Refused(Exception):
+    """A request the service refuses, with the status it answers and why."""
+
+    def __init__(self, status: int, message: str) -> None:
+        super().__init__(message)
+        self.status = status
+
+
+class Unavailable(Refused):
+    """The plugin failed: what it holds is not known to agree with the store (503)."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(503, message)
+
+
 class Service:
     """One store, held in memory, and its persistence: what the endpoints call, apart from HTTP."""
 
-    def __init__(self, installs: Iterable[Callable[[Any], Any]] = (), plugin: Plugin | None = None,
+    def __init__(self, installs: Iterable[Install] = (), plugin: Plugin | None = None,
                  snapshot_every: int = 100) -> None:
-        self.store = Builders.Store()
+        self.installs = list(installs)
         self.plugin = plugin if plugin is not None else Memory()
         self.snapshot_every = snapshot_every
-        self._journaled = 0  # transactions journaled since the latest snapshot
+        self._journaled = 0  # transactions journaled since the latest snapshot the plugin took
         self._lock = threading.Lock()  # one transaction at a time: transactions on one store do not nest
-        if not replay(self.store, self.plugin):
-            for install in installs:  # db initialization by schema: the installs, then a snapshot of what they wrote
-                self.store.transaction(install)
-            self.plugin.snapshot(Plain.ToPlain(self.store).Snapshot())
+        self._broken: str | None = None  # why the store could not be read back from the plugin, once it could not
+        self.store = self._open()
 
-    def _commit(self, plain: PlainData) -> list[dict[str, Any]]:
-        """Executes a transaction's expression; journals it, where it writes, once it commits."""
-        frames = self.store.transaction(Plain.FromPlain(self.store).Transaction(plain))
-        if writes(plain):
+    def _open(self) -> Any:
+        """A store filled from the plugin; where it holds nothing, the installs run, then the plugin takes a snapshot
+        of what they wrote (db initialization by schema)."""
+        store = Builders.Store()
+        if not replay(store, self.plugin):
+            for install in self.installs:
+                store.transaction(install)
+            self.plugin.snapshot(Plain.ToPlain(store).Snapshot())
+        return store
+
+    def restore(self) -> None:
+        """Undoes what the plugin has not journaled: the store is read back from the plugin. Where that fails, the
+        service answers 503 to every request from then on."""
+        try:
+            self.store = self._open()
+            self._journaled = 0
+        except Exception as error:  # the plugin's own, whatever it raises
+            log.exception("the store could not be read back from the persistence plugin")
+            self._broken = f"the store could not be read back from the persistence plugin: {_describe(error)}"
+
+    def _available(self) -> None:
+        if self._broken is not None:
+            raise Unavailable(self._broken)
+
+    def _commit(self, kind: str, plain: PlainData) -> list[dict[str, Any]]:
+        """Executes a transaction's expression, its frames each binding the kind's symbols; journals it, where it
+        writes, once it commits. Refused (400) where the executor refuses it, or where a frame lacks a symbol; then
+        nothing it wrote is kept."""
+        try:
+            transaction = Plain.FromPlain(self.store).Transaction(plain)
+            frames = self.store.transaction(transaction)
+        except REFUSALS as error:  # refused before or as it ends: nothing was written
+            raise Refused(400, _describe(error)) from error
+        missing = _missing(kind, frames)
+        if not writes(plain):
+            if missing:
+                raise Refused(400, missing)
+            return frames
+        if missing:
+            self.restore()  # committed in memory, never journaled: undone
+            raise Refused(400, f"{missing}; what it wrote is undone")
+        try:
             self.plugin.journal(plain)
-            self._journaled += 1
-            if self._journaled >= self.snapshot_every:
+        except Exception as error:  # the plugin's own, whatever it raises
+            log.exception("a committed transaction could not be journaled")
+            self.restore()
+            raise Unavailable(f"the transaction could not be journaled, and is undone: {_describe(error)}") from error
+        self._journaled += 1
+        if self._journaled >= self.snapshot_every:
+            try:
                 self.plugin.snapshot(Plain.ToPlain(self.store).Snapshot())
                 self._journaled = 0
+            except Exception:  # the journal holds every transaction: the snapshot is tried again after the next one
+                log.exception("a snapshot could not be taken; the journal still holds every transaction")
         return frames
 
     def names(self) -> list[str]:
         """Every named schema, by name."""
-        return list(self.store.names())
+        with self._lock:
+            self._available()
+            return list(self.store.names())
 
     def schemas(self) -> PlainData:
         """CAP-002, while CAP-003 is blocked: the store's schemas, the first transaction of its snapshot, from which a
         client's store takes every schema."""
         with self._lock:
+            self._available()
             return Plain.ToPlain(self.store).Snapshot()[0]
 
     def templates(self) -> dict[str, PlainData]:
         """CAP-004: each kind's template."""
-        return {kind: Plain.ToPlain(self.store).Transaction(tx) for kind, tx in Views.templates(self.store).items()}
+        with self._lock:
+            self._available()
+            return {kind: Plain.ToPlain(self.store).Transaction(tx) for kind, tx in Views.templates(self.store).items()}
 
     def view(self, kind: str, plain: PlainData) -> list[str]:
         """CAP-012: the frames a transaction gives, each a `References.OfFrame` filled as `kind` defines, as JSON."""
         with self._lock:
-            frames = self._commit(plain)
+            self._available()
             out = []
-            for frame in frames:
+            for frame in self._commit(kind, plain):
                 witnessed = Views.witness(self.store, kind, frame)
                 if witnessed is not None:
                     out.append(JSON.ToJSON(self.store)(witnessed.as_schema(), witnessed))
             return out
 
 
+def _missing(kind: str, frames: list[dict[str, Any]]) -> str | None:
+    """Why a view of `kind` cannot be filled from `frames`: a frame that does not bind each of its symbols."""
+    for frame in frames:
+        absent = [name for name in Views.SYMBOLS[kind] if name not in frame]
+        if absent:
+            return (f"the {kind} view's frames each bind {', '.join(Views.SYMBOLS[kind])}; a frame binds no "
+                    f"{', '.join(absent)}")
+    return None
+
+
+def _describe(error: BaseException) -> str:
+    return f"{type(error).__name__}: {error}"
+
+
 def _error(status: int, message: str) -> JSONResponse:
     return JSONResponse({"error": message}, status_code=status)
 
 
-def app(installs: Iterable[Callable[[Any], Any]] = (), plugin: Plugin | None = None,
-        snapshot_every: int = 100) -> FastAPI:
-    """The FastAPI application over a `Service`, which it holds as `app.state.service`."""
+def _lines(lines: list[str]) -> Iterator[str]:
+    for line in lines:
+        yield line + "\n"
+
+
+def app(installs: Iterable[Install] = (), plugin: Plugin | None = None, snapshot_every: int = 100, *,
+        origins: Iterable[str] = ()) -> FastAPI:
+    """The FastAPI application over a `Service` of the app that `installs` write, persisted by `plugin`
+    (`Persistence.Memory` where None). It holds the service as `app.state.service`. `origins` are those a browser may
+    call it from (CORS), the UI's: none by default."""
     service = Service(installs, plugin, snapshot_every)
     api = FastAPI(title="mbse-rest", description="Logical views over an mbse-schemas store (docs/CONTRACT.md)")
     api.state.service = service
+    allowed = list(origins)
+    if allowed:
+        api.add_middleware(CORSMiddleware, allow_origins=allowed, allow_methods=["GET", "POST"],
+                           allow_headers=["accept", "content-type"])
+
+    @api.exception_handler(HTTPException)
+    async def refused(_: Request, error: HTTPException) -> JSONResponse:  # a path or method it does not serve
+        return JSONResponse({"error": str(error.detail)}, status_code=error.status_code, headers=error.headers)
+
+    @api.exception_handler(RequestValidationError)
+    async def invalid(_: Request, error: RequestValidationError) -> JSONResponse:
+        return _error(400, str(error))
+
+    def answer(call: Callable[[], Any]) -> Any:
+        try:
+            return call()
+        except Refused as error:
+            return _error(error.status, str(error))
+        except Exception as error:  # a fault of the service's own: 500, with the contract's error body
+            log.exception("a request failed")
+            return _error(500, _describe(error))
 
     @api.get("/schemas")
     def schemas() -> Any:
-        return service.schemas()
+        return answer(service.schemas)
 
     @api.get("/schemas/{name}")
     def schema(name: str) -> Any:
-        if name not in service.names():
-            return _error(404, f"no schema is named {name!r}")
-        return _error(501, UNWRITTEN)
+        def call() -> Any:
+            if name not in service.names():
+                return _error(404, f"no schema is named {name!r}")
+            return _error(501, UNWRITTEN)
+        return answer(call)
 
     @api.get("/views")
     def templates() -> Any:
-        return service.templates()
+        return answer(service.templates)
 
     @api.post("/views/{kind}")
-    def view(kind: str, body: Any = Body(...)) -> Any:
+    async def view(kind: str, request: Request) -> Any:
         if kind not in Views.KINDS:
             return _error(404, f"no logical view kind is named {kind!r}: one of {', '.join(Views.KINDS)}")
+        body = await request.body()
         try:
-            lines = service.view(kind, body)
-        except (ValueError, TypeError, LookupError, KeyError) as error:  # DecodeError is a ValueError
-            return _error(400, f"{type(error).__name__}: {error}")
-        return Response("".join(line + "\n" for line in lines), media_type=NDJSON)
+            plain = JSON.loads(body)
+        except ValueError as error:  # DecodeError: not strict JSON
+            return _error(400, f"the request's body is not a transaction's expression as JSON: {_describe(error)}")
+
+        def call() -> Any:
+            return StreamingResponse(_lines(service.view(kind, plain)), media_type=NDJSON)
+        return await run_in_threadpool(answer, call)  # it waits on the store's lock: not on the event loop
 
     return api
+
+
+def installs_of(module: str | ModuleType, seed: bool = True) -> list[Install]:
+    """An app's installs, by mbse-demo-apps' layout: its package's `Schemas.install`, then, where `seed` and it has one,
+    its `Seed.seed`."""
+    package = importlib.import_module(module) if isinstance(module, str) else module
+    name = package.__name__
+    schemas = importlib.import_module(f"{name}.Schemas")
+    installs: list[Install] = [schemas.install]
+    if seed:
+        try:
+            seeds = importlib.import_module(f"{name}.Seed")
+        except ModuleNotFoundError as error:
+            if error.name != f"{name}.Seed":
+                raise
+        else:
+            installs.append(seeds.seed)
+    return installs
+
+
+def plugin_of(name: str) -> Plugin:
+    """A persistence plugin by name: `memory`, or `module:attribute`, a class or function that makes one when called
+    with no arguments (its own configuration is its own, from the environment for instance)."""
+    if name.strip().lower() in ("", "memory"):
+        return Memory()
+    module, _, attribute = name.partition(":")
+    if not attribute:
+        raise ValueError(f"a persistence plugin is 'memory' or 'module:attribute', not {name!r}")
+    made = getattr(importlib.import_module(module), attribute)()
+    if not isinstance(made, Plugin):
+        raise TypeError(f"{name} makes no persistence plugin: it lacks load, journal or snapshot")
+    return made
+
+
+def _flag(value: str) -> bool:
+    if value.strip().lower() in ("1", "true", "yes", "on"):
+        return True
+    if value.strip().lower() in ("0", "false", "no", "off"):
+        return False
+    raise ValueError(f"expected 1 or 0, true or false, not {value!r}")
+
+
+def from_environment(environ: Mapping[str, str] | None = None) -> FastAPI:
+    """The application as the environment configures it (README.md, Running the service):
+
+    - `MBSE_REST_APP`: the app's package, its installs found by `installs_of` (`mbse.Demos.Apps.WorkTracker`);
+    - `MBSE_REST_SEED`: whether its `Seed.seed` runs at first start (`1`);
+    - `MBSE_REST_PLUGIN`: the persistence plugin, `plugin_of`'s name (`memory`);
+    - `MBSE_REST_SNAPSHOT_EVERY`: journaled transactions between snapshots (`100`);
+    - `MBSE_REST_ORIGINS`: the UI's origins a browser may call from, comma-separated (none).
+    """
+    env = os.environ if environ is None else environ
+    installs = installs_of(env.get("MBSE_REST_APP", WORK_TRACKER), _flag(env.get("MBSE_REST_SEED", "1")))
+    origins = [origin.strip() for origin in env.get("MBSE_REST_ORIGINS", "").split(",") if origin.strip()]
+    return app(installs, plugin_of(env.get("MBSE_REST_PLUGIN", "memory")),
+               int(env.get("MBSE_REST_SNAPSHOT_EVERY", "100")), origins=origins)
 
 
 def work_tracker(plugin: Plugin | None = None) -> FastAPI:
     """The stub server: the service over the demo app's store (mbse-demo-apps, a development dependency), its schemas
     installed and seeded."""
-    from mbse.Demos.Apps.WorkTracker import Schemas, Seed
-
-    return app([Schemas.install, Seed.seed], plugin)
-
+    return app(installs_of(WORK_TRACKER), plugin)
