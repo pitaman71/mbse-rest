@@ -71,7 +71,7 @@ Views.request(store, "adjacency", { x: goalReference, y: store.registered("work.
 ```
 
 A template carries no spec; the client may add to it (CAP-004), as the `adjacency` view does to name the adjacency
-it follows, a member of `x`'s schema. Building that request in a client is blocked for now (Gaps, 2).
+it follows, a member of `x`'s schema, in plain builder notation, as above.
 
 ## View kinds (CAP-005 to CAP-008)
 
@@ -157,16 +157,12 @@ Reported, not worked around (AGENTS.md):
    instead, `ValueError: a 'Schemas.OfObject' is owned through an adjacency with no name`; TypeScript raises
    `TypeError: root.as_schema is not a function`. Only the whole store's schemas are written, as the snapshot's first
    transaction. CAP-003 answers 501 until it can.
-2. **A spec cannot be recorded over a reference the store does not hold.** A client's store holds the app's schemas
-   but none of its data, so `.symbols({x: reference, y: Capability}).spec([_ => _.x.capabilities([_.y])])` is refused
-   when recorded, `LookupError: symbol 'x' is given a reference that designates nothing the store holds`
-   (mbse-schemas' References proposal, as settled in building Decided, 8). That is CAP-008's own example, built where
-   a UI builds it; the server reads and runs the same expression, since it holds the data. The spec is not written
-   here by hand through the mutation verbs (`as_adjacency`, `insert`, `as_link`): models as data are written in the
-   builders' fluent syntax (mbse-basis P-019). **The fix wanted from mbse-schemas:** the spec recorder accepts a symbol
-   given a reference together with the schema of the object it designates, which the client knows, so that
-   `_.x.capabilities([_.y])` records against that schema without resolving the reference. Until then the client's
-   three adjacency requests are `todo` tests.
+2. **Resolved by mbse-schemas c835f83** ("References, Decided 8: a reference symbol's schema from its path, through
+   the schemas"). A spec over a symbol given a reference was refused when the store did not hold the object
+   (`LookupError: symbol 'x' is given a reference that designates nothing the store holds`), so a client's store,
+   which holds the app's schemas but none of its data, could not build CAP-008's request. It now records in plain
+   builder notation, `.symbols({x: reference, y: Capability}).spec([_ => _.x.capabilities([_.y])])`, and the client
+   builds every adjacency request byte for byte against the corpus.
 3. **An install cannot be built as an expression without running it.** `store.transaction(install)` gives `install`
    the store's schemas by name (`txn.Schemas`, `txn.work`) through a private wrapper; `store.Mutations.OfTransaction(
    install)` does not (`TypeError: no member of the entry takes <empty>`). So installs are not journaled: the service
@@ -205,5 +201,5 @@ Where VISUALIZATION.md is silent, the simplest default consistent with it and wi
 14. **The corpus** as above, one case per file pair, `.json` compared as JSON and `.ndjson` byte for byte.
 15. **Tests**: Node's test runner through `tsx` for TypeScript (`npm test`), since `@mbse/schemas` is TypeScript
     source; `httpx2` for FastAPI's test client, which deprecates `httpx`.
-16. **Pins**: mbse-schemas at 39bc8d8 as instructed, though development ran against its checkout five commits later
-    (5599d11, which makes `References.OfObject` a value object; the wire is unchanged); mbse-demo-apps at 917beb0.
+16. **Pins**: mbse-schemas at c835f83, the checkout it is developed and tested against (an earlier note, pinned at
+    39bc8d8 while developing at 5599d11, is moot); mbse-demo-apps at 917beb0.
