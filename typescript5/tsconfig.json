@@ -16,6 +16,7 @@
     "noEmit": true
   },
   "include": [
-    "mbse/**/*.ts"
+    "mbse/**/*.ts",
+    "tests/**/*.ts"
   ]
 }

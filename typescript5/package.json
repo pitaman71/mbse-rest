@@ -5,16 +5,19 @@
   "type": "module",
   "description": "The client side of mbse-rest: mutation queries to REST calls, and frame streams back (VISUALIZATION.md, FEA-006)",
   "exports": {
-    "./Services/Rest/Client": "./mbse/Services/Rest/Client.ts"
+    "./Services/Rest/Client": "./mbse/Services/Rest/Client.ts",
+    "./Services/Rest/Views": "./mbse/Services/Rest/Views.ts"
   },
   "scripts": {
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "node --import tsx --test tests/*.test.ts"
   },
   "dependencies": {
     "@mbse/schemas": "file:../../mbse-schemas/typescript5"
   },
   "devDependencies": {
-    "typescript": "^5.6.0",
-    "@types/node": "^22.0.0"
+    "@types/node": "^22.0.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.6.0"
   }
 }
