@@ -101,10 +101,7 @@ describe("requests: the client builds each one the corpus holds", () => {
     "adjacency-comment-about": ["work.Result", "about", "adjacency-comment-about"],
   };
   for (const [name, [y, adjacency, from]] of Object.entries(adjacencies)) {
-    test(name, {
-      todo: "mbse-schemas refuses a spec over a symbol given a reference that designates nothing the client's store "
-        + "holds (docs/CONTRACT.md, Gaps in mbse-schemas)",
-    }, async () => {
+    test(name, async () => {
       const store = await storeWithSchemas();
       const plain = Views.request(store, "adjacency", { x: reference(store, from), y: store.registered(y) }, adjacency);
       assert.equal(J.dumps(plain), canonical(read(`${name}.request.json`)));
