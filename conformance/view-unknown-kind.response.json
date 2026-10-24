@@ -1,0 +1,3 @@
+{
+ "error": "no logical view kind is named 'summary': one of label, chip, detail, adjacency"
+}

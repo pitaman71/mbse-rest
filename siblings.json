@@ -3,5 +3,10 @@
     "repository": "git@github.com:pitaman71/mbse-schemas.git",
     "version": "0.24.0",
     "commit": "39bc8d856bd699674524fc103f8da98630fa7709"
+  },
+  "mbse-demo-apps": {
+    "repository": "git@github.com:pitaman71/mbse-demo-apps.git",
+    "version": "0.1.0",
+    "commit": "917beb0b7c07f7eabef508a09adc56dc836cfb6f"
   }
 }

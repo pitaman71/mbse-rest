@@ -1,0 +1,3 @@
+{
+ "error": "ValueError: symbol 'x' has neither a schema nor a reference: a symbol has exactly one"
+}

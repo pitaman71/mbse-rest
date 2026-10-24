@@ -1,0 +1,33 @@
+{
+ "mutations": [
+  {
+   "map": {
+    "symbols": [
+     {
+      "symbols": {
+       "x": {
+        "reference": {
+         "path": {
+          "singleton": "work.Features",
+          "next": {
+           "entry": {
+            "i": "features",
+            "o": "directory",
+            "properties": {
+             "id": "FEA-002"
+            },
+            "next": {
+             "target": {}
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

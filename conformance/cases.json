@@ -1,0 +1,146 @@
+[
+ {
+  "name": "schemas",
+  "method": "GET",
+  "path": "/schemas",
+  "request": null,
+  "status": 200,
+  "content_type": "application/json",
+  "response": "schemas.response.json"
+ },
+ {
+  "name": "schema-inspector",
+  "method": "GET",
+  "path": "/schemas/work.Project",
+  "request": null,
+  "status": 501,
+  "content_type": "application/json",
+  "response": "schema-inspector.response.json"
+ },
+ {
+  "name": "schema-unknown",
+  "method": "GET",
+  "path": "/schemas/work.Nothing",
+  "request": null,
+  "status": 404,
+  "content_type": "application/json",
+  "response": "schema-unknown.response.json"
+ },
+ {
+  "name": "snapshot-schemas",
+  "method": "GET",
+  "path": "/snapshot/schemas",
+  "request": null,
+  "status": 200,
+  "content_type": "application/json",
+  "response": "snapshot-schemas.response.json"
+ },
+ {
+  "name": "templates",
+  "method": "GET",
+  "path": "/views",
+  "request": null,
+  "status": 200,
+  "content_type": "application/json",
+  "response": "templates.response.json"
+ },
+ {
+  "name": "label-capabilities",
+  "method": "POST",
+  "path": "/views/label",
+  "request": "label-capabilities.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "label-capabilities.response.ndjson"
+ },
+ {
+  "name": "label-directory",
+  "method": "POST",
+  "path": "/views/label",
+  "request": "label-directory.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "label-directory.response.ndjson"
+ },
+ {
+  "name": "chip-tasks",
+  "method": "POST",
+  "path": "/views/chip",
+  "request": "chip-tasks.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "chip-tasks.response.ndjson"
+ },
+ {
+  "name": "chip-comments",
+  "method": "POST",
+  "path": "/views/chip",
+  "request": "chip-comments.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "chip-comments.response.ndjson"
+ },
+ {
+  "name": "detail-feature",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "detail-feature.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "detail-feature.response.ndjson"
+ },
+ {
+  "name": "detail-goal",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "detail-goal.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "detail-goal.response.ndjson"
+ },
+ {
+  "name": "adjacency-goal-capabilities",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "adjacency-goal-capabilities.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "adjacency-goal-capabilities.response.ndjson"
+ },
+ {
+  "name": "adjacency-feature-capabilities",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "adjacency-feature-capabilities.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "adjacency-feature-capabilities.response.ndjson"
+ },
+ {
+  "name": "adjacency-comment-about",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "adjacency-comment-about.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "adjacency-comment-about.response.ndjson"
+ },
+ {
+  "name": "view-unknown-kind",
+  "method": "POST",
+  "path": "/views/summary",
+  "request": "view-unknown-kind.request.json",
+  "status": 404,
+  "content_type": "application/json",
+  "response": "view-unknown-kind.response.json"
+ },
+ {
+  "name": "view-unassigned-symbol",
+  "method": "POST",
+  "path": "/views/label",
+  "request": "view-unassigned-symbol.request.json",
+  "status": 400,
+  "content_type": "application/json",
+  "response": "view-unassigned-symbol.response.json"
+ }
+]
