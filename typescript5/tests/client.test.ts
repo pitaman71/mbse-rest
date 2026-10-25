@@ -10,9 +10,15 @@ import { Client, newStore, schemaNames, ServiceError, Views } from "../mbse/Serv
 const ROOT = new URL("../../conformance/", import.meta.url);
 const read = (name: string): string => readFileSync(new URL(name, ROOT), "utf8");
 
+/** What a request is made of, on the cases the corpus generates for the UI's views (CONTRACT.md, The golden corpus). */
+interface View {
+  kind: Views.Kind;
+  given: Record<string, { schema: string } | { reference: unknown }>;
+  adjacency?: string;
+}
 interface Case {
   name: string; method: string; path: string; request: string | null; status: number; content_type: string;
-  response: string;
+  response: string; view?: View;
 }
 const CASES = globalThis.JSON.parse(read("cases.json")) as Case[];
 const byName = new Map(CASES.map((c) => [c.name, c]));
@@ -105,6 +111,22 @@ describe("requests: the client builds each one the corpus holds", () => {
       const store = await storeWithSchemas();
       const plain = Views.request(store, "adjacency", { x: reference(store, from), y: store.registered(y) }, adjacency);
       assert.equal(J.dumps(plain), canonical(read(`${name}.request.json`)));
+    });
+  }
+});
+
+describe("requests: the client builds each one the UI's views make, from the case's view", () => {
+  let shared: Promise<any> | undefined;
+  const store = (): Promise<any> => (shared ??= storeWithSchemas());
+  const given = (s: any, view: View): Record<string, unknown> => Object.fromEntries(
+    Object.entries(view.given).map(([symbol, value]) => [symbol, "schema" in value
+      ? s.registered(value.schema)
+      : J.FromJSON(s)(s.References.OfObject.as_schema(), globalThis.JSON.stringify(value.reference))]));
+  for (const c of CASES.filter((c) => c.view !== undefined)) {
+    test(c.name, async () => {
+      const s = await store();
+      const plain = Views.request(s, c.view!.kind, given(s, c.view!), c.view!.adjacency);
+      assert.equal(J.dumps(plain), canonical(read(c.request!)));
     });
   }
 });

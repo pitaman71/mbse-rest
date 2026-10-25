@@ -2029,6 +2029,18 @@
          },
          {
           "as_property": {
+           "name": "description",
+           "mutations": [
+            {
+             "set": {
+              "value": "A body of work with a purpose, broken down into features."
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_property": {
            "name": "ref",
            "mutations": [
             {
@@ -2485,6 +2497,18 @@
             {
              "set": {
               "value": "work.Feature"
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_property": {
+           "name": "description",
+           "mutations": [
+            {
+             "set": {
+              "value": "A capability area of a project, broken down into capabilities."
              }
             }
            ]
@@ -3023,6 +3047,18 @@
             {
              "set": {
               "value": "work.Capability"
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_property": {
+           "name": "description",
+           "mutations": [
+            {
+             "set": {
+              "value": "Something the system must be able to do, delivered through results."
              }
             }
            ]
@@ -3643,6 +3679,18 @@
          },
          {
           "as_property": {
+           "name": "description",
+           "mutations": [
+            {
+             "set": {
+              "value": "A verifiable outcome that shows a capability works, reached through tasks."
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_property": {
            "name": "ref",
            "mutations": [
             {
@@ -4181,6 +4229,18 @@
          },
          {
           "as_property": {
+           "name": "description",
+           "mutations": [
+            {
+             "set": {
+              "value": "A unit of work toward a result."
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_property": {
            "name": "ref",
            "mutations": [
             {
@@ -4644,6 +4704,18 @@
          },
          {
           "as_property": {
+           "name": "description",
+           "mutations": [
+            {
+             "set": {
+              "value": "A remark about one or more organization elements, which may be resolved."
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_property": {
            "name": "ref",
            "mutations": [
             {
@@ -5032,6 +5104,18 @@
          },
          {
           "as_property": {
+           "name": "description",
+           "mutations": [
+            {
+             "set": {
+              "value": "A plan of goals over time."
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_property": {
            "name": "ref",
            "mutations": [
             {
@@ -5413,6 +5497,18 @@
             {
              "set": {
               "value": "work.Goal"
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_property": {
+           "name": "description",
+           "mutations": [
+            {
+             "set": {
+              "value": "A milestone of a schedule: the capabilities due by it, each with its dates and progress."
              }
             }
            ]

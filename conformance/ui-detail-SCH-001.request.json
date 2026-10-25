@@ -1,0 +1,33 @@
+{
+ "mutations": [
+  {
+   "map": {
+    "symbols": [
+     {
+      "symbols": {
+       "x": {
+        "reference": {
+         "path": {
+          "singleton": "work.Schedules",
+          "next": {
+           "entry": {
+            "i": "schedules",
+            "o": "directory",
+            "properties": {
+             "id": "SCH-001"
+            },
+            "next": {
+             "target": {}
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

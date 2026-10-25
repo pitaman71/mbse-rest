@@ -1,0 +1,100 @@
+{
+ "mutations": [
+  {
+   "map": {
+    "symbols": [
+     {
+      "symbols": {
+       "x": {
+        "reference": {
+         "path": {
+          "singleton": "work.Capabilities",
+          "next": {
+           "entry": {
+            "i": "capabilities",
+            "o": "directory",
+            "properties": {
+             "id": "CAP-003"
+            },
+            "next": {
+             "target": {}
+            }
+           }
+          }
+         }
+        }
+       },
+       "y": {
+        "schema": [
+         {
+          "$ref": {
+           "singleton": ".",
+           "next": {
+            "entry": {
+             "i": "schemas",
+             "o": "",
+             "properties": {
+              "name": "work"
+             },
+             "next": {
+              "entry": {
+               "i": "schemas",
+               "o": "",
+               "properties": {
+                "name": "CapabilityDirectory"
+               },
+               "next": {
+                "target": {}
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        ]
+       }
+      },
+      "spec": [
+       {
+        "x": [
+         {
+          "as_adjacency": {
+           "name": "directory",
+           "mutations": [
+            {
+             "insert": {
+              "entries": [
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "directory",
+                   "mutations": [
+                    {
+                     "set": {
+                      "ref": {
+                       "symbol": "y"
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            }
+           ]
+          }
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  }
+ ]
+}

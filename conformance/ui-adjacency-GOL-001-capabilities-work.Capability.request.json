@@ -1,0 +1,100 @@
+{
+ "mutations": [
+  {
+   "map": {
+    "symbols": [
+     {
+      "symbols": {
+       "x": {
+        "reference": {
+         "path": {
+          "singleton": "work.Goals",
+          "next": {
+           "entry": {
+            "i": "goals",
+            "o": "directory",
+            "properties": {
+             "id": "GOL-001"
+            },
+            "next": {
+             "target": {}
+            }
+           }
+          }
+         }
+        }
+       },
+       "y": {
+        "schema": [
+         {
+          "$ref": {
+           "singleton": ".",
+           "next": {
+            "entry": {
+             "i": "schemas",
+             "o": "",
+             "properties": {
+              "name": "work"
+             },
+             "next": {
+              "entry": {
+               "i": "schemas",
+               "o": "",
+               "properties": {
+                "name": "Capability"
+               },
+               "next": {
+                "target": {}
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        ]
+       }
+      },
+      "spec": [
+       {
+        "x": [
+         {
+          "as_adjacency": {
+           "name": "capabilities",
+           "mutations": [
+            {
+             "insert": {
+              "entries": [
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "capability",
+                   "mutations": [
+                    {
+                     "set": {
+                      "ref": {
+                       "symbol": "y"
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            }
+           ]
+          }
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  }
+ ]
+}
