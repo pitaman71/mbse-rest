@@ -137,7 +137,110 @@ class Plugin(Protocol):
   (in mbse-schemas' JSON) and read every frame back byte for byte. mbse-react can develop against the corpus with
   the same fetch, before a server runs.
 
-## Running it
+## Refusals and failures (M1)
+
+Every refusal is `{"error": "<message>"}`, `application/json`; the message is for people, not to be parsed.
+
+| Status | When |
+|---|---|
+| 400 | `POST /views/{kind}`: the body is not strict JSON (mbse-schemas' `JSON.loads`), or not a transaction's expression, or the executor refuses it; or a frame it gives does not bind each of the kind's symbols. It wrote nothing. |
+| 404 | a path the service does not serve, a view kind it lacks, a schema name its store lacks |
+| 405 | a method a path does not take |
+| 500 | a fault of the service's own |
+| 501 | `GET /schemas/{name}` (CAP-003), until Gaps, 1 is closed |
+| 503 | the plugin failed: a transaction that wrote could not be journaled, and is undone, so that it may be sent again; or, after that, the store could not be read back from the plugin, and then every request answers 503 until the service restarts |
+
+- **What the plugin has not journaled is undone.** Transactions on one store do not nest, so a transaction that
+  writes commits in memory before the service can journal it or check its frames. Where it is then refused (a frame
+  lacks a symbol) or its journal fails, the service reads the store back from the plugin (`Service.restore`): the
+  snapshot, then the journal, as at startup. The store then holds exactly what the plugin holds.
+- **A snapshot that fails** is logged and tried again after the next journaled transaction; the journal still holds
+  every transaction, so nothing is lost and the request is answered as usual.
+- **A plugin that fails at startup** (`load`, or the first snapshot) fails the start: `app()` raises.
+- **One transaction at a time**: every endpoint holds the service's lock while it reads or writes the store; a view's
+  frames are computed and written as JSON under it, then streamed (`StreamingResponse`, chunked) once the status is
+  decided.
+
+## The service for any MBSE app (M1)
+
+```python
+from mbse.Services.Rest import Service
+
+api = Service.app(installs, plugin=None, snapshot_every=100, origins=())  # a FastAPI application
+```
+
+- `installs`: the app's installs, each a callback given a transaction (`store.transaction(install)`), its schemas'
+  first, then, optionally, its seed's. `Service.installs_of("my.App", seed=True)` finds them by mbse-demo-apps'
+  layout: `my.App.Schemas.install`, then `my.App.Seed.seed` where the package has one and `seed` is true.
+- `plugin`: a `Persistence.Plugin`; `Persistence.Memory()` where None. `Service.plugin_of(name)` makes one by name:
+  `memory`, or `module:attribute`, a class or function called with no arguments (its own configuration is its own).
+- `origins`: the origins a browser may call the service from (CORS, `GET` and `POST`): none by default.
+- `api.state.service` is the `Service`: its `store`, `plugin` and `installs`.
+- `Service.work_tracker(plugin)` is the stub server over the WorkTracker, as before.
+
+### Running it
+
+```sh
+cd python3 && uv run python -m mbse.Services.Rest   # serves with uvicorn, as the environment configures it
+```
+
+| Variable | Default | What |
+|---|---|---|
+| `MBSE_REST_APP` | `mbse.Demos.Apps.WorkTracker` | the app's package, its installs by `installs_of` |
+| `MBSE_REST_SEED` | `1` | whether its `Seed.seed` runs at first start (`1`/`0`, `true`/`false`) |
+| `MBSE_REST_PLUGIN` | `memory` | the persistence plugin, by `plugin_of`'s name, e.g. `mbse.Persistence.DynamoDB:Plugin` |
+| `MBSE_REST_SNAPSHOT_EVERY` | `100` | journaled transactions between snapshots |
+| `MBSE_REST_ORIGINS` | none | the UI's origins, comma-separated, e.g. `http://localhost:5173` |
+| `MBSE_REST_HOST` | `127.0.0.1` | where it listens |
+| `MBSE_REST_PORT` | `8000` | |
+
+`Service.from_environment()` builds the same application, for any ASGI server:
+`uv run uvicorn --factory mbse.Services.Rest.Service:from_environment`.
+
+## The client (M1)
+
+`typescript5/mbse/Services/Rest/Client.ts` (`@mbse/rest/Services/Rest/Client`), over mbse-schemas' TypeScript
+implementation. A store (`newStore()`) reads the schemas once, then gives symbols schemas and reads frames back
+(`Views`).
+
+```typescript
+import { Client, newStore, Views, TransactionRefused } from "@mbse/rest/Services/Rest/Client";
+
+const client = new Client("http://localhost:8000");          // or "", the page's own origin; or { fetch, headers }
+const store = newStore();
+const names = await client.loadSchemas(store);                // CAP-002: every named schema, now in `store`
+const tasks = await client.chip(store, store.registered("work.Task"));
+for (const frame of tasks) console.log(Views.label(store, frame), [...Views.chip(store, frame)]);
+const abort = new AbortController();
+for await (const frame of client.stream(store, "detail", Views.request(store, "detail", { x: ref }),
+  { signal: abort.signal })) { /* each frame as it arrives */ }
+```
+
+| Member | For |
+|---|---|
+| `new Client(base = "", options?)` | `base` without its trailing slash; `options` is `{fetch?, headers?}`, or a fetch (as in M0) |
+| `loadSchemas(store, {signal}?)` | CAP-002: reads the schema snapshot into `store`; gives `schemaNames(store)` |
+| `schema(name, {signal}?)` | CAP-003: rejects with `Unimplemented` (501) for now, `NotFound` for an unknown name |
+| `templates({signal}?)` | CAP-004: a `Map` of each kind's template |
+| `stream(store, kind, transaction, {signal}?)` | CAP-012: an async generator of `Views.Frame`, read as the response arrives |
+| `view(store, kind, transaction, {signal}?)` | CAP-012: every frame, as an array |
+| `viewOf(store, kind, given, {adjacency?, signal?})` | `view` of `Views.request(store, kind, given, adjacency)` |
+| `label(store, x)`, `chip(store, x)`, `detail(store, x)`, `adjacency(store, x, adjacency, y)` | CAP-005 to CAP-008, `x` a schema or a `References.OfObject`, each with `{signal}?` last |
+| `url(path)` | the URL a call is sent to |
+
+Errors, each a `RestError` (an `Error`):
+
+| Class | When |
+|---|---|
+| `ServiceError` | any refusal: `status`, `body`, and `error`, the body's message |
+| `TransactionRefused`, `NotFound`, `Unimplemented`, `Unavailable` | `ServiceError`s of 400, 404, 501 and 503 (`ServiceError.of`) |
+| `TransportError` | the service out of reach, or the response cut off: `cause` is the platform's error |
+| `ResponseError` | a response accepted that is not what the contract gives (not JSON, not NDJSON, a line not a frame) |
+
+An abort is not a `RestError`: the call rejects with the signal's reason, the platform's `AbortError`, so that a UI
+tells it apart as it does any fetch's. Aborting, or leaving a `for await` over `stream` early, cancels the response.
+
+## Running the tests
 
 ```sh
 cd python3 && uv sync && uv run pytest              # the server, its views, persistence, and the corpus current
@@ -145,8 +248,8 @@ uv run python -m mbse.Services.Rest.Conformance     # regenerate conformance/
 cd typescript5 && npm install && npm run typecheck && npm test
 ```
 
-The stub server is `Service.work_tracker()`, a FastAPI application; serve it with any ASGI server, for example
-`uv run --with uvicorn uvicorn --factory mbse.Services.Rest.Service:work_tracker`.
+The client's tests import mbse-schemas' TypeScript source, whose own dependency (`yaml`) must be installed in the
+sibling's checkout: `(cd ../mbse-schemas/typescript5 && npm ci --omit=dev)`.
 
 ## Gaps in mbse-schemas
 
@@ -202,4 +305,28 @@ Where VISUALIZATION.md is silent, the simplest default consistent with it and wi
 15. **Tests**: Node's test runner through `tsx` for TypeScript (`npm test`), since `@mbse/schemas` is TypeScript
     source; `httpx2` for FastAPI's test client, which deprecates `httpx`.
 16. **Pins**: mbse-schemas at c835f83, the checkout it is developed and tested against (an earlier note, pinned at
-    39bc8d8 while developing at 5599d11, is moot); mbse-demo-apps at 917beb0.
+    39bc8d8 while developing at 5599d11, is moot); mbse-demo-apps at 7f030e8 (M1; 917beb0 in M0), the checkout M1
+    is tested against.
+
+Decided in M1 (none changes a request or a response the corpus holds):
+
+17. **The factory** keeps M0's `app(installs, plugin, snapshot_every)`, adding `origins` by keyword, so that
+    mbse-dynamodb's tests call it as before; an app's installs are found by mbse-demo-apps' layout
+    (`Schemas.install`, optional `Seed.seed`), and a plugin by `memory` or `module:attribute`, made with no arguments.
+18. **Configuration by environment variables**, `MBSE_REST_*`, as in Running it; the app defaults to the WorkTracker,
+    the demo, and CORS to no origin at all, so that a browser can call the service only from origins it is given.
+19. **Every refusal answers the contract's error body**, including FastAPI's own (an unknown path, 404; a method,
+    405), and a body that is not strict JSON is a 400, not FastAPI's 422.
+20. **A frame that does not bind the kind's symbols** is a 400 (it was a `KeyError` answered as one), checked before
+    the transaction is journaled.
+21. **Undo by replay**: what the plugin has not journaled is undone by reading the store back from it, since
+    transactions do not nest and so cannot be held open while journaling. Where that fails, the service answers 503
+    until it restarts, rather than serve a store that disagrees with its plugin.
+22. **503 for a journal that fails** (the transaction undone, safe to send again), 500 for the service's own faults;
+    a snapshot that fails does not fail the request.
+23. **The client's errors** are classes, `RestError` and below, by status where the contract names one; an abort
+    rejects with the signal's own reason, unwrapped.
+24. **The client's conveniences** (`viewOf`, `label`, `chip`, `detail`, `adjacency`) build requests with
+    `Views.request`, as before, so they send what the corpus holds byte for byte.
+25. **No server runs in the tests**: the entry point is tested by what it hands uvicorn; every endpoint through
+    FastAPI's test client.
