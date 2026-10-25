@@ -1,0 +1,100 @@
+{
+ "mutations": [
+  {
+   "map": {
+    "symbols": [
+     {
+      "symbols": {
+       "x": {
+        "reference": {
+         "path": {
+          "singleton": "work.Schedules",
+          "next": {
+           "entry": {
+            "i": "schedules",
+            "o": "directory",
+            "properties": {
+             "id": "SCH-001"
+            },
+            "next": {
+             "target": {}
+            }
+           }
+          }
+         }
+        }
+       },
+       "y": {
+        "schema": [
+         {
+          "$ref": {
+           "singleton": ".",
+           "next": {
+            "entry": {
+             "i": "schemas",
+             "o": "",
+             "properties": {
+              "name": "work"
+             },
+             "next": {
+              "entry": {
+               "i": "schemas",
+               "o": "",
+               "properties": {
+                "name": "ScheduleDirectory"
+               },
+               "next": {
+                "target": {}
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        ]
+       }
+      },
+      "spec": [
+       {
+        "x": [
+         {
+          "as_adjacency": {
+           "name": "directory",
+           "mutations": [
+            {
+             "insert": {
+              "entries": [
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "directory",
+                   "mutations": [
+                    {
+                     "set": {
+                      "ref": {
+                       "symbol": "y"
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            }
+           ]
+          }
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  }
+ ]
+}

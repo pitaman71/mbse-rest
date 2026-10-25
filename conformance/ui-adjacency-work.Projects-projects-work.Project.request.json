@@ -1,0 +1,91 @@
+{
+ "mutations": [
+  {
+   "map": {
+    "symbols": [
+     {
+      "symbols": {
+       "x": {
+        "reference": {
+         "path": {
+          "singleton": "work.Projects",
+          "next": {
+           "target": {}
+          }
+         }
+        }
+       },
+       "y": {
+        "schema": [
+         {
+          "$ref": {
+           "singleton": ".",
+           "next": {
+            "entry": {
+             "i": "schemas",
+             "o": "",
+             "properties": {
+              "name": "work"
+             },
+             "next": {
+              "entry": {
+               "i": "schemas",
+               "o": "",
+               "properties": {
+                "name": "Project"
+               },
+               "next": {
+                "target": {}
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        ]
+       }
+      },
+      "spec": [
+       {
+        "x": [
+         {
+          "as_adjacency": {
+           "name": "projects",
+           "mutations": [
+            {
+             "insert": {
+              "entries": [
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "project",
+                   "mutations": [
+                    {
+                     "set": {
+                      "ref": {
+                       "symbol": "y"
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            }
+           ]
+          }
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  }
+ ]
+}

@@ -133,5 +133,3100 @@
   "status": 400,
   "content_type": "application/json",
   "response": "view-unassigned-symbol.response.json"
+ },
+ {
+  "name": "ui-chip-work.Project",
+  "method": "POST",
+  "path": "/views/chip",
+  "request": "ui-chip-work.Project.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-chip-work.Project.response.ndjson",
+  "view": {
+   "kind": "chip",
+   "given": {
+    "x": {
+     "schema": "work.Project"
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-entries-work.Project",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "ui-entries-work.Project.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-entries-work.Project.response.ndjson",
+  "view": {
+   "kind": "detail",
+   "given": {
+    "x": {
+     "schema": "work.Project"
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-chip-work.Feature",
+  "method": "POST",
+  "path": "/views/chip",
+  "request": "ui-chip-work.Feature.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-chip-work.Feature.response.ndjson",
+  "view": {
+   "kind": "chip",
+   "given": {
+    "x": {
+     "schema": "work.Feature"
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-entries-work.Feature",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "ui-entries-work.Feature.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-entries-work.Feature.response.ndjson",
+  "view": {
+   "kind": "detail",
+   "given": {
+    "x": {
+     "schema": "work.Feature"
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-chip-work.Capability",
+  "method": "POST",
+  "path": "/views/chip",
+  "request": "ui-chip-work.Capability.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-chip-work.Capability.response.ndjson",
+  "view": {
+   "kind": "chip",
+   "given": {
+    "x": {
+     "schema": "work.Capability"
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-entries-work.Capability",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "ui-entries-work.Capability.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-entries-work.Capability.response.ndjson",
+  "view": {
+   "kind": "detail",
+   "given": {
+    "x": {
+     "schema": "work.Capability"
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-chip-work.Result",
+  "method": "POST",
+  "path": "/views/chip",
+  "request": "ui-chip-work.Result.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-chip-work.Result.response.ndjson",
+  "view": {
+   "kind": "chip",
+   "given": {
+    "x": {
+     "schema": "work.Result"
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-entries-work.Result",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "ui-entries-work.Result.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-entries-work.Result.response.ndjson",
+  "view": {
+   "kind": "detail",
+   "given": {
+    "x": {
+     "schema": "work.Result"
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-chip-work.Task",
+  "method": "POST",
+  "path": "/views/chip",
+  "request": "ui-chip-work.Task.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-chip-work.Task.response.ndjson",
+  "view": {
+   "kind": "chip",
+   "given": {
+    "x": {
+     "schema": "work.Task"
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-entries-work.Task",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "ui-entries-work.Task.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-entries-work.Task.response.ndjson",
+  "view": {
+   "kind": "detail",
+   "given": {
+    "x": {
+     "schema": "work.Task"
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-chip-work.Comment",
+  "method": "POST",
+  "path": "/views/chip",
+  "request": "ui-chip-work.Comment.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-chip-work.Comment.response.ndjson",
+  "view": {
+   "kind": "chip",
+   "given": {
+    "x": {
+     "schema": "work.Comment"
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-entries-work.Comment",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "ui-entries-work.Comment.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-entries-work.Comment.response.ndjson",
+  "view": {
+   "kind": "detail",
+   "given": {
+    "x": {
+     "schema": "work.Comment"
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-chip-work.Schedule",
+  "method": "POST",
+  "path": "/views/chip",
+  "request": "ui-chip-work.Schedule.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-chip-work.Schedule.response.ndjson",
+  "view": {
+   "kind": "chip",
+   "given": {
+    "x": {
+     "schema": "work.Schedule"
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-entries-work.Schedule",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "ui-entries-work.Schedule.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-entries-work.Schedule.response.ndjson",
+  "view": {
+   "kind": "detail",
+   "given": {
+    "x": {
+     "schema": "work.Schedule"
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-chip-work.Goal",
+  "method": "POST",
+  "path": "/views/chip",
+  "request": "ui-chip-work.Goal.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-chip-work.Goal.response.ndjson",
+  "view": {
+   "kind": "chip",
+   "given": {
+    "x": {
+     "schema": "work.Goal"
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-entries-work.Goal",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "ui-entries-work.Goal.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-entries-work.Goal.response.ndjson",
+  "view": {
+   "kind": "detail",
+   "given": {
+    "x": {
+     "schema": "work.Goal"
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-chip-work.ProjectDirectory",
+  "method": "POST",
+  "path": "/views/chip",
+  "request": "ui-chip-work.ProjectDirectory.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-chip-work.ProjectDirectory.response.ndjson",
+  "view": {
+   "kind": "chip",
+   "given": {
+    "x": {
+     "schema": "work.ProjectDirectory"
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-entries-work.ProjectDirectory",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "ui-entries-work.ProjectDirectory.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-entries-work.ProjectDirectory.response.ndjson",
+  "view": {
+   "kind": "detail",
+   "given": {
+    "x": {
+     "schema": "work.ProjectDirectory"
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-chip-work.FeatureDirectory",
+  "method": "POST",
+  "path": "/views/chip",
+  "request": "ui-chip-work.FeatureDirectory.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-chip-work.FeatureDirectory.response.ndjson",
+  "view": {
+   "kind": "chip",
+   "given": {
+    "x": {
+     "schema": "work.FeatureDirectory"
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-entries-work.FeatureDirectory",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "ui-entries-work.FeatureDirectory.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-entries-work.FeatureDirectory.response.ndjson",
+  "view": {
+   "kind": "detail",
+   "given": {
+    "x": {
+     "schema": "work.FeatureDirectory"
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-chip-work.CapabilityDirectory",
+  "method": "POST",
+  "path": "/views/chip",
+  "request": "ui-chip-work.CapabilityDirectory.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-chip-work.CapabilityDirectory.response.ndjson",
+  "view": {
+   "kind": "chip",
+   "given": {
+    "x": {
+     "schema": "work.CapabilityDirectory"
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-entries-work.CapabilityDirectory",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "ui-entries-work.CapabilityDirectory.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-entries-work.CapabilityDirectory.response.ndjson",
+  "view": {
+   "kind": "detail",
+   "given": {
+    "x": {
+     "schema": "work.CapabilityDirectory"
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-chip-work.ResultDirectory",
+  "method": "POST",
+  "path": "/views/chip",
+  "request": "ui-chip-work.ResultDirectory.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-chip-work.ResultDirectory.response.ndjson",
+  "view": {
+   "kind": "chip",
+   "given": {
+    "x": {
+     "schema": "work.ResultDirectory"
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-entries-work.ResultDirectory",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "ui-entries-work.ResultDirectory.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-entries-work.ResultDirectory.response.ndjson",
+  "view": {
+   "kind": "detail",
+   "given": {
+    "x": {
+     "schema": "work.ResultDirectory"
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-chip-work.TaskDirectory",
+  "method": "POST",
+  "path": "/views/chip",
+  "request": "ui-chip-work.TaskDirectory.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-chip-work.TaskDirectory.response.ndjson",
+  "view": {
+   "kind": "chip",
+   "given": {
+    "x": {
+     "schema": "work.TaskDirectory"
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-entries-work.TaskDirectory",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "ui-entries-work.TaskDirectory.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-entries-work.TaskDirectory.response.ndjson",
+  "view": {
+   "kind": "detail",
+   "given": {
+    "x": {
+     "schema": "work.TaskDirectory"
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-chip-work.CommentDirectory",
+  "method": "POST",
+  "path": "/views/chip",
+  "request": "ui-chip-work.CommentDirectory.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-chip-work.CommentDirectory.response.ndjson",
+  "view": {
+   "kind": "chip",
+   "given": {
+    "x": {
+     "schema": "work.CommentDirectory"
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-entries-work.CommentDirectory",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "ui-entries-work.CommentDirectory.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-entries-work.CommentDirectory.response.ndjson",
+  "view": {
+   "kind": "detail",
+   "given": {
+    "x": {
+     "schema": "work.CommentDirectory"
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-chip-work.ScheduleDirectory",
+  "method": "POST",
+  "path": "/views/chip",
+  "request": "ui-chip-work.ScheduleDirectory.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-chip-work.ScheduleDirectory.response.ndjson",
+  "view": {
+   "kind": "chip",
+   "given": {
+    "x": {
+     "schema": "work.ScheduleDirectory"
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-entries-work.ScheduleDirectory",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "ui-entries-work.ScheduleDirectory.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-entries-work.ScheduleDirectory.response.ndjson",
+  "view": {
+   "kind": "detail",
+   "given": {
+    "x": {
+     "schema": "work.ScheduleDirectory"
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-chip-work.GoalDirectory",
+  "method": "POST",
+  "path": "/views/chip",
+  "request": "ui-chip-work.GoalDirectory.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-chip-work.GoalDirectory.response.ndjson",
+  "view": {
+   "kind": "chip",
+   "given": {
+    "x": {
+     "schema": "work.GoalDirectory"
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-entries-work.GoalDirectory",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "ui-entries-work.GoalDirectory.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-entries-work.GoalDirectory.response.ndjson",
+  "view": {
+   "kind": "detail",
+   "given": {
+    "x": {
+     "schema": "work.GoalDirectory"
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-detail-PRJ-001",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "ui-detail-PRJ-001.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-detail-PRJ-001.response.ndjson",
+  "view": {
+   "kind": "detail",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Projects",
+       "next": {
+        "entry": {
+         "i": "projects",
+         "o": "directory",
+         "properties": {
+          "id": "PRJ-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-adjacency-PRJ-001-directory-work.ProjectDirectory",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-PRJ-001-directory-work.ProjectDirectory.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-PRJ-001-directory-work.ProjectDirectory.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Projects",
+       "next": {
+        "entry": {
+         "i": "projects",
+         "o": "directory",
+         "properties": {
+          "id": "PRJ-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.ProjectDirectory"
+    }
+   },
+   "adjacency": "directory"
+  }
+ },
+ {
+  "name": "ui-adjacency-PRJ-001-features-work.Feature",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-PRJ-001-features-work.Feature.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-PRJ-001-features-work.Feature.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Projects",
+       "next": {
+        "entry": {
+         "i": "projects",
+         "o": "directory",
+         "properties": {
+          "id": "PRJ-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Feature"
+    }
+   },
+   "adjacency": "features"
+  }
+ },
+ {
+  "name": "ui-adjacency-PRJ-001-comments-work.Comment",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-PRJ-001-comments-work.Comment.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-PRJ-001-comments-work.Comment.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Projects",
+       "next": {
+        "entry": {
+         "i": "projects",
+         "o": "directory",
+         "properties": {
+          "id": "PRJ-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Comment"
+    }
+   },
+   "adjacency": "comments"
+  }
+ },
+ {
+  "name": "ui-detail-FEA-001",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "ui-detail-FEA-001.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-detail-FEA-001.response.ndjson",
+  "view": {
+   "kind": "detail",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Features",
+       "next": {
+        "entry": {
+         "i": "features",
+         "o": "directory",
+         "properties": {
+          "id": "FEA-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-adjacency-FEA-001-directory-work.FeatureDirectory",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-FEA-001-directory-work.FeatureDirectory.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-FEA-001-directory-work.FeatureDirectory.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Features",
+       "next": {
+        "entry": {
+         "i": "features",
+         "o": "directory",
+         "properties": {
+          "id": "FEA-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.FeatureDirectory"
+    }
+   },
+   "adjacency": "directory"
+  }
+ },
+ {
+  "name": "ui-adjacency-FEA-001-project-work.Project",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-FEA-001-project-work.Project.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-FEA-001-project-work.Project.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Features",
+       "next": {
+        "entry": {
+         "i": "features",
+         "o": "directory",
+         "properties": {
+          "id": "FEA-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Project"
+    }
+   },
+   "adjacency": "project"
+  }
+ },
+ {
+  "name": "ui-adjacency-FEA-001-capabilities-work.Capability",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-FEA-001-capabilities-work.Capability.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-FEA-001-capabilities-work.Capability.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Features",
+       "next": {
+        "entry": {
+         "i": "features",
+         "o": "directory",
+         "properties": {
+          "id": "FEA-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Capability"
+    }
+   },
+   "adjacency": "capabilities"
+  }
+ },
+ {
+  "name": "ui-adjacency-FEA-001-comments-work.Comment",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-FEA-001-comments-work.Comment.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-FEA-001-comments-work.Comment.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Features",
+       "next": {
+        "entry": {
+         "i": "features",
+         "o": "directory",
+         "properties": {
+          "id": "FEA-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Comment"
+    }
+   },
+   "adjacency": "comments"
+  }
+ },
+ {
+  "name": "ui-detail-FEA-002",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "ui-detail-FEA-002.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-detail-FEA-002.response.ndjson",
+  "view": {
+   "kind": "detail",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Features",
+       "next": {
+        "entry": {
+         "i": "features",
+         "o": "directory",
+         "properties": {
+          "id": "FEA-002"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-adjacency-FEA-002-directory-work.FeatureDirectory",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-FEA-002-directory-work.FeatureDirectory.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-FEA-002-directory-work.FeatureDirectory.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Features",
+       "next": {
+        "entry": {
+         "i": "features",
+         "o": "directory",
+         "properties": {
+          "id": "FEA-002"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.FeatureDirectory"
+    }
+   },
+   "adjacency": "directory"
+  }
+ },
+ {
+  "name": "ui-adjacency-FEA-002-project-work.Project",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-FEA-002-project-work.Project.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-FEA-002-project-work.Project.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Features",
+       "next": {
+        "entry": {
+         "i": "features",
+         "o": "directory",
+         "properties": {
+          "id": "FEA-002"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Project"
+    }
+   },
+   "adjacency": "project"
+  }
+ },
+ {
+  "name": "ui-adjacency-FEA-002-capabilities-work.Capability",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-FEA-002-capabilities-work.Capability.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-FEA-002-capabilities-work.Capability.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Features",
+       "next": {
+        "entry": {
+         "i": "features",
+         "o": "directory",
+         "properties": {
+          "id": "FEA-002"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Capability"
+    }
+   },
+   "adjacency": "capabilities"
+  }
+ },
+ {
+  "name": "ui-adjacency-FEA-002-comments-work.Comment",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-FEA-002-comments-work.Comment.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-FEA-002-comments-work.Comment.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Features",
+       "next": {
+        "entry": {
+         "i": "features",
+         "o": "directory",
+         "properties": {
+          "id": "FEA-002"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Comment"
+    }
+   },
+   "adjacency": "comments"
+  }
+ },
+ {
+  "name": "ui-detail-CAP-001",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "ui-detail-CAP-001.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-detail-CAP-001.response.ndjson",
+  "view": {
+   "kind": "detail",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Capabilities",
+       "next": {
+        "entry": {
+         "i": "capabilities",
+         "o": "directory",
+         "properties": {
+          "id": "CAP-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-adjacency-CAP-001-directory-work.CapabilityDirectory",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-CAP-001-directory-work.CapabilityDirectory.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-CAP-001-directory-work.CapabilityDirectory.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Capabilities",
+       "next": {
+        "entry": {
+         "i": "capabilities",
+         "o": "directory",
+         "properties": {
+          "id": "CAP-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.CapabilityDirectory"
+    }
+   },
+   "adjacency": "directory"
+  }
+ },
+ {
+  "name": "ui-adjacency-CAP-001-feature-work.Feature",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-CAP-001-feature-work.Feature.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-CAP-001-feature-work.Feature.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Capabilities",
+       "next": {
+        "entry": {
+         "i": "capabilities",
+         "o": "directory",
+         "properties": {
+          "id": "CAP-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Feature"
+    }
+   },
+   "adjacency": "feature"
+  }
+ },
+ {
+  "name": "ui-adjacency-CAP-001-results-work.Result",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-CAP-001-results-work.Result.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-CAP-001-results-work.Result.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Capabilities",
+       "next": {
+        "entry": {
+         "i": "capabilities",
+         "o": "directory",
+         "properties": {
+          "id": "CAP-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Result"
+    }
+   },
+   "adjacency": "results"
+  }
+ },
+ {
+  "name": "ui-adjacency-CAP-001-goals-work.Goal",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-CAP-001-goals-work.Goal.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-CAP-001-goals-work.Goal.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Capabilities",
+       "next": {
+        "entry": {
+         "i": "capabilities",
+         "o": "directory",
+         "properties": {
+          "id": "CAP-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Goal"
+    }
+   },
+   "adjacency": "goals"
+  }
+ },
+ {
+  "name": "ui-adjacency-CAP-001-comments-work.Comment",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-CAP-001-comments-work.Comment.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-CAP-001-comments-work.Comment.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Capabilities",
+       "next": {
+        "entry": {
+         "i": "capabilities",
+         "o": "directory",
+         "properties": {
+          "id": "CAP-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Comment"
+    }
+   },
+   "adjacency": "comments"
+  }
+ },
+ {
+  "name": "ui-detail-CAP-002",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "ui-detail-CAP-002.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-detail-CAP-002.response.ndjson",
+  "view": {
+   "kind": "detail",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Capabilities",
+       "next": {
+        "entry": {
+         "i": "capabilities",
+         "o": "directory",
+         "properties": {
+          "id": "CAP-002"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-adjacency-CAP-002-directory-work.CapabilityDirectory",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-CAP-002-directory-work.CapabilityDirectory.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-CAP-002-directory-work.CapabilityDirectory.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Capabilities",
+       "next": {
+        "entry": {
+         "i": "capabilities",
+         "o": "directory",
+         "properties": {
+          "id": "CAP-002"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.CapabilityDirectory"
+    }
+   },
+   "adjacency": "directory"
+  }
+ },
+ {
+  "name": "ui-adjacency-CAP-002-feature-work.Feature",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-CAP-002-feature-work.Feature.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-CAP-002-feature-work.Feature.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Capabilities",
+       "next": {
+        "entry": {
+         "i": "capabilities",
+         "o": "directory",
+         "properties": {
+          "id": "CAP-002"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Feature"
+    }
+   },
+   "adjacency": "feature"
+  }
+ },
+ {
+  "name": "ui-adjacency-CAP-002-results-work.Result",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-CAP-002-results-work.Result.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-CAP-002-results-work.Result.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Capabilities",
+       "next": {
+        "entry": {
+         "i": "capabilities",
+         "o": "directory",
+         "properties": {
+          "id": "CAP-002"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Result"
+    }
+   },
+   "adjacency": "results"
+  }
+ },
+ {
+  "name": "ui-adjacency-CAP-002-goals-work.Goal",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-CAP-002-goals-work.Goal.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-CAP-002-goals-work.Goal.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Capabilities",
+       "next": {
+        "entry": {
+         "i": "capabilities",
+         "o": "directory",
+         "properties": {
+          "id": "CAP-002"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Goal"
+    }
+   },
+   "adjacency": "goals"
+  }
+ },
+ {
+  "name": "ui-adjacency-CAP-002-comments-work.Comment",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-CAP-002-comments-work.Comment.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-CAP-002-comments-work.Comment.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Capabilities",
+       "next": {
+        "entry": {
+         "i": "capabilities",
+         "o": "directory",
+         "properties": {
+          "id": "CAP-002"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Comment"
+    }
+   },
+   "adjacency": "comments"
+  }
+ },
+ {
+  "name": "ui-detail-CAP-003",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "ui-detail-CAP-003.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-detail-CAP-003.response.ndjson",
+  "view": {
+   "kind": "detail",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Capabilities",
+       "next": {
+        "entry": {
+         "i": "capabilities",
+         "o": "directory",
+         "properties": {
+          "id": "CAP-003"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-adjacency-CAP-003-directory-work.CapabilityDirectory",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-CAP-003-directory-work.CapabilityDirectory.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-CAP-003-directory-work.CapabilityDirectory.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Capabilities",
+       "next": {
+        "entry": {
+         "i": "capabilities",
+         "o": "directory",
+         "properties": {
+          "id": "CAP-003"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.CapabilityDirectory"
+    }
+   },
+   "adjacency": "directory"
+  }
+ },
+ {
+  "name": "ui-adjacency-CAP-003-feature-work.Feature",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-CAP-003-feature-work.Feature.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-CAP-003-feature-work.Feature.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Capabilities",
+       "next": {
+        "entry": {
+         "i": "capabilities",
+         "o": "directory",
+         "properties": {
+          "id": "CAP-003"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Feature"
+    }
+   },
+   "adjacency": "feature"
+  }
+ },
+ {
+  "name": "ui-adjacency-CAP-003-results-work.Result",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-CAP-003-results-work.Result.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-CAP-003-results-work.Result.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Capabilities",
+       "next": {
+        "entry": {
+         "i": "capabilities",
+         "o": "directory",
+         "properties": {
+          "id": "CAP-003"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Result"
+    }
+   },
+   "adjacency": "results"
+  }
+ },
+ {
+  "name": "ui-adjacency-CAP-003-goals-work.Goal",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-CAP-003-goals-work.Goal.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-CAP-003-goals-work.Goal.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Capabilities",
+       "next": {
+        "entry": {
+         "i": "capabilities",
+         "o": "directory",
+         "properties": {
+          "id": "CAP-003"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Goal"
+    }
+   },
+   "adjacency": "goals"
+  }
+ },
+ {
+  "name": "ui-adjacency-CAP-003-comments-work.Comment",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-CAP-003-comments-work.Comment.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-CAP-003-comments-work.Comment.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Capabilities",
+       "next": {
+        "entry": {
+         "i": "capabilities",
+         "o": "directory",
+         "properties": {
+          "id": "CAP-003"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Comment"
+    }
+   },
+   "adjacency": "comments"
+  }
+ },
+ {
+  "name": "ui-detail-RES-001",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "ui-detail-RES-001.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-detail-RES-001.response.ndjson",
+  "view": {
+   "kind": "detail",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Results",
+       "next": {
+        "entry": {
+         "i": "results",
+         "o": "directory",
+         "properties": {
+          "id": "RES-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-adjacency-RES-001-directory-work.ResultDirectory",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-RES-001-directory-work.ResultDirectory.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-RES-001-directory-work.ResultDirectory.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Results",
+       "next": {
+        "entry": {
+         "i": "results",
+         "o": "directory",
+         "properties": {
+          "id": "RES-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.ResultDirectory"
+    }
+   },
+   "adjacency": "directory"
+  }
+ },
+ {
+  "name": "ui-adjacency-RES-001-capability-work.Capability",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-RES-001-capability-work.Capability.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-RES-001-capability-work.Capability.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Results",
+       "next": {
+        "entry": {
+         "i": "results",
+         "o": "directory",
+         "properties": {
+          "id": "RES-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Capability"
+    }
+   },
+   "adjacency": "capability"
+  }
+ },
+ {
+  "name": "ui-adjacency-RES-001-tasks-work.Task",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-RES-001-tasks-work.Task.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-RES-001-tasks-work.Task.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Results",
+       "next": {
+        "entry": {
+         "i": "results",
+         "o": "directory",
+         "properties": {
+          "id": "RES-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Task"
+    }
+   },
+   "adjacency": "tasks"
+  }
+ },
+ {
+  "name": "ui-adjacency-RES-001-comments-work.Comment",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-RES-001-comments-work.Comment.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-RES-001-comments-work.Comment.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Results",
+       "next": {
+        "entry": {
+         "i": "results",
+         "o": "directory",
+         "properties": {
+          "id": "RES-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Comment"
+    }
+   },
+   "adjacency": "comments"
+  }
+ },
+ {
+  "name": "ui-detail-TSK-001",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "ui-detail-TSK-001.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-detail-TSK-001.response.ndjson",
+  "view": {
+   "kind": "detail",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Tasks",
+       "next": {
+        "entry": {
+         "i": "tasks",
+         "o": "directory",
+         "properties": {
+          "id": "TSK-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-adjacency-TSK-001-directory-work.TaskDirectory",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-TSK-001-directory-work.TaskDirectory.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-TSK-001-directory-work.TaskDirectory.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Tasks",
+       "next": {
+        "entry": {
+         "i": "tasks",
+         "o": "directory",
+         "properties": {
+          "id": "TSK-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.TaskDirectory"
+    }
+   },
+   "adjacency": "directory"
+  }
+ },
+ {
+  "name": "ui-adjacency-TSK-001-result-work.Result",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-TSK-001-result-work.Result.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-TSK-001-result-work.Result.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Tasks",
+       "next": {
+        "entry": {
+         "i": "tasks",
+         "o": "directory",
+         "properties": {
+          "id": "TSK-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Result"
+    }
+   },
+   "adjacency": "result"
+  }
+ },
+ {
+  "name": "ui-adjacency-TSK-001-comments-work.Comment",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-TSK-001-comments-work.Comment.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-TSK-001-comments-work.Comment.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Tasks",
+       "next": {
+        "entry": {
+         "i": "tasks",
+         "o": "directory",
+         "properties": {
+          "id": "TSK-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Comment"
+    }
+   },
+   "adjacency": "comments"
+  }
+ },
+ {
+  "name": "ui-detail-TSK-002",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "ui-detail-TSK-002.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-detail-TSK-002.response.ndjson",
+  "view": {
+   "kind": "detail",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Tasks",
+       "next": {
+        "entry": {
+         "i": "tasks",
+         "o": "directory",
+         "properties": {
+          "id": "TSK-002"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-adjacency-TSK-002-directory-work.TaskDirectory",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-TSK-002-directory-work.TaskDirectory.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-TSK-002-directory-work.TaskDirectory.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Tasks",
+       "next": {
+        "entry": {
+         "i": "tasks",
+         "o": "directory",
+         "properties": {
+          "id": "TSK-002"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.TaskDirectory"
+    }
+   },
+   "adjacency": "directory"
+  }
+ },
+ {
+  "name": "ui-adjacency-TSK-002-result-work.Result",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-TSK-002-result-work.Result.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-TSK-002-result-work.Result.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Tasks",
+       "next": {
+        "entry": {
+         "i": "tasks",
+         "o": "directory",
+         "properties": {
+          "id": "TSK-002"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Result"
+    }
+   },
+   "adjacency": "result"
+  }
+ },
+ {
+  "name": "ui-adjacency-TSK-002-comments-work.Comment",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-TSK-002-comments-work.Comment.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-TSK-002-comments-work.Comment.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Tasks",
+       "next": {
+        "entry": {
+         "i": "tasks",
+         "o": "directory",
+         "properties": {
+          "id": "TSK-002"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Comment"
+    }
+   },
+   "adjacency": "comments"
+  }
+ },
+ {
+  "name": "ui-detail-CMT-001",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "ui-detail-CMT-001.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-detail-CMT-001.response.ndjson",
+  "view": {
+   "kind": "detail",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Comments",
+       "next": {
+        "entry": {
+         "i": "comments",
+         "o": "directory",
+         "properties": {
+          "id": "CMT-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-adjacency-CMT-001-directory-work.CommentDirectory",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-CMT-001-directory-work.CommentDirectory.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-CMT-001-directory-work.CommentDirectory.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Comments",
+       "next": {
+        "entry": {
+         "i": "comments",
+         "o": "directory",
+         "properties": {
+          "id": "CMT-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.CommentDirectory"
+    }
+   },
+   "adjacency": "directory"
+  }
+ },
+ {
+  "name": "ui-adjacency-CMT-001-about-work.Project",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-CMT-001-about-work.Project.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-CMT-001-about-work.Project.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Comments",
+       "next": {
+        "entry": {
+         "i": "comments",
+         "o": "directory",
+         "properties": {
+          "id": "CMT-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Project"
+    }
+   },
+   "adjacency": "about"
+  }
+ },
+ {
+  "name": "ui-adjacency-CMT-001-about-work.Feature",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-CMT-001-about-work.Feature.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-CMT-001-about-work.Feature.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Comments",
+       "next": {
+        "entry": {
+         "i": "comments",
+         "o": "directory",
+         "properties": {
+          "id": "CMT-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Feature"
+    }
+   },
+   "adjacency": "about"
+  }
+ },
+ {
+  "name": "ui-adjacency-CMT-001-about-work.Capability",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-CMT-001-about-work.Capability.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-CMT-001-about-work.Capability.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Comments",
+       "next": {
+        "entry": {
+         "i": "comments",
+         "o": "directory",
+         "properties": {
+          "id": "CMT-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Capability"
+    }
+   },
+   "adjacency": "about"
+  }
+ },
+ {
+  "name": "ui-adjacency-CMT-001-about-work.Result",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-CMT-001-about-work.Result.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-CMT-001-about-work.Result.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Comments",
+       "next": {
+        "entry": {
+         "i": "comments",
+         "o": "directory",
+         "properties": {
+          "id": "CMT-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Result"
+    }
+   },
+   "adjacency": "about"
+  }
+ },
+ {
+  "name": "ui-adjacency-CMT-001-about-work.Task",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-CMT-001-about-work.Task.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-CMT-001-about-work.Task.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Comments",
+       "next": {
+        "entry": {
+         "i": "comments",
+         "o": "directory",
+         "properties": {
+          "id": "CMT-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Task"
+    }
+   },
+   "adjacency": "about"
+  }
+ },
+ {
+  "name": "ui-detail-SCH-001",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "ui-detail-SCH-001.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-detail-SCH-001.response.ndjson",
+  "view": {
+   "kind": "detail",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Schedules",
+       "next": {
+        "entry": {
+         "i": "schedules",
+         "o": "directory",
+         "properties": {
+          "id": "SCH-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-adjacency-SCH-001-directory-work.ScheduleDirectory",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-SCH-001-directory-work.ScheduleDirectory.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-SCH-001-directory-work.ScheduleDirectory.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Schedules",
+       "next": {
+        "entry": {
+         "i": "schedules",
+         "o": "directory",
+         "properties": {
+          "id": "SCH-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.ScheduleDirectory"
+    }
+   },
+   "adjacency": "directory"
+  }
+ },
+ {
+  "name": "ui-adjacency-SCH-001-goals-work.Goal",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-SCH-001-goals-work.Goal.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-SCH-001-goals-work.Goal.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Schedules",
+       "next": {
+        "entry": {
+         "i": "schedules",
+         "o": "directory",
+         "properties": {
+          "id": "SCH-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Goal"
+    }
+   },
+   "adjacency": "goals"
+  }
+ },
+ {
+  "name": "ui-detail-GOL-001",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "ui-detail-GOL-001.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-detail-GOL-001.response.ndjson",
+  "view": {
+   "kind": "detail",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Goals",
+       "next": {
+        "entry": {
+         "i": "goals",
+         "o": "directory",
+         "properties": {
+          "id": "GOL-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-adjacency-GOL-001-directory-work.GoalDirectory",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-GOL-001-directory-work.GoalDirectory.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-GOL-001-directory-work.GoalDirectory.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Goals",
+       "next": {
+        "entry": {
+         "i": "goals",
+         "o": "directory",
+         "properties": {
+          "id": "GOL-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.GoalDirectory"
+    }
+   },
+   "adjacency": "directory"
+  }
+ },
+ {
+  "name": "ui-adjacency-GOL-001-schedule-work.Schedule",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-GOL-001-schedule-work.Schedule.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-GOL-001-schedule-work.Schedule.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Goals",
+       "next": {
+        "entry": {
+         "i": "goals",
+         "o": "directory",
+         "properties": {
+          "id": "GOL-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Schedule"
+    }
+   },
+   "adjacency": "schedule"
+  }
+ },
+ {
+  "name": "ui-adjacency-GOL-001-capabilities-work.Capability",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-GOL-001-capabilities-work.Capability.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-GOL-001-capabilities-work.Capability.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Goals",
+       "next": {
+        "entry": {
+         "i": "goals",
+         "o": "directory",
+         "properties": {
+          "id": "GOL-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Capability"
+    }
+   },
+   "adjacency": "capabilities"
+  }
+ },
+ {
+  "name": "ui-detail-work.Projects",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "ui-detail-work.Projects.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-detail-work.Projects.response.ndjson",
+  "view": {
+   "kind": "detail",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Projects",
+       "next": {
+        "target": {}
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-adjacency-work.Projects-projects-work.Project",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-work.Projects-projects-work.Project.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-work.Projects-projects-work.Project.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Projects",
+       "next": {
+        "target": {}
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Project"
+    }
+   },
+   "adjacency": "projects"
+  }
+ },
+ {
+  "name": "ui-detail-work.Features",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "ui-detail-work.Features.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-detail-work.Features.response.ndjson",
+  "view": {
+   "kind": "detail",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Features",
+       "next": {
+        "target": {}
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-adjacency-work.Features-features-work.Feature",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-work.Features-features-work.Feature.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-work.Features-features-work.Feature.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Features",
+       "next": {
+        "target": {}
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Feature"
+    }
+   },
+   "adjacency": "features"
+  }
+ },
+ {
+  "name": "ui-detail-work.Capabilities",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "ui-detail-work.Capabilities.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-detail-work.Capabilities.response.ndjson",
+  "view": {
+   "kind": "detail",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Capabilities",
+       "next": {
+        "target": {}
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-adjacency-work.Capabilities-capabilities-work.Capability",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-work.Capabilities-capabilities-work.Capability.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-work.Capabilities-capabilities-work.Capability.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Capabilities",
+       "next": {
+        "target": {}
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Capability"
+    }
+   },
+   "adjacency": "capabilities"
+  }
+ },
+ {
+  "name": "ui-detail-work.Results",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "ui-detail-work.Results.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-detail-work.Results.response.ndjson",
+  "view": {
+   "kind": "detail",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Results",
+       "next": {
+        "target": {}
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-adjacency-work.Results-results-work.Result",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-work.Results-results-work.Result.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-work.Results-results-work.Result.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Results",
+       "next": {
+        "target": {}
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Result"
+    }
+   },
+   "adjacency": "results"
+  }
+ },
+ {
+  "name": "ui-detail-work.Tasks",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "ui-detail-work.Tasks.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-detail-work.Tasks.response.ndjson",
+  "view": {
+   "kind": "detail",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Tasks",
+       "next": {
+        "target": {}
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-adjacency-work.Tasks-tasks-work.Task",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-work.Tasks-tasks-work.Task.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-work.Tasks-tasks-work.Task.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Tasks",
+       "next": {
+        "target": {}
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Task"
+    }
+   },
+   "adjacency": "tasks"
+  }
+ },
+ {
+  "name": "ui-detail-work.Comments",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "ui-detail-work.Comments.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-detail-work.Comments.response.ndjson",
+  "view": {
+   "kind": "detail",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Comments",
+       "next": {
+        "target": {}
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-adjacency-work.Comments-comments-work.Comment",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-work.Comments-comments-work.Comment.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-work.Comments-comments-work.Comment.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Comments",
+       "next": {
+        "target": {}
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Comment"
+    }
+   },
+   "adjacency": "comments"
+  }
+ },
+ {
+  "name": "ui-detail-work.Schedules",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "ui-detail-work.Schedules.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-detail-work.Schedules.response.ndjson",
+  "view": {
+   "kind": "detail",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Schedules",
+       "next": {
+        "target": {}
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-adjacency-work.Schedules-schedules-work.Schedule",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-work.Schedules-schedules-work.Schedule.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-work.Schedules-schedules-work.Schedule.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Schedules",
+       "next": {
+        "target": {}
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Schedule"
+    }
+   },
+   "adjacency": "schedules"
+  }
+ },
+ {
+  "name": "ui-detail-work.Goals",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "ui-detail-work.Goals.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-detail-work.Goals.response.ndjson",
+  "view": {
+   "kind": "detail",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Goals",
+       "next": {
+        "target": {}
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "name": "ui-adjacency-work.Goals-goals-work.Goal",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-work.Goals-goals-work.Goal.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-work.Goals-goals-work.Goal.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Goals",
+       "next": {
+        "target": {}
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Goal"
+    }
+   },
+   "adjacency": "goals"
+  }
  }
 ]

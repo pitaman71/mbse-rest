@@ -8,8 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 from mbse.Schemas.Framework import Builders, Plain, References
 
-from mbse.Demos.Apps.WorkTracker import Schemas, Seed
-from mbse.Services.Rest import Conformance, Persistence, Service, Views
+from mbse.Services.Rest import Conformance, Persistence, PersistenceCases, Service, Views
 
 
 @pytest.fixture
@@ -135,42 +134,7 @@ def test_errors(client):
     assert client.post("/views/label", json={"mutations": "no"}).status_code == 400
 
 
-def write_task(store, title):
-    """A transaction that writes, a new task in its directory, then binds it as the label view's `x`."""
-    return Plain.ToPlain(store).Transaction(store.Mutations.OfTransaction(lambda t: t.mutations([lambda mu: mu.upsert(
-        lambda u: u.exists([lambda p: p.symbols({"d": store.work.TaskDirectory, "x": store.work.Task}).spec([
-            lambda _: _.d.tasks({"TSK-009": lambda e: e.task(_.x)}), lambda _: _.x.title(title)])]))])))
-
-
-def test_a_transaction_that_writes_is_journaled_and_replayed():
-    plugin = Persistence.Memory()
-    client = TestClient(Service.work_tracker(plugin))
-    assert len(plugin.snapshots) == 1 and plugin.entries == []  # first start: the installs, then a snapshot
-    [frame] = frames(client.post("/views/label", json=write_task(store_of(client), "Journal it")))
-    assert label_of(frame) == {"title": "Journal it"}
-    reads = Plain.ToPlain(store_of(client)).Transaction(store_of(client).Mutations.OfTransaction(
-        lambda t: t.mutations([lambda mu: mu.map(lambda m: m.symbols([lambda p: p.symbols({"x": store_of(client).work.Task})]))])))
-    client.post("/views/label", json=reads)
-    assert len(plugin.entries) == 1  # a read is not journaled
-    again = TestClient(Service.app([], plugin))  # a restart: the snapshot, then the journal after it
-    titles = [label_of(f)["title"] for f in frames(again.post("/views/label", json=reads))]
-    assert titles == ["Install the schemas", "Seed the demo", "Journal it"]
-
-
-def test_a_snapshot_every_so_many_transactions():
-    plugin = Persistence.Memory()
-    client = TestClient(Service.app([Schemas.install, Seed.seed], plugin, snapshot_every=1))
-    client.post("/views/label", json=write_task(store_of(client), "Snapshot it"))
-    assert len(plugin.snapshots) == 2
-    snapshot, journal = plugin.load()
-    assert journal == [] and snapshot is not None
-    assert isinstance(plugin, Persistence.Plugin)
-
-
-def test_a_refused_transaction_writes_and_journals_nothing():
-    plugin = Persistence.Memory()
-    client = TestClient(Service.work_tracker(plugin))
-    body = write_task(store_of(client), "Refused")
-    body["mutations"][0]["upsert"]["exists"][0]["symbols"]["y"] = {}  # a symbol given neither: refused
-    assert client.post("/views/label", json=body).status_code == 400
-    assert plugin.entries == []
+@pytest.mark.parametrize("case", PersistenceCases.CASES, ids=lambda case: case.__name__)
+def test_persistence_with_the_reference_plugin(case):
+    """The cases every plugin must pass (CAP-013), with `Memory`; mbse-dynamodb runs them with its own."""
+    case(Persistence.Memory)

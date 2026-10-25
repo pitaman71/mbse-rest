@@ -42,10 +42,12 @@ def _map(store: Any, symbols: Callable[[Any], dict[str, Any]], spec: Callable[[A
 
 
 class Case:
-    """One request and the response it gets."""
+    """One request and the response it gets; `view`, where given, says what the request is made of (its kind, what
+    each symbol is given, and an adjacency's name), so that a client can build it again without knowing the case."""
 
-    def __init__(self, name: str, method: str, path: str, request: Callable[[Any], Any] | None = None) -> None:
-        self.name, self.method, self.path, self.request = name, method, path, request
+    def __init__(self, name: str, method: str, path: str, request: Callable[[Any], Any] | None = None,
+                 view: dict[str, Any] | None = None) -> None:
+        self.name, self.method, self.path, self.request, self.view = name, method, path, request, view
 
 
 def _ref(directory: str, adjacency: str, id_: str) -> Callable[[Any], Any]:
@@ -85,6 +87,80 @@ CASES = [
 ]
 
 
+FRAMEWORK = ("Schemas", "Paths", "Mutations", "References", "Parametrics")
+
+
+def _app_schemas(store: Any) -> list[str]:
+    """The app's reference object schemas, in the store's order: those mbse-react's browsers show (CAP-009 to
+    CAP-011), the directories included."""
+    return [name for name in store.names() if name.split(".")[0] not in FRAMEWORK
+            and getattr(store.registered(name), "ref", None) is True]
+
+
+def _linked(store: Any, schema: str) -> list[tuple[str, list[str]]]:
+    """Each named adjacency of `schema`, with the schemas whose objects its entries may link: those declaring an
+    adjacency to its relation through another link, as mbse-react's inspector asks CAP-008 for them."""
+    declared = [(name, adjacency) for name in _app_schemas(store)
+                for adjacency in [*store.registered(name).adjacencies.values(), *store.registered(name).anonymous]]
+    found = []
+    for adjacency_name, adjacency in store.registered(schema).adjacencies.items():
+        relation = adjacency.relation.name
+        linked = list(dict.fromkeys(owner for owner, other in declared
+                                    if other.relation.name == relation and other.me != adjacency.me))
+        found.append((adjacency_name, linked))
+    return found
+
+
+def _key(plain: Any) -> str:
+    """A case name's part for an object, from its reference: its last key's values, or a singleton's name."""
+    step, key = plain["path"], plain["path"]["singleton"]
+    while "entry" in step["next"]:
+        step = step["next"]["entry"]
+        key = "-".join(str(value) for value in step["properties"].values())
+    return key
+
+
+def _given(store: Any, given: dict[str, Any]) -> Callable[[Any], dict[str, Any]]:
+    """Symbols as `view` describes them, given in the store a case runs in: a schema by name, or a reference."""
+    def symbols(s: Any) -> dict[str, Any]:
+        return {symbol: s.registered(value["schema"]) if "schema" in value
+                else Plain.FromPlain(s)(s.References.OfObject.as_schema(), value["reference"])
+                for symbol, value in given.items()}
+    return symbols
+
+
+def _ui_cases() -> list[Case]:
+    """A case for every view mbse-react asks of the WorkTracker seed: each app schema's chips (CAP-006) and entries
+    (CAP-007 over its extent, the relation browser's), each object's detail (CAP-007), and each object's adjacencies,
+    one case per schema their entries may link (CAP-008). All reads, so they may share one server."""
+    store = Service.work_tracker().state.service.store
+    reference = store.References.OfObject.as_schema()
+    cases = []
+    for schema in _app_schemas(store):
+        for kind, prefix in (("chip", "ui-chip"), ("detail", "ui-entries")):
+            view = {"kind": kind, "given": {"x": {"schema": schema}}}
+            cases.append(Case(f"{prefix}-{schema}", "POST", f"/views/{kind}",
+                              lambda s, v=view: _map(s, _given(s, v["given"])), view))
+    for schema in _app_schemas(store):
+        for obj in store.extent(schema):
+            try:
+                plain = Plain.ToPlain(store)(reference, References.of(store, obj))
+            except LookupError:  # a counted object: no reference, left out (FEA-003)
+                continue
+            key = _key(plain)
+            view = {"kind": "detail", "given": {"x": {"reference": plain}}}
+            cases.append(Case(f"ui-detail-{key}", "POST", "/views/detail",
+                              lambda s, v=view: _map(s, _given(s, v["given"])), view))
+            for adjacency, linked in _linked(store, schema):
+                for y in linked:
+                    view = {"kind": "adjacency", "given": {"x": {"reference": plain}, "y": {"schema": y}},
+                            "adjacency": adjacency}
+                    cases.append(Case(f"ui-adjacency-{key}-{adjacency}-{y}", "POST", "/views/adjacency",
+                                      lambda s, v=view: _map(s, _given(s, v["given"]), lambda _s, a=v["adjacency"]: [
+                                          lambda _: getattr(_.x, a)([_.y])]), view))
+    return cases
+
+
 def _dump(plain: Any) -> str:
     return json.dumps(plain, indent=1, ensure_ascii=False) + "\n"
 
@@ -93,8 +169,9 @@ def generate() -> dict[str, str]:
     """Every file of the corpus, by its name: each case's request and response, and the index."""
     files: dict[str, str] = {}
     index = []
-    for case in CASES:
-        api = Service.work_tracker()
+    shared = Service.work_tracker()
+    for case in [*CASES, *_ui_cases()]:
+        api = shared if case.view is not None else Service.work_tracker()  # the UI's cases only read
         client = TestClient(api)
         body = case.request(api.state.service.store) if case.request else None
         response = client.request(case.method, case.path, json=body) if body is not None else \
@@ -105,6 +182,8 @@ def generate() -> dict[str, str]:
                  "request": f"{case.name}.request.json" if body is not None else None,
                  "status": response.status_code, "content_type": content_type,
                  "response": f"{case.name}.response.{'ndjson' if stream else 'json'}"}
+        if case.view is not None:
+            entry["view"] = case.view
         index.append(entry)
         if body is not None:
             files[entry["request"]] = _dump(body)

@@ -122,14 +122,25 @@ class Plugin(Protocol):
 - **Snapshots.** Every `snapshot_every` journaled transactions (100 by default); after one, `load` gives only what
   is journaled after it.
 - `Persistence.Memory` is the reference implementation. `mbse.Persistence.DynamoDB` (mbse-dynamodb) implements the
-  same protocol, and should pass the same tests (`python3/tests/test_service.py`, the persistence cases) with its
-  plugin in place of `Memory`.
+  same protocol. Every plugin must pass `PersistenceCases.CASES`, each a function given a maker of a fresh plugin,
+  which checks the service's use of it through the protocol alone (`load`, and a `Counting` wrapper for how often it
+  journals and snapshots), never a plugin's own attributes; mbse-rest runs them with `Memory`
+  (`python3/tests/test_service.py`), mbse-dynamodb with its own plugin.
 
 ## The golden corpus
 
 `conformance/cases.json` lists each case: `name`, `method`, `path`, `request` (a file, or null), `status`,
 `content_type` and `response` (a file). Each case is sent to a fresh stub server over the WorkTracker seed
 (mbse-demo-apps). `uv run python -m mbse.Services.Rest.Conformance` writes it; `--check` reports what differs.
+
+Beside the hand-written cases, the corpus holds a case for every view mbse-react asks of the seed (`ui-*`), generated
+from the store so that the UI can develop against the corpus alone: each app reference object schema's chips
+(`ui-chip-<schema>`, CAP-006) and entries (`ui-entries-<schema>`, CAP-007 with `x` given the schema, the relation
+browser's), each object's detail (`ui-detail-<key>`, CAP-007), and each object's named adjacencies, one case for each
+schema whose objects their entries may link (`ui-adjacency-<key>-<adjacency>-<schema>`, CAP-008). They only read, so
+they share one server. Each carries `view`, what its request is made of: its `kind`, what each symbol is `given` (a
+`schema` by name, or a `reference`, a `References.OfObject` in mbse-schemas' JSON), and, an adjacency view's, its
+`adjacency`; the client's tests build each such request again from it, byte for byte.
 
 - The server's tests require the corpus to be current: a change to a response is a change to the corpus, committed
   with it, and reviewed as a change to the contract.
@@ -188,7 +199,7 @@ cd python3 && uv run python -m mbse.Services.Rest   # serves with uvicorn, as th
 |---|---|---|
 | `MBSE_REST_APP` | `mbse.Demos.Apps.WorkTracker` | the app's package, its installs by `installs_of` |
 | `MBSE_REST_SEED` | `1` | whether its `Seed.seed` runs at first start (`1`/`0`, `true`/`false`) |
-| `MBSE_REST_PLUGIN` | `memory` | the persistence plugin, by `plugin_of`'s name, e.g. `mbse.Persistence.DynamoDB:Plugin` |
+| `MBSE_REST_PLUGIN` | `memory` | the persistence plugin, by `plugin_of`'s name, e.g. `mbse.Persistence.DynamoDB.Plugin:Plugin` |
 | `MBSE_REST_SNAPSHOT_EVERY` | `100` | journaled transactions between snapshots |
 | `MBSE_REST_ORIGINS` | none | the UI's origins, comma-separated, e.g. `http://localhost:5173` |
 | `MBSE_REST_HOST` | `127.0.0.1` | where it listens |

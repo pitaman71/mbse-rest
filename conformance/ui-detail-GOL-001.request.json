@@ -1,0 +1,33 @@
+{
+ "mutations": [
+  {
+   "map": {
+    "symbols": [
+     {
+      "symbols": {
+       "x": {
+        "reference": {
+         "path": {
+          "singleton": "work.Goals",
+          "next": {
+           "entry": {
+            "i": "goals",
+            "o": "directory",
+            "properties": {
+             "id": "GOL-001"
+            },
+            "next": {
+             "target": {}
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    ]
+   }
+  }
+ ]
+}
