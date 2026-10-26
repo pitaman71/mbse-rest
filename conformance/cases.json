@@ -2599,43 +2599,6 @@
   }
  },
  {
-  "name": "ui-adjacency-CMT-001-replies-work.Comment",
-  "method": "POST",
-  "path": "/views/adjacency",
-  "request": "ui-adjacency-CMT-001-replies-work.Comment.request.json",
-  "status": 200,
-  "content_type": "application/x-ndjson",
-  "response": "ui-adjacency-CMT-001-replies-work.Comment.response.ndjson",
-  "view": {
-   "kind": "adjacency",
-   "given": {
-    "x": {
-     "reference": {
-      "path": {
-       "singleton": "work.Comments",
-       "next": {
-        "entry": {
-         "i": "comments",
-         "o": "directory",
-         "properties": {
-          "id": "CMT-001"
-         },
-         "next": {
-          "target": {}
-         }
-        }
-       }
-      }
-     }
-    },
-    "y": {
-     "schema": "work.Comment"
-    }
-   },
-   "adjacency": "replies"
-  }
- },
- {
   "name": "ui-adjacency-CMT-001-thread-work.Comment",
   "method": "POST",
   "path": "/views/adjacency",
@@ -2670,6 +2633,43 @@
     }
    },
    "adjacency": "thread"
+  }
+ },
+ {
+  "name": "ui-adjacency-CMT-001-replies-work.Comment",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-CMT-001-replies-work.Comment.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-CMT-001-replies-work.Comment.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Comments",
+       "next": {
+        "entry": {
+         "i": "comments",
+         "o": "directory",
+         "properties": {
+          "id": "CMT-001"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Comment"
+    }
+   },
+   "adjacency": "replies"
   }
  },
  {
@@ -2928,43 +2928,6 @@
   }
  },
  {
-  "name": "ui-adjacency-CMT-002-replies-work.Comment",
-  "method": "POST",
-  "path": "/views/adjacency",
-  "request": "ui-adjacency-CMT-002-replies-work.Comment.request.json",
-  "status": 200,
-  "content_type": "application/x-ndjson",
-  "response": "ui-adjacency-CMT-002-replies-work.Comment.response.ndjson",
-  "view": {
-   "kind": "adjacency",
-   "given": {
-    "x": {
-     "reference": {
-      "path": {
-       "singleton": "work.Comments",
-       "next": {
-        "entry": {
-         "i": "comments",
-         "o": "directory",
-         "properties": {
-          "id": "CMT-002"
-         },
-         "next": {
-          "target": {}
-         }
-        }
-       }
-      }
-     }
-    },
-    "y": {
-     "schema": "work.Comment"
-    }
-   },
-   "adjacency": "replies"
-  }
- },
- {
   "name": "ui-adjacency-CMT-002-thread-work.Comment",
   "method": "POST",
   "path": "/views/adjacency",
@@ -2999,6 +2962,43 @@
     }
    },
    "adjacency": "thread"
+  }
+ },
+ {
+  "name": "ui-adjacency-CMT-002-replies-work.Comment",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-CMT-002-replies-work.Comment.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-CMT-002-replies-work.Comment.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Comments",
+       "next": {
+        "entry": {
+         "i": "comments",
+         "o": "directory",
+         "properties": {
+          "id": "CMT-002"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Comment"
+    }
+   },
+   "adjacency": "replies"
   }
  },
  {
@@ -3257,43 +3257,6 @@
   }
  },
  {
-  "name": "ui-adjacency-CMT-003-replies-work.Comment",
-  "method": "POST",
-  "path": "/views/adjacency",
-  "request": "ui-adjacency-CMT-003-replies-work.Comment.request.json",
-  "status": 200,
-  "content_type": "application/x-ndjson",
-  "response": "ui-adjacency-CMT-003-replies-work.Comment.response.ndjson",
-  "view": {
-   "kind": "adjacency",
-   "given": {
-    "x": {
-     "reference": {
-      "path": {
-       "singleton": "work.Comments",
-       "next": {
-        "entry": {
-         "i": "comments",
-         "o": "directory",
-         "properties": {
-          "id": "CMT-003"
-         },
-         "next": {
-          "target": {}
-         }
-        }
-       }
-      }
-     }
-    },
-    "y": {
-     "schema": "work.Comment"
-    }
-   },
-   "adjacency": "replies"
-  }
- },
- {
   "name": "ui-adjacency-CMT-003-thread-work.Comment",
   "method": "POST",
   "path": "/views/adjacency",
@@ -3328,6 +3291,43 @@
     }
    },
    "adjacency": "thread"
+  }
+ },
+ {
+  "name": "ui-adjacency-CMT-003-replies-work.Comment",
+  "method": "POST",
+  "path": "/views/adjacency",
+  "request": "ui-adjacency-CMT-003-replies-work.Comment.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "ui-adjacency-CMT-003-replies-work.Comment.response.ndjson",
+  "view": {
+   "kind": "adjacency",
+   "given": {
+    "x": {
+     "reference": {
+      "path": {
+       "singleton": "work.Comments",
+       "next": {
+        "entry": {
+         "i": "comments",
+         "o": "directory",
+         "properties": {
+          "id": "CMT-003"
+         },
+         "next": {
+          "target": {}
+         }
+        }
+       }
+      }
+     }
+    },
+    "y": {
+     "schema": "work.Comment"
+    }
+   },
+   "adjacency": "replies"
   }
  },
  {

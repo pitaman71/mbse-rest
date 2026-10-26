@@ -5452,81 +5452,6 @@
                           "mutations": [
                            {
                             "set": {
-                             "value": "thread"
-                            }
-                           }
-                          ]
-                         }
-                        },
-                        {
-                         "as_adjacency": {
-                          "name": "relation",
-                          "mutations": [
-                           {
-                            "insert": {
-                             "entries": [
-                              {
-                               "mutations": [
-                                {
-                                 "as_link": {
-                                  "name": "relation",
-                                  "mutations": [
-                                   {
-                                    "set": {
-                                     "ref": {
-                                      "symbol": "32"
-                                     }
-                                    }
-                                   }
-                                  ]
-                                 }
-                                }
-                               ]
-                              }
-                             ]
-                            }
-                           }
-                          ]
-                         }
-                        }
-                       ]
-                      }
-                     }
-                    }
-                   ]
-                  }
-                 },
-                 {
-                  "as_property": {
-                   "name": "name",
-                   "mutations": [
-                    {
-                     "set": {
-                      "value": "replies"
-                     }
-                    }
-                   ]
-                  }
-                 }
-                ]
-               },
-               {
-                "mutations": [
-                 {
-                  "as_link": {
-                   "name": "adjacency",
-                   "mutations": [
-                    {
-                     "set": {
-                      "def": {
-                       "schema": "Schemas.OfAdjacency",
-                       "mutations": [
-                        {
-                         "as_property": {
-                          "name": "me",
-                          "mutations": [
-                           {
-                            "set": {
                              "value": "reply"
                             }
                            }
@@ -5578,6 +5503,81 @@
                     {
                      "set": {
                       "value": "thread"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "adjacency",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfAdjacency",
+                       "mutations": [
+                        {
+                         "as_property": {
+                          "name": "me",
+                          "mutations": [
+                           {
+                            "set": {
+                             "value": "thread"
+                            }
+                           }
+                          ]
+                         }
+                        },
+                        {
+                         "as_adjacency": {
+                          "name": "relation",
+                          "mutations": [
+                           {
+                            "insert": {
+                             "entries": [
+                              {
+                               "mutations": [
+                                {
+                                 "as_link": {
+                                  "name": "relation",
+                                  "mutations": [
+                                   {
+                                    "set": {
+                                     "ref": {
+                                      "symbol": "32"
+                                     }
+                                    }
+                                   }
+                                  ]
+                                 }
+                                }
+                               ]
+                              }
+                             ]
+                            }
+                           }
+                          ]
+                         }
+                        }
+                       ]
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "replies"
                      }
                     }
                    ]
