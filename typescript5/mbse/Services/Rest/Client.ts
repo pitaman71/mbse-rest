@@ -71,6 +71,9 @@ export class TransportError extends RestError {}
  * contract gives): `cause` is what reading it raised. */
 export class ResponseError extends RestError {}
 
+/** The request header that names the client's session (CAP-015): the service stamps it on each write. */
+export const SESSION_HEADER = "x-mbse-session";
+
 export type Fetch = (input: string, init?: RequestInit) => Promise<Response>;
 
 export interface ClientOptions {
@@ -78,6 +81,9 @@ export interface ClientOptions {
   readonly fetch?: Fetch;
   /** Headers sent with every call, besides `accept` and `content-type`. */
   readonly headers?: Readonly<Record<string, string>>;
+  /** The interactive session the calls are made in (CAP-015): its `id`, sent as the `x-mbse-session` header for the
+   * service to stamp on each write, and its `locale` and `device`, written into each edit and proposal. */
+  readonly session?: Views.Session & { readonly id: string };
 }
 
 export interface CallOptions {
@@ -96,12 +102,15 @@ export class Client {
   readonly base: string;
   private readonly fetch: Fetch;
   private readonly headers: Readonly<Record<string, string>>;
+  private readonly session: Views.Session | undefined;
 
   constructor(base = "", options: ClientOptions | Fetch = {}) {
     const given: ClientOptions = typeof options === "function" ? { fetch: options } : options;
     this.base = base.replace(/\/+$/, "");
     this.fetch = given.fetch ?? globalThis.fetch.bind(globalThis);
-    this.headers = given.headers ?? {};
+    this.headers = { ...(given.session === undefined ? {} : { [SESSION_HEADER]: given.session.id }), ...given.headers };
+    this.session = given.session === undefined ? undefined
+      : { locale: given.session.locale, device: given.session.device };
   }
 
   /** The URL of `path` at the service. */
@@ -253,7 +262,7 @@ export class Client {
    * committed the edit; a refused edit raises, as any view's refusal does. */
   edit(store: any, x: unknown, values: Readonly<Record<string, unknown>>, options: CallOptions = {}):
       Promise<Views.Frame[]> {
-    return this.view(store, "detail", Views.edit(store, x, values), options);
+    return this.view(store, "detail", Views.edit(store, x, values, this.session), options);
   }
 
   /** CAP-018: proposes a new object of `schema` through `x`'s `adjacency`, its other link `link` (`Views.propose`), and
@@ -261,7 +270,8 @@ export class Client {
   propose(store: any, x: unknown, adjacency: string, link: string, schema: unknown,
       values: Readonly<Record<string, unknown>>, entry: Readonly<Record<string, unknown>> = {},
       options: CallOptions = {}): Promise<Views.Frame[]> {
-    return this.view(store, "detail", Views.propose(store, x, adjacency, link, schema, values, entry), options);
+    return this.view(store, "detail", Views.propose(store, x, adjacency, link, schema, values, entry, this.session),
+      options);
   }
 }
 

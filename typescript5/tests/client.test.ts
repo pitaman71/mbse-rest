@@ -244,3 +244,35 @@ describe("responses: the client reads each stream the corpus holds", () => {
       [["original", "2026-11-30"], ["forecast", "2026-12-07"], ["progress", 0.25]]);
   });
 });
+
+describe("provenance (CAP-015, CAP-020)", () => {
+  test("a comment's detail carries the transaction that created it, its session's identity", async () => {
+    const store = await storeWithSchemas();
+    const [frame] = await client.view(store, "detail", J.loads(read("ui-detail-CMT-001.request.json")));
+    const { created, modified } = Views.provenance(store, frame!, frame!.binds.get("x"));
+    assert.deepEqual(created, { when: "2026-10-26T14:30:05Z", who: "unknown" });  // the seed's, unstamped by a session
+    assert.equal(modified, undefined);
+  });
+
+  test("an adjacency view carries each linked comment's provenance; a task, whose schema has no history, none", async () => {
+    const store = await storeWithSchemas();
+    const frames = await client.view(store, "adjacency",
+      J.loads(read("ui-adjacency-CAP-002-comments-work.Comment.request.json")));
+    assert.ok(frames.length > 0 && frames.every((f) => Views.provenance(store, f, f.binds.get("y")).created !== undefined));
+    const [task] = await client.view(store, "detail", J.loads(read("ui-detail-TSK-001.request.json")));
+    assert.deepEqual(Views.provenance(store, task!, task!.binds.get("x")), {});
+  });
+
+  test("a client in a session names it in a header, and writes its locale and device into an edit", async () => {
+    const seen: { headers: Record<string, string>; body: string }[] = [];
+    const watching = async (input: string, init?: RequestInit): Promise<Response> => {
+      seen.push({ headers: init?.headers as Record<string, string>, body: String(init?.body ?? "") });
+      return corpus(input, init);
+    };
+    const store = await storeWithSchemas();
+    const inSession = new Client("http://corpus", { fetch: watching, session: { id: "tab-7", locale: "en-GB" } });
+    await inSession.edit(store, reference(store, "edit-task-clear"), { description: null }).catch(() => undefined);
+    assert.equal(seen[0]!.headers["x-mbse-session"], "tab-7");
+    assert.deepEqual((J.loads(seen[0]!.body) as Map<string, unknown>).get("session"), new Map([["locale", "en-GB"]]));
+  });
+});

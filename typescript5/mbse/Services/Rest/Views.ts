@@ -36,13 +36,32 @@ export function request(store: any, kind: Kind, given: Readonly<Record<string, u
   return Plain.ToPlain(store).Transaction(transaction);
 }
 
+/** What a client says of its interactive session in a write (CAP-015): its locale and device, where known. The
+ * session's id and identity are the service's to stamp. */
+export interface Session {
+  readonly locale?: string | undefined;
+  readonly device?: string | undefined;
+}
+
+/** The transaction's `session`, from what is known of it; none where nothing is. */
+function inSession(t: any, session: Session | undefined): any {
+  if (session === undefined || (session.locale === undefined && session.device === undefined)) return t;
+  return t.session((s: any) => {
+    let built = s;
+    if (session.locale !== undefined) built = built.locale(session.locale);
+    if (session.device !== undefined) built = built.device(session.device);
+    return built;
+  });
+}
+
 /** An edit of one object's properties (CAP-014): the detail view's template, `x` given the object's reference, then an
  * update that writes each property given its value (`null` clears it). Posted to the detail view, it gives the object's
  * detail as the edit left it, once committed. Gives the transaction's expression, the request's body. */
-export function edit(store: any, reference: unknown, values: Readonly<Record<string, unknown>>): Plain.PlainMap {
+export function edit(store: any, reference: unknown, values: Readonly<Record<string, unknown>>, session?: Session):
+    Plain.PlainMap {
   const names = Object.keys(values);
   if (names.length === 0) throw new TypeError("an edit writes at least one property");
-  const transaction = store.Mutations.OfTransaction((t: any) => t.mutations([(mu: any) => mu.map((m: any) => m
+  const transaction = store.Mutations.OfTransaction((t: any) => inSession(t, session).mutations([(mu: any) => mu.map((m: any) => m
     .symbols([(p: any) => p.symbols({ x: reference })])
     .then([(w: any) => w.update((u: any) => u.apply([(p: any) => p
       .symbols({ x: reference })
@@ -56,8 +75,9 @@ export function edit(store: any, reference: unknown, values: Readonly<Record<str
  * service has committed it; an owned object is placed in its directory, its key given there. Gives the transaction's
  * expression, the request's body. */
 export function propose(store: any, x: unknown, adjacency: string, link: string, schema: unknown,
-    values: Readonly<Record<string, unknown>>, entry: Readonly<Record<string, unknown>> = {}): Plain.PlainMap {
-  const transaction = store.Mutations.OfTransaction((t: any) => t.mutations([(mu: any) => mu.upsert((u: any) => u
+    values: Readonly<Record<string, unknown>>, entry: Readonly<Record<string, unknown>> = {}, session?: Session):
+    Plain.PlainMap {
+  const transaction = store.Mutations.OfTransaction((t: any) => inSession(t, session).mutations([(mu: any) => mu.upsert((u: any) => u
     .exists([(p: any) => p
       .symbols({ x, n: schema })
       .spec([
@@ -211,4 +231,51 @@ export function entryLabel(store: any, frame: Frame, entry: any): string {
 /** An entry's properties, each its value. */
 export function entryProperties(entry: any): ReadonlyMap<string, unknown> {
   return new Map(items(entry.properties).map(([name, v]) => [name as string, valueOf(v)]));
+}
+
+/** An entry's links, each its name and the `References.OfObject` it links. */
+export function entryLinks(entry: any): ReadonlyMap<string, unknown> {
+  return new Map(items(entry.links).map(([name, any]) => [String(name), objectOf(any)]));
+}
+
+/** One transaction in an object's provenance (CAP-015), as a frame carries it. */
+export interface Written {
+  /** When the transaction executed, UTC ISO 8601 text. */
+  readonly when: string;
+  /** Its session's identity, by name. */
+  readonly who: string;
+  readonly locale?: string;
+  readonly device?: string;
+}
+
+/** CAP-020: an object's provenance as `frame` carries it (the detail view's `x`, an adjacency view's `y`): the
+ * transaction that created it and the one that last wrote it after, where the frame has them. */
+export function provenance(store: any, frame: Frame, reference: unknown):
+    { readonly created?: Written; readonly modified?: Written } {
+  const entries = frame.entries.map((entry) => ({ relation: relationName(store, entry), links: entryLinks(entry) }));
+  const linking = (relation: string, link: string, target: unknown) => {
+    if (target === undefined || target === null) return undefined;
+    const key = keyOf(store, target);
+    return entries.find((e) => e.relation === relation && e.links.has(link) && keyOf(store, e.links.get(link)) === key);
+  };
+  const written = (relation: string): Written | undefined => {
+    const record = linking(relation, "object", reference)?.links.get("transaction");
+    if (record === undefined) return undefined;
+    const session = linking("Provenance.InSession", "transaction", record)?.links.get("session");
+    const identity = linking("Provenance.Who", "session", session)?.links.get("identity");
+    const held = assignedTo(store, frame, session);
+    const text = (name: string): string | undefined => {
+      const value = held.get(name);
+      return typeof value === "string" ? value : undefined;
+    };
+    return {
+      when: String(assignedTo(store, frame, record).get("when") ?? ""),
+      who: identity === undefined ? "unknown" : lastKey(store, identity),
+      ...(text("locale") === undefined ? {} : { locale: text("locale")! }),
+      ...(text("device") === undefined ? {} : { device: text("device")! }),
+    };
+  };
+  const created = written("Provenance.CreatedBy");
+  const modified = written("Provenance.ModifiedBy");
+  return { ...(created === undefined ? {} : { created }), ...(modified === undefined ? {} : { modified }) };
 }

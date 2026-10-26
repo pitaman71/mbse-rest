@@ -132,6 +132,10 @@ WorkTracker's are its comments.
   records of the transactions that created it and last wrote it, each one's session and the session's identity
   (`assigns`), and the entries linking them, `Provenance.CreatedBy`, `ModifiedBy`, `InSession` and `Who`
   (`entries`). An identity has no properties: its name is its directory key, the last key of its reference's path.
+- **The client** names its session with the `session` option (`new Client(base, { session: { id, locale, device }
+  })`): its `id` goes in the `x-mbse-session` header of every call, and its `locale` and `device` into every edit and
+  proposal (`Views.edit`, `Views.propose`). `Views.provenance(store, frame, reference)` reads an object's provenance
+  from a frame: `created` and `modified`, each its `when`, `who`, and the session's `locale` and `device`.
 - **The corpus** stamps reproducibly: a fixed clock and uids by count (`corpus-1`, ...).
 
 ## Proposals (CAP-018)
