@@ -1,0 +1,98 @@
+{
+ "mutations": [
+  {
+   "map": {
+    "symbols": [
+     {
+      "symbols": {
+       "x": {
+        "reference": {
+         "path": {
+          "singleton": "work.Tasks",
+          "next": {
+           "entry": {
+            "i": "tasks",
+            "o": "directory",
+            "properties": {
+             "id": "TSK-001"
+            },
+            "next": {
+             "target": {}
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    ],
+    "then": [
+     {
+      "update": {
+       "apply": [
+        {
+         "symbols": {
+          "x": {
+           "reference": {
+            "path": {
+             "singleton": "work.Tasks",
+             "next": {
+              "entry": {
+               "i": "tasks",
+               "o": "directory",
+               "properties": {
+                "id": "TSK-001"
+               },
+               "next": {
+                "target": {}
+               }
+              }
+             }
+            }
+           }
+          }
+         },
+         "spec": [
+          {
+           "x": [
+            {
+             "as_property": {
+              "name": "title",
+              "mutations": [
+               {
+                "set": {
+                 "value": "Install the **schemas**"
+                }
+               }
+              ]
+             }
+            }
+           ]
+          },
+          {
+           "x": [
+            {
+             "as_property": {
+              "name": "description",
+              "mutations": [
+               {
+                "set": {
+                 "value": "Define them in a *module-scope* `install`."
+                }
+               }
+              ]
+             }
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

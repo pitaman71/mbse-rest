@@ -247,6 +247,14 @@ export class Client {
   adjacency(store: any, x: unknown, adjacency: string, y: unknown, options: CallOptions = {}): Promise<Views.Frame[]> {
     return this.viewOf(store, "adjacency", { x, y }, { ...options, adjacency });
   }
+
+  /** CAP-014: writes `values` to the properties of the object `x`, a `References.OfObject`, each a value of its
+   * property's schema or `null` to clear it (`Views.edit`), and gives its detail view (CAP-007) once the service has
+   * committed the edit; a refused edit raises, as any view's refusal does. */
+  edit(store: any, x: unknown, values: Readonly<Record<string, unknown>>, options: CallOptions = {}):
+      Promise<Views.Frame[]> {
+    return this.view(store, "detail", Views.edit(store, x, values), options);
+  }
 }
 
 /** The signal's reason, where `error` is what its abort raised. */

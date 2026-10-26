@@ -117,6 +117,24 @@
   "response": "adjacency-comment-about.response.ndjson"
  },
  {
+  "name": "edit-task-title",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "edit-task-title.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "edit-task-title.response.ndjson"
+ },
+ {
+  "name": "edit-task-clear",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "edit-task-clear.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "edit-task-clear.response.ndjson"
+ },
+ {
   "name": "view-unknown-kind",
   "method": "POST",
   "path": "/views/summary",

@@ -36,6 +36,20 @@ export function request(store: any, kind: Kind, given: Readonly<Record<string, u
   return Plain.ToPlain(store).Transaction(transaction);
 }
 
+/** An edit of one object's properties (CAP-014): the detail view's template, `x` given the object's reference, then an
+ * update that writes each property given its value (`null` clears it). Posted to the detail view, it gives the object's
+ * detail as the edit left it, once committed. Gives the transaction's expression, the request's body. */
+export function edit(store: any, reference: unknown, values: Readonly<Record<string, unknown>>): Plain.PlainMap {
+  const names = Object.keys(values);
+  if (names.length === 0) throw new TypeError("an edit writes at least one property");
+  const transaction = store.Mutations.OfTransaction((t: any) => t.mutations([(mu: any) => mu.map((m: any) => m
+    .symbols([(p: any) => p.symbols({ x: reference })])
+    .then([(w: any) => w.update((u: any) => u.apply([(p: any) => p
+      .symbols({ x: reference })
+      .spec(names.map((name) => (_: any) => _.x[name](values[name])))]))]))]));
+  return Plain.ToPlain(store).Transaction(transaction);
+}
+
 /** Property values a frame witnesses an object holds (`References.OfProperties`). */
 export interface Assigned {
   /** The object's `References.OfObject`. */

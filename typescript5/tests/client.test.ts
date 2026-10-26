@@ -115,6 +115,34 @@ describe("requests: the client builds each one the corpus holds", () => {
   }
 });
 
+describe("edits (CAP-014): the client builds each one the corpus holds, and reads back the detail it gives", () => {
+  const edits: Record<string, Record<string, unknown>> = {
+    "edit-task-title": { title: "Install the **schemas**", description: "Define them in a *module-scope* `install`." },
+    "edit-task-clear": { description: null },
+  };
+  for (const [name, values] of Object.entries(edits)) {
+    test(name, async () => {
+      const store = await storeWithSchemas();
+      const plain = Views.edit(store, reference(store, name), values);
+      assert.equal(J.dumps(plain), canonical(read(`${name}.request.json`)));
+    });
+  }
+
+  test("an edit gives the object's detail as the edit left it", async () => {
+    const store = await storeWithSchemas();
+    const [frame] = await client.edit(store, reference(store, "edit-task-title"), edits["edit-task-title"]!);
+    assert.equal(Views.label(store, frame!), "Install the **schemas**");
+    assert.equal(Views.summary(store, frame!), "Define them in a *module-scope* `install`.");
+  });
+
+  test("an edit of no property, or of one the object's schema lacks, is refused before it is sent", async () => {
+    const store = await storeWithSchemas();
+    const task = reference(store, "edit-task-title");
+    assert.throws(() => Views.edit(store, task, {}), TypeError);
+    assert.throws(() => Views.edit(store, task, { nothing: "x" }));
+  });
+});
+
 describe("requests: the client builds each one the UI's views make, from the case's view", () => {
   let shared: Promise<any> | undefined;
   const store = (): Promise<any> => (shared ??= storeWithSchemas());
