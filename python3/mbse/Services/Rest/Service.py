@@ -25,7 +25,9 @@ from __future__ import annotations
 import importlib
 import logging
 import os
+import datetime
 import threading
+import uuid
 from collections.abc import Callable, Iterable, Iterator, Mapping
 from types import ModuleType
 from typing import Any
@@ -85,11 +87,50 @@ class Unavailable(Refused):
         super().__init__(503, message)
 
 
+SESSION_HEADER = "x-mbse-session"
+"""The request header that names the client's session (CAP-015): the demo's stand-in for a validated token's
+session, which the service trusts (tech debt, TODO.md)."""
+
+
+Clock = Callable[[], datetime.datetime]
+Uids = Callable[[], str]
+
+
+def _now() -> datetime.datetime:
+    return datetime.datetime.now(datetime.timezone.utc)
+
+
+def _uuid() -> str:
+    return str(uuid.uuid4())
+
+
+def _iso(moment: datetime.datetime) -> str:
+    """A moment as UTC ISO 8601 text, to the second: `2026-10-26T14:30:05Z`."""
+    return moment.astimezone(datetime.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def stamp(plain: PlainData, session: str | None, who: str, clock: Clock = _now, uids: Uids = _uuid) -> PlainData:
+    """CAP-015: a transaction that writes, as the service journals and executes it: given a `uid` where it has none,
+    so that a replay finds the same record, and its `when`, and its session's `id` and `who`, the service's; the
+    client's `locale`, `device` and `where` are kept. Where the client names no session, the identity's own,
+    `<who>:default`. A transaction that only reads is given back as it is."""
+    if not writes(plain) or not isinstance(plain, dict):
+        return plain
+    stamped = dict(plain)
+    stamped.setdefault("uid", uids())
+    stamped["when"] = _iso(clock())
+    # no session named: one of the identity's own, since a session has one identity (Provenance.Who)
+    stamped["session"] = {**(plain.get("session") or {}), "id": session or f"{who}:default", "who": who}
+    return stamped
+
+
 class Service:
     """One store, held in memory, and its persistence: what the endpoints call, apart from HTTP."""
 
     def __init__(self, installs: Iterable[Install] = (), plugin: Plugin | None = None,
-                 snapshot_every: int = 100) -> None:
+                 snapshot_every: int = 100, *, user: str = "demo", clock: Clock = _now, uids: Uids = _uuid) -> None:
+        self.user = user  # the demo's identity, standing in for a validated token's (CAP-015; tech debt, TODO.md)
+        self.clock, self.uids = clock, uids  # a write's `when` and, where it has none, its `uid` (`stamp`)
         self.installs = list(installs)
         self.plugin = plugin if plugin is not None else Memory()
         self.snapshot_every = snapshot_every
@@ -103,8 +144,8 @@ class Service:
         of what they wrote (db initialization by schema)."""
         store = Builders.Store()
         if not replay(store, self.plugin):
-            for install in self.installs:
-                store.transaction(install)
+            for install in self.installs:  # each given `when` by the service's clock, as a write is (CAP-015)
+                store.transaction(lambda t, i=install, w=_iso(self.clock()): i(t).when(w))
             self.plugin.snapshot(Plain.ToPlain(store).Snapshot())
         return store
 
@@ -173,12 +214,13 @@ class Service:
             self._available()
             return {kind: Plain.ToPlain(self.store).Transaction(tx) for kind, tx in Views.templates(self.store).items()}
 
-    def view(self, kind: str, plain: PlainData) -> list[str]:
-        """CAP-012: the frames a transaction gives, each a `References.OfFrame` filled as `kind` defines, as JSON."""
+    def view(self, kind: str, plain: PlainData, session: str | None = None) -> list[str]:
+        """CAP-012: the frames a transaction gives, each a `References.OfFrame` filled as `kind` defines, as JSON. A
+        transaction that writes is stamped first (CAP-015, `stamp`), in `session`."""
         with self._lock:
             self._available()
             out = []
-            for frame in self._commit(kind, plain):
+            for frame in self._commit(kind, stamp(plain, session, self.user, self.clock, self.uids)):
                 witnessed = Views.witness(self.store, kind, frame)
                 if witnessed is not None:
                     out.append(JSON.ToJSON(self.store)(witnessed.as_schema(), witnessed))
@@ -209,17 +251,17 @@ def _lines(lines: list[str]) -> Iterator[str]:
 
 
 def app(installs: Iterable[Install] = (), plugin: Plugin | None = None, snapshot_every: int = 100, *,
-        origins: Iterable[str] = ()) -> FastAPI:
+        origins: Iterable[str] = (), user: str = "demo", clock: Clock = _now, uids: Uids = _uuid) -> FastAPI:
     """The FastAPI application over a `Service` of the app that `installs` write, persisted by `plugin`
     (`Persistence.Memory` where None). It holds the service as `app.state.service`. `origins` are those a browser may
     call it from (CORS), the UI's: none by default."""
-    service = Service(installs, plugin, snapshot_every)
+    service = Service(installs, plugin, snapshot_every, user=user, clock=clock, uids=uids)
     api = FastAPI(title="mbse-rest", description="Logical views over an mbse-schemas store (docs/CONTRACT.md)")
     api.state.service = service
     allowed = list(origins)
     if allowed:
         api.add_middleware(CORSMiddleware, allow_origins=allowed, allow_methods=["GET", "POST"],
-                           allow_headers=["accept", "content-type"])
+                           allow_headers=["accept", "content-type", SESSION_HEADER])
 
     @api.exception_handler(HTTPException)
     async def refused(_: Request, error: HTTPException) -> JSONResponse:  # a path or method it does not serve
@@ -265,19 +307,21 @@ def app(installs: Iterable[Install] = (), plugin: Plugin | None = None, snapshot
             return _error(400, f"the request's body is not a transaction's expression as JSON: {_describe(error)}")
 
         def call() -> Any:
-            return StreamingResponse(_lines(service.view(kind, plain)), media_type=NDJSON)
+            frames = service.view(kind, plain, request.headers.get(SESSION_HEADER))
+            return StreamingResponse(_lines(frames), media_type=NDJSON)
         return await run_in_threadpool(answer, call)  # it waits on the store's lock: not on the event loop
 
     return api
 
 
 def installs_of(module: str | ModuleType, seed: bool = True) -> list[Install]:
-    """An app's installs, by mbse-demo-apps' layout: its package's `Schemas.install`, then, where `seed` and it has one,
-    its `Seed.seed`."""
+    """An app's installs, by mbse-demo-apps' layout: its package's `Schemas.INSTALLS`, in order, where it lists them
+    (its schemas, then, for one with a history, `Provenance.install` and its `Provenance.extend`), else its
+    `Schemas.install`; then, where `seed` and it has one, its `Seed.seed`."""
     package = importlib.import_module(module) if isinstance(module, str) else module
     name = package.__name__
     schemas = importlib.import_module(f"{name}.Schemas")
-    installs: list[Install] = [schemas.install]
+    installs: list[Install] = list(getattr(schemas, "INSTALLS", [schemas.install]))
     if seed:
         try:
             seeds = importlib.import_module(f"{name}.Seed")
@@ -324,10 +368,11 @@ def from_environment(environ: Mapping[str, str] | None = None) -> FastAPI:
     installs = installs_of(env.get("MBSE_REST_APP", WORK_TRACKER), _flag(env.get("MBSE_REST_SEED", "1")))
     origins = [origin.strip() for origin in env.get("MBSE_REST_ORIGINS", "").split(",") if origin.strip()]
     return app(installs, plugin_of(env.get("MBSE_REST_PLUGIN", "memory")),
-               int(env.get("MBSE_REST_SNAPSHOT_EVERY", "100")), origins=origins)
+               int(env.get("MBSE_REST_SNAPSHOT_EVERY", "100")), origins=origins,
+               user=env.get("MBSE_REST_USER", "demo"))
 
 
-def work_tracker(plugin: Plugin | None = None) -> FastAPI:
+def work_tracker(plugin: Plugin | None = None, **options: Any) -> FastAPI:
     """The stub server: the service over the demo app's store (mbse-demo-apps, a development dependency), its schemas
     installed and seeded."""
-    return app(installs_of(WORK_TRACKER), plugin)
+    return app(installs_of(WORK_TRACKER), plugin, **options)

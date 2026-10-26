@@ -8,8 +8,12 @@ One definition, shared by the server, which fills each frame's `assigns` and `en
 |---|---|---|
 | `label` (CAP-005) | `x` | the label and summary properties `x` holds |
 | `chip` (CAP-006) | `x` | `label`'s, then the first three other scalar properties `x`'s schema declares that it holds |
-| `detail` (CAP-007) | `x` | every property `x` holds; every entry of its named adjacencies; each linked object's `label` |
-| `adjacency` (CAP-008) | `x`, `y` | every entry of `x`'s named adjacencies that links `y`; `y`'s `chip` |
+| `detail` (CAP-007) | `x` | every property `x` holds; every entry of its named adjacencies; each linked object's `label`; `x`'s provenance |
+| `adjacency` (CAP-008) | `x`, `y` | every entry of `x`'s named adjacencies that links `y`; `y`'s `chip`; `y`'s provenance |
+
+An object's provenance (CAP-015), where its schema has a history: the records of the transactions that created it and
+last wrote it (`when`, `where`), each one's session (`started`, `locale`, `device`) and the session's identity, and the
+entries linking them (`CreatedBy`, `ModifiedBy`, `InSession`, `Who`).
 
 A template is a transaction of one map whose pattern declares the kind's symbols, each given neither a schema nor a
 reference: the client gives each one exactly one (CAP-004). The `adjacency` template's spec is added by the client,
@@ -121,6 +125,45 @@ class _Witness:
         return True
 
 
+def _history(store: Any, reference: Any) -> list[tuple[str, Mapping[str, Any]]]:
+    """The provenance of the object `reference` designates (CAP-015): for `created` and `modified`, each frame binding
+    `t`, the transaction record that created (or last wrote) it, `s`, its session, and `i`, the session's identity.
+    Read from the records' side, since an object's adjacencies to them are anonymous; none where the store has no
+    `Provenance`, or the object's schema no history."""
+    try:
+        records, sessions, identities = (store.registered(name) for name in (
+            "Provenance.OfTransaction", "Provenance.OfSession", "Provenance.OfIdentity"))
+    except LookupError:  # Provenance is not installed
+        return []
+    found = []
+    for relation in ("created", "modified"):
+        frames = store.transaction(lambda t, r=relation: t.mutations([lambda mu: mu.map(lambda m: m.symbols([lambda p: p
+            .symbols({"c": reference, "t": records, "s": sessions, "i": identities})
+            .spec([lambda _: getattr(_.t, r)([_.c]), lambda _: _.t.session([_.s]), lambda _: _.s.who([_.i])])]))]))
+        found.extend((relation, frame) for frame in frames)
+    return found
+
+
+def _witness_history(seen: "_Witness", obj: Any) -> None:
+    """Witnesses `obj`'s provenance (CAP-015): each record, its session and identity, with what they hold, and the
+    entries linking them: `CreatedBy` and `ModifiedBy` (from the record), `InSession`, `Who`."""
+    reference = _reference(seen.store, obj)
+    if reference is None:
+        return
+    for relation, frame in _history(seen.store, reference):
+        record, session, identity = frame["t"], frame["s"], frame["i"]
+        for entry in getattr(record, relation):
+            if entry.object is obj:
+                seen.enter(entry)
+        for entry in record.session:
+            seen.enter(entry)
+        for entry in session.who:
+            seen.enter(entry)
+        seen.assign(record, "detail")
+        seen.assign(session, "detail")
+        seen.assign(identity, "detail")
+
+
 def _linked(obj: Any, entry: Any, adjacency: Any) -> list[Any]:
     """What `entry`, held by `obj`'s `adjacency`, links besides `obj`."""
     return [getattr(entry, link) for link in adjacency.relation.entry.links if link != adjacency.me]
@@ -139,6 +182,7 @@ def witness(store: Any, kind: str, frame: Mapping[str, Any]) -> Any | None:
     if kind in ("label", "chip", "detail"):
         seen.assign(x, kind)
     if kind == "detail":
+        _witness_history(seen, x)
         for name, adjacency in x.as_schema().adjacencies.items():
             for entry in getattr(x, name):
                 if seen.enter(entry):
@@ -151,4 +195,5 @@ def witness(store: Any, kind: str, frame: Mapping[str, Any]) -> Any | None:
                 if any(other is y for other in _linked(x, entry, adjacency)):
                     seen.enter(entry)
         seen.assign(y, "chip")
+        _witness_history(seen, y)
     return store.References.OfFrame(lambda f: f.binds(binds).assigns(seen.assigns).entries(seen.entries))

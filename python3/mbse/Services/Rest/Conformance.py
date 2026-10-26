@@ -12,6 +12,7 @@ stream of frames, byte for byte.
 
 from __future__ import annotations
 
+import datetime
 import json
 import sys
 from collections.abc import Callable
@@ -126,7 +127,7 @@ CASES = [
 ]
 
 
-FRAMEWORK = ("Schemas", "Paths", "Mutations", "References", "Parametrics")
+FRAMEWORK = ("Schemas", "Paths", "Mutations", "References", "Parametrics", "Provenance")
 
 
 def _app_schemas(store: Any) -> list[str]:
@@ -156,7 +157,7 @@ def _key(plain: Any) -> str:
     while "entry" in step["next"]:
         step = step["next"]["entry"]
         key = "-".join(str(value) for value in step["properties"].values())
-    return key
+    return key.replace("/", "-")  # a file name's part
 
 
 def _given(store: Any, given: dict[str, Any]) -> Callable[[Any], dict[str, Any]]:
@@ -172,7 +173,7 @@ def _ui_cases() -> list[Case]:
     """A case for every view mbse-react asks of the WorkTracker seed: each app schema's chips (CAP-006) and entries
     (CAP-007 over its extent, the relation browser's), each object's detail (CAP-007), and each object's adjacencies,
     one case per schema their entries may link (CAP-008). All reads, so they may share one server."""
-    store = Service.work_tracker().state.service.store
+    store = _server().state.service.store
     reference = store.References.OfObject.as_schema()
     cases = []
     for schema in _app_schemas(store):
@@ -204,13 +205,20 @@ def _dump(plain: Any) -> str:
     return json.dumps(plain, indent=1, ensure_ascii=False) + "\n"
 
 
+def _server() -> Any:
+    """A fresh stub server whose writes are stamped reproducibly (CAP-015): a fixed clock, and uids by count."""
+    count = iter(range(1, 1_000_000))
+    return Service.work_tracker(clock=lambda: datetime.datetime(2026, 10, 26, 14, 30, 5, tzinfo=datetime.timezone.utc),
+                                uids=lambda: f"corpus-{next(count)}")
+
+
 def generate() -> dict[str, str]:
     """Every file of the corpus, by its name: each case's request and response, and the index."""
     files: dict[str, str] = {}
     index = []
-    shared = Service.work_tracker()
+    shared = _server()
     for case in [*CASES, *_ui_cases()]:
-        api = shared if case.view is not None else Service.work_tracker()  # the UI's cases only read
+        api = shared if case.view is not None else _server()  # the UI's cases only read
         client = TestClient(api)
         body = case.request(api.state.service.store) if case.request else None
         response = client.request(case.method, case.path, json=body) if body is not None else \

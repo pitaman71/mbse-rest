@@ -176,3 +176,47 @@ def test_a_proposed_object_is_created_with_its_entry_and_owned():
     reply = [e.reply for e in thread.replies][-1]
     assert [str(e.id) for e in reply.directory] == ["CMT-004"]
     assert len(frame["entries"]) > 0 and len(plugin.entries) == 1
+
+
+def _stamped_edit():
+    """An edit of the thread CMT-001 through a service with a fixed clock and uid, in the session `tab-7`: the store,
+    the plugin, and the detail frame the edit gave."""
+    import datetime
+    moment = datetime.datetime(2026, 10, 26, 9, 15, tzinfo=datetime.timezone.utc)
+    plugin = Persistence.Memory()
+    client = TestClient(Service.work_tracker(plugin, user="ada", clock=lambda: moment, uids=lambda: "tx-1"))
+    store = store_of(client)
+    thread = store.singleton("work.Comments").comments({"id": "CMT-001"})
+    body = Conformance._edit(store, lambda s: References.of(s, thread), {"text": "Edited."})
+    body["session"] = {"locale": "en-GB"}  # the client's part
+    [frame] = frames(client.post("/views/detail", json=body, headers={"x-mbse-session": "tab-7"}))
+    return store, plugin, frame
+
+
+def test_a_write_is_stamped_and_its_provenance_is_in_the_detail():
+    """CAP-015: the service stamps a write's `when`, uid, session id and identity, keeping the client's locale; the
+    detail of a comment carries the record that created it and the one that last wrote it, with their session and
+    identity."""
+    _, plugin, frame = _stamped_edit()
+    [journaled] = plugin.entries
+    assert journaled["uid"] == "tx-1" and journaled["when"] == "2026-10-26T09:15:00Z"
+    assert journaled["session"] == {"locale": "en-GB", "id": "tab-7", "who": "ada"}
+    relations = [e["relation"]["next"]["entry"]["next"]["entry"]["properties"]["name"] for e in frame["entries"]]
+    assert {"CreatedBy", "ModifiedBy", "InSession", "Who"} <= set(relations)
+    values = [a["properties"] for a in frame["assigns"]]
+    assert {"when": {"str": "2026-10-26T09:15:00Z"}} in values  # the edit's record
+    assert any(v.get("locale") == {"str": "en-GB"} for v in values)  # its session
+
+
+@pytest.mark.xfail(strict=True, reason="mbse-schemas 0.26.0 records reading a snapshot as a new transaction (TODO.md)")
+def test_a_restart_replays_the_same_records():
+    """CAP-015: a restart reads the snapshot, then replays the stamped journal, into the same records."""
+    store, plugin, _ = _stamped_edit()
+    replayed = store_of(TestClient(Service.app([], plugin)))
+    assert [str(e.uid) for e in replayed.singleton("Provenance.Transactions").transactions] == \
+        [str(e.uid) for e in store.singleton("Provenance.Transactions").transactions]
+
+
+def test_stamp_leaves_a_read_as_it_is():
+    read = {"mutations": [{"map": {"symbols": [{}]}}]}
+    assert Service.stamp(read, "tab-1", "ada") is read

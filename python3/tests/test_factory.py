@@ -129,8 +129,8 @@ def test_an_app_without_a_seed():
 
 
 def test_installs_by_the_apps_layout(monkeypatch):
-    assert Service.installs_of("mbse.Demos.Apps.WorkTracker") == [Schemas.install, Seed.seed]
-    assert Service.installs_of("mbse.Demos.Apps.WorkTracker", seed=False) == [Schemas.install]
+    assert Service.installs_of("mbse.Demos.Apps.WorkTracker") == [*Schemas.INSTALLS, Seed.seed]
+    assert Service.installs_of("mbse.Demos.Apps.WorkTracker", seed=False) == list(Schemas.INSTALLS)
     package, schemas = types.ModuleType("library"), types.ModuleType("library.Schemas")
     package.__path__ = []  # a package, whose Seed is not found
     schemas.install = install
@@ -158,7 +158,7 @@ def test_from_the_environment():
     api = Service.from_environment({"MBSE_REST_SEED": "0", "MBSE_REST_SNAPSHOT_EVERY": "7",
                                     "MBSE_REST_ORIGINS": "http://localhost:5173, http://ui.example"})
     service = api.state.service
-    assert service.installs == [Schemas.install] and service.snapshot_every == 7
+    assert service.installs == list(Schemas.INSTALLS) and service.snapshot_every == 7
     assert isinstance(service.plugin, Persistence.Memory)
     assert list(service.store.singleton("work.Tasks").tasks) == []  # not seeded
     client = TestClient(api)
@@ -190,7 +190,7 @@ def test_the_entry_point_serves_from_the_environment(monkeypatch):
     monkeypatch.setenv("MBSE_REST_SEED", "0")
     entry.main()
     assert (served["host"], served["port"]) == ("0.0.0.0", 8123)
-    assert served["api"].state.service.installs == [Schemas.install]
+    assert served["api"].state.service.installs == list(Schemas.INSTALLS)
     monkeypatch.delenv("MBSE_REST_HOST")
     monkeypatch.delenv("MBSE_REST_PORT")
     entry.main()

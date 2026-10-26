@@ -117,6 +117,23 @@ frames, so the response is the object's detail as the edit left it; a refused ed
 - What a UI may edit, and how text is shown, is the UI's: CAP-014 reads every `Schemas.OfStr` as markdown and leaves
   ownership keys uneditable; the service does not validate what it is given.
 
+## Provenance (CAP-015)
+
+An app with a history lists its installs in `Schemas.INSTALLS` (`installs_of`): its schemas, `Provenance.install`
+(mbse-schemas 0.26.0), and an install calling `Provenance.extend` for the schemas whose objects have a history; the
+WorkTracker's are its comments.
+
+- **The service stamps every transaction that writes** before executing and journaling it (`Service.stamp`): a `uid`
+  where it has none, so that a replay finds the same record; `when`, from its clock, as UTC ISO 8601 text; and the
+  session's `id` and `who`, the session the request names in the `x-mbse-session` header (else `<who>:default`) and
+  the service's identity (`MBSE_REST_USER`, `demo` by default), keeping the client's `locale`, `device` and `where`.
+  Its startup installs are given `when` from its clock too. The journal holds what was stamped.
+- **The detail and adjacency views carry provenance**: for `x`'s detail, and for each `y` of an adjacency view, the
+  records of the transactions that created it and last wrote it, each one's session and the session's identity
+  (`assigns`), and the entries linking them, `Provenance.CreatedBy`, `ModifiedBy`, `InSession` and `Who`
+  (`entries`). An identity has no properties: its name is its directory key, the last key of its reference's path.
+- **The corpus** stamps reproducibly: a fixed clock and uids by count (`corpus-1`, ...).
+
 ## Proposals (CAP-018)
 
 A proposal makes a new object through an existing one's adjacency: an `upsert` whose symbols are `x`, the inbound
@@ -232,6 +249,7 @@ cd python3 && uv run python -m mbse.Services.Rest   # serves with uvicorn, as th
 | `MBSE_REST_PLUGIN` | `memory` | the persistence plugin, by `plugin_of`'s name, e.g. `mbse.Persistence.DynamoDB.Plugin:Plugin` |
 | `MBSE_REST_SNAPSHOT_EVERY` | `100` | journaled transactions between snapshots |
 | `MBSE_REST_ORIGINS` | none | the UI's origins, comma-separated, e.g. `http://localhost:5173` |
+| `MBSE_REST_USER` | `demo` | the identity the service stamps on writes (CAP-015), standing in for a validated token |
 | `MBSE_REST_HOST` | `127.0.0.1` | where it listens |
 | `MBSE_REST_PORT` | `8000` | |
 
@@ -376,3 +394,5 @@ Decided in M1 (none changes a request or a response the corpus holds):
     and journal writes (11).
 27. **A proposal is an `upsert` posted to the detail view** (CAP-018), its symbols `x` and `n`, as an edit is an
     `update` there (26): the response is the inbound object's detail with the new entry.
+28. **The service stamps writes on what it receives** (CAP-015), the expression's plain form, so that the journal holds
+    the stamped transaction; the session's id comes from a header while there is no token (TODO.md, 4).
