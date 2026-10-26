@@ -117,6 +117,20 @@ frames, so the response is the object's detail as the edit left it; a refused ed
 - What a UI may edit, and how text is shown, is the UI's: CAP-014 reads every `Schemas.OfStr` as markdown and leaves
   ownership keys uneditable; the service does not validate what it is given.
 
+## Proposals (CAP-018)
+
+A proposal makes a new object through an existing one's adjacency: an `upsert` whose symbols are `x`, the inbound
+object's `References.OfObject`, and `n`, given the new object's schema, and whose spec writes `x`'s entry in the
+adjacency linking `n` through the relation's other link (with the entry's properties, where given) and `n`'s
+properties, posted to `POST /views/detail`. The service commits and journals it; an owned object is placed in its
+directory, its key given there (CMT-004 for the WorkTracker's next comment); the response is `x`'s detail with the new
+entry.
+
+- **The client**: `Views.propose(store, x, adjacency, link, schema, values, entry)` builds it, and
+  `client.propose(...)` sends it.
+- **The corpus**: `propose-thread` (a comment about a feature) and `propose-reply` (a reply resolving a thread).
+- Editing an existing entry's properties with its linked object's, the rest of CAP-018, is not built yet.
+
 ## Persistence (CAP-013)
 
 `Persistence.Plugin`, a Python protocol whose every argument and result is mbse-schemas' plain form, so that a plugin
@@ -360,3 +374,5 @@ Decided in M1 (none changes a request or a response the corpus holds):
 26. **An edit is an `update` after the detail view's map** (CAP-014), posted to the detail view, rather than an
     endpoint of its own: its response is the detail the inspector shows next, and the view endpoints already accept
     and journal writes (11).
+27. **A proposal is an `upsert` posted to the detail view** (CAP-018), its symbols `x` and `n`, as an edit is an
+    `update` there (26): the response is the inbound object's detail with the new entry.

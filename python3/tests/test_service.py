@@ -160,3 +160,19 @@ def test_an_edit_is_committed_journaled_and_kept():
         {"id": "TSK-001"})), {"title": "**Bold**"})
     [kept] = frames(again.post("/views/detail", json=detail))
     assert label_of(kept) == {"title": "**Bold**"}
+
+
+def test_a_proposed_object_is_created_with_its_entry_and_owned():
+    """CAP-018: a reply proposed through a thread's replies is made with its entry, placed in its directory (its
+    ID given there), journaled, and the thread's detail given back with it."""
+    plugin = Persistence.Memory()
+    client = TestClient(Service.work_tracker(plugin))
+    store = store_of(client)
+    thread = store.singleton("work.Comments").comments({"id": "CMT-001"})
+    body = Conformance._propose(store, lambda s: References.of(s, thread), "replies", "reply", "work.Comment",
+                                {"text": "Closing this.", "resolves_thread": True})
+    [frame] = frames(client.post("/views/detail", json=body))
+    assert [str(e.reply.text) for e in thread.replies][-1] == "Closing this."
+    reply = [e.reply for e in thread.replies][-1]
+    assert [str(e.id) for e in reply.directory] == ["CMT-004"]
+    assert len(frame["entries"]) > 0 and len(plugin.entries) == 1

@@ -255,6 +255,14 @@ export class Client {
       Promise<Views.Frame[]> {
     return this.view(store, "detail", Views.edit(store, x, values), options);
   }
+
+  /** CAP-018: proposes a new object of `schema` through `x`'s `adjacency`, its other link `link` (`Views.propose`), and
+   * gives `x`'s detail view (CAP-007) once the service has committed it. */
+  propose(store: any, x: unknown, adjacency: string, link: string, schema: unknown,
+      values: Readonly<Record<string, unknown>>, entry: Readonly<Record<string, unknown>> = {},
+      options: CallOptions = {}): Promise<Views.Frame[]> {
+    return this.view(store, "detail", Views.propose(store, x, adjacency, link, schema, values, entry), options);
+  }
 }
 
 /** The signal's reason, where `error` is what its abort raised. */

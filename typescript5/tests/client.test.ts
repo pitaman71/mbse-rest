@@ -135,6 +135,26 @@ describe("edits (CAP-014): the client builds each one the corpus holds, and read
     assert.equal(Views.summary(store, frame!), "Define them in a *module-scope* `install`.");
   });
 
+  const proposals: Record<string, [string, string, Record<string, unknown>]> = {
+    "propose-thread": ["comments", "comment", { text: "Who reviews the **views**?" }],
+    "propose-reply": ["replies", "reply", { text: "Closing this.", resolves_thread: true }],
+  };
+  for (const [name, [adjacency, link, values]] of Object.entries(proposals)) {
+    test(`${name} (CAP-018)`, async () => {
+      const store = await storeWithSchemas();
+      const plain = Views.propose(store, reference(store, name), adjacency, link, store.registered("work.Comment"), values);
+      assert.equal(J.dumps(plain), canonical(read(`${name}.request.json`)));
+    });
+  }
+
+  test("a proposal gives the inbound object's detail with its new entry (CAP-018)", async () => {
+    const store = await storeWithSchemas();
+    const [adjacency, link, values] = proposals["propose-reply"]!;
+    const [frame] = await client.propose(store, reference(store, "propose-reply"), adjacency, link,
+      store.registered("work.Comment"), values);
+    assert.ok(frame!.entries.length > 0);
+  });
+
   test("an edit of no property, or of one the object's schema lacks, is refused before it is sent", async () => {
     const store = await storeWithSchemas();
     const task = reference(store, "edit-task-title");

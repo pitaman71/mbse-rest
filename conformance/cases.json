@@ -135,6 +135,24 @@
   "response": "edit-task-clear.response.ndjson"
  },
  {
+  "name": "propose-thread",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "propose-thread.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "propose-thread.response.ndjson"
+ },
+ {
+  "name": "propose-reply",
+  "method": "POST",
+  "path": "/views/detail",
+  "request": "propose-reply.request.json",
+  "status": 200,
+  "content_type": "application/x-ndjson",
+  "response": "propose-reply.response.ndjson"
+ },
+ {
   "name": "view-unknown-kind",
   "method": "POST",
   "path": "/views/summary",

@@ -50,6 +50,24 @@ export function edit(store: any, reference: unknown, values: Readonly<Record<str
   return Plain.ToPlain(store).Transaction(transaction);
 }
 
+/** A new object proposed through an adjacency (CAP-018): `x`, the inbound object's reference, gains an entry in its
+ * `adjacency`, whose other link, `link`, holds a new object of `schema` (the store's schema object), with `values` its
+ * properties and `entry` the entry's. Posted to the detail view, it gives `x`'s detail with the new entry, once the
+ * service has committed it; an owned object is placed in its directory, its key given there. Gives the transaction's
+ * expression, the request's body. */
+export function propose(store: any, x: unknown, adjacency: string, link: string, schema: unknown,
+    values: Readonly<Record<string, unknown>>, entry: Readonly<Record<string, unknown>> = {}): Plain.PlainMap {
+  const transaction = store.Mutations.OfTransaction((t: any) => t.mutations([(mu: any) => mu.upsert((u: any) => u
+    .exists([(p: any) => p
+      .symbols({ x, n: schema })
+      .spec([
+        (_: any) => _.x[adjacency]([(e: any) => Object.entries(entry)
+          .reduce((built: any, [name, value]) => built[name](value), e[link](_.n))]),
+        ...Object.entries(values).map(([name, value]) => (_: any) => _.n[name](value)),
+      ])]))]));
+  return Plain.ToPlain(store).Transaction(transaction);
+}
+
 /** Property values a frame witnesses an object holds (`References.OfProperties`). */
 export interface Assigned {
   /** The object's `References.OfObject`. */

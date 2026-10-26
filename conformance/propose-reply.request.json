@@ -1,0 +1,132 @@
+{
+ "mutations": [
+  {
+   "upsert": {
+    "exists": [
+     {
+      "symbols": {
+       "x": {
+        "reference": {
+         "path": {
+          "singleton": "work.Comments",
+          "next": {
+           "entry": {
+            "i": "comments",
+            "o": "directory",
+            "properties": {
+             "id": "CMT-001"
+            },
+            "next": {
+             "target": {}
+            }
+           }
+          }
+         }
+        }
+       },
+       "n": {
+        "schema": [
+         {
+          "$ref": {
+           "singleton": ".",
+           "next": {
+            "entry": {
+             "i": "schemas",
+             "o": "",
+             "properties": {
+              "name": "work"
+             },
+             "next": {
+              "entry": {
+               "i": "schemas",
+               "o": "",
+               "properties": {
+                "name": "Comment"
+               },
+               "next": {
+                "target": {}
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        ]
+       }
+      },
+      "spec": [
+       {
+        "x": [
+         {
+          "as_adjacency": {
+           "name": "replies",
+           "mutations": [
+            {
+             "insert": {
+              "entries": [
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "reply",
+                   "mutations": [
+                    {
+                     "set": {
+                      "ref": {
+                       "symbol": "n"
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            }
+           ]
+          }
+         }
+        ]
+       },
+       {
+        "n": [
+         {
+          "as_property": {
+           "name": "text",
+           "mutations": [
+            {
+             "set": {
+              "value": "Closing this."
+             }
+            }
+           ]
+          }
+         }
+        ]
+       },
+       {
+        "n": [
+         {
+          "as_property": {
+           "name": "resolves_thread",
+           "mutations": [
+            {
+             "set": {
+              "value": true
+             }
+            }
+           ]
+          }
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  }
+ ]
+}

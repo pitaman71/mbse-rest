@@ -51,6 +51,24 @@ def _edit(store: Any, reference: Callable[[Any], Any], values: dict[str, Any]) -
                                                  for name, value in values.items()])]))]))])))
 
 
+def _propose(store: Any, reference: Callable[[Any], Any], adjacency: str, link: str, schema: str,
+             values: dict[str, Any], entry: dict[str, Any] | None = None) -> Any:
+    """A new object proposed through an adjacency (CAP-018), as the client builds it: an upsert whose symbols are `x`,
+    the inbound object, and `n`, the new one, and whose spec writes `x`'s entry linking `n`, and `n`'s properties."""
+    x = reference(store)
+    return Plain.ToPlain(store).Transaction(store.Mutations.OfTransaction(lambda t: t.mutations([lambda mu: mu.upsert(
+        lambda u: u.exists([lambda p: p.symbols({"x": x, "n": store.registered(schema)}).spec([
+            lambda _: getattr(_.x, adjacency)([lambda e: _entry(getattr(e, link)(_.n), entry or {})]),
+            *[lambda _, name=name, value=value: getattr(_.n, name)(value) for name, value in values.items()],
+        ])]))])))
+
+
+def _entry(built: Any, entry: dict[str, Any]) -> Any:
+    for name, value in entry.items():
+        built = getattr(built, name)(value)
+    return built
+
+
 class Case:
     """One request and the response it gets; `view`, where given, says what the request is made of (its kind, what
     each symbol is given, and an adjacency's name), so that a client can build it again without knowing the case."""
@@ -95,6 +113,12 @@ CASES = [
                              {"title": "Install the **schemas**", "description": "Define them in a *module-scope* `install`."})),
     Case("edit-task-clear", "POST", "/views/detail",
          lambda store: _edit(store, _ref("work.Tasks", "tasks", "TSK-002"), {"description": None})),
+    Case("propose-thread", "POST", "/views/detail",
+         lambda store: _propose(store, _ref("work.Features", "features", "FEA-002"), "comments", "comment",
+                                "work.Comment", {"text": "Who reviews the **views**?"})),
+    Case("propose-reply", "POST", "/views/detail",
+         lambda store: _propose(store, _ref("work.Comments", "comments", "CMT-001"), "replies", "reply",
+                                "work.Comment", {"text": "Closing this.", "resolves_thread": True})),
     Case("view-unknown-kind", "POST", "/views/summary",
          lambda store: _map(store, lambda s: {"x": s.work.Task})),
     Case("view-unassigned-symbol", "POST", "/views/label",
