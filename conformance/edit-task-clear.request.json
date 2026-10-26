@@ -1,0 +1,80 @@
+{
+ "mutations": [
+  {
+   "map": {
+    "symbols": [
+     {
+      "symbols": {
+       "x": {
+        "reference": {
+         "path": {
+          "singleton": "work.Tasks",
+          "next": {
+           "entry": {
+            "i": "tasks",
+            "o": "directory",
+            "properties": {
+             "id": "TSK-002"
+            },
+            "next": {
+             "target": {}
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    ],
+    "then": [
+     {
+      "update": {
+       "apply": [
+        {
+         "symbols": {
+          "x": {
+           "reference": {
+            "path": {
+             "singleton": "work.Tasks",
+             "next": {
+              "entry": {
+               "i": "tasks",
+               "o": "directory",
+               "properties": {
+                "id": "TSK-002"
+               },
+               "next": {
+                "target": {}
+               }
+              }
+             }
+            }
+           }
+          }
+         },
+         "spec": [
+          {
+           "x": [
+            {
+             "as_property": {
+              "name": "description",
+              "mutations": [
+               {
+                "clear": {}
+               }
+              ]
+             }
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

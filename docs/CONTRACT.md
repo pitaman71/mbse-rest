@@ -101,6 +101,22 @@ once, in the order met; `entries`, a `References.OfEntry` for each entry it witn
 - A view's transaction may write (CAP-013's flow): whatever it writes is committed, and journaled, before its frames
   are filled.
 
+## Edits (CAP-014)
+
+An edit writes an object's properties and gives back its detail: the detail view's template, `x` given the object's
+`References.OfObject`, then an `update` whose spec writes each property given, a value of its property's schema, or
+none to clear it, posted to `POST /views/detail`. The endpoint takes no new arguments: the expression carries the
+edit, as it carries any view's bindings. The service commits and journals it (Persistence, below) before it fills the
+frames, so the response is the object's detail as the edit left it; a refused edit is a 400 and writes nothing.
+
+- **The client**: `Views.edit(store, reference, values)` builds it, and `client.edit(store, reference, values)` sends
+  it and reads the detail back. An edit of no property is refused by the client, and one of a property the object's
+  schema lacks by mbse-schemas' spec recorder, before anything is sent.
+- **The corpus**: `edit-task-title` (markdown written into a task's title and description) and `edit-task-clear` (a
+  description cleared), each on a fresh server, since they write.
+- What a UI may edit, and how text is shown, is the UI's: CAP-014 reads every `Schemas.OfStr` as markdown and leaves
+  ownership keys uneditable; the service does not validate what it is given.
+
 ## Persistence (CAP-013)
 
 `Persistence.Plugin`, a Python protocol whose every argument and result is mbse-schemas' plain form, so that a plugin
@@ -341,3 +357,6 @@ Decided in M1 (none changes a request or a response the corpus holds):
     `Views.request`, as before, so they send what the corpus holds byte for byte.
 25. **No server runs in the tests**: the entry point is tested by what it hands uvicorn; every endpoint through
     FastAPI's test client.
+26. **An edit is an `update` after the detail view's map** (CAP-014), posted to the detail view, rather than an
+    endpoint of its own: its response is the detail the inspector shows next, and the view endpoints already accept
+    and journal writes (11).

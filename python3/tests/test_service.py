@@ -138,3 +138,21 @@ def test_errors(client):
 def test_persistence_with_the_reference_plugin(case):
     """The cases every plugin must pass (CAP-013), with `Memory`; mbse-dynamodb runs them with its own."""
     case(Persistence.Memory)
+
+
+def test_an_edit_is_committed_journaled_and_kept():
+    """CAP-014: an edit through the detail view writes the object's properties, gives its detail as the edit left it,
+    is journaled, and survives a restart; None clears a property."""
+    plugin = Persistence.Memory()
+    client = TestClient(Service.work_tracker(plugin))
+    store = store_of(client)
+    task = store.singleton("work.Tasks").tasks({"id": "TSK-001"})
+    body = Conformance._edit(store, lambda s: References.of(s, task), {"title": "**Bold**", "description": None})
+    [frame] = frames(client.post("/views/detail", json=body))
+    assert label_of(frame) == {"title": "**Bold**"}
+    assert len(plugin.entries) == 1
+    again = TestClient(Service.app([], plugin))
+    detail = Conformance._edit(store_of(again), lambda s: References.of(s, s.singleton("work.Tasks").tasks(
+        {"id": "TSK-001"})), {"title": "**Bold**"})
+    [kept] = frames(again.post("/views/detail", json=detail))
+    assert label_of(kept) == {"title": "**Bold**"}

@@ -41,6 +41,16 @@ def _map(store: Any, symbols: Callable[[Any], dict[str, Any]], spec: Callable[[A
         lambda m: m.symbols([lambda p: p.symbols(given).spec(spec(store)) if spec else p.symbols(given)]))])))
 
 
+def _edit(store: Any, reference: Callable[[Any], Any], values: dict[str, Any]) -> Any:
+    """An edit (CAP-014), as the client builds one: the detail view's template, `x` given the object's reference, then
+    an update writing each property given its value (None clears it)."""
+    x = reference(store)
+    return Plain.ToPlain(store).Transaction(store.Mutations.OfTransaction(lambda t: t.mutations([lambda mu: mu.map(
+        lambda m: m.symbols([lambda p: p.symbols({"x": x})]).then([lambda w: w.update(lambda u: u.apply([
+            lambda p: p.symbols({"x": x}).spec([lambda _, n=name, v=value: getattr(_.x, n)(v)
+                                                 for name, value in values.items()])]))]))])))
+
+
 class Case:
     """One request and the response it gets; `view`, where given, says what the request is made of (its kind, what
     each symbol is given, and an adjacency's name), so that a client can build it again without knowing the case."""
@@ -80,6 +90,11 @@ CASES = [
          lambda store: _map(store, lambda s: {"x": _ref("work.Comments", "comments", "CMT-001")(s),
                                               "y": s.work.Result},
                             lambda s: [lambda _: _.x.about([_.y])])),
+    Case("edit-task-title", "POST", "/views/detail",
+         lambda store: _edit(store, _ref("work.Tasks", "tasks", "TSK-001"),
+                             {"title": "Install the **schemas**", "description": "Define them in a *module-scope* `install`."})),
+    Case("edit-task-clear", "POST", "/views/detail",
+         lambda store: _edit(store, _ref("work.Tasks", "tasks", "TSK-002"), {"description": None})),
     Case("view-unknown-kind", "POST", "/views/summary",
          lambda store: _map(store, lambda s: {"x": s.work.Task})),
     Case("view-unassigned-symbol", "POST", "/views/label",
