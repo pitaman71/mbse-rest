@@ -994,6 +994,486 @@
           }
          }
         ]
+       },
+       "33": {
+        "schema": [
+         {
+          "$ref": {
+           "singleton": ".",
+           "next": {
+            "entry": {
+             "i": "schemas",
+             "o": "",
+             "properties": {
+              "name": "Schemas"
+             },
+             "next": {
+              "entry": {
+               "i": "schemas",
+               "o": "",
+               "properties": {
+                "name": "OfRelation"
+               },
+               "next": {
+                "target": {}
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        ]
+       },
+       "34": {
+        "schema": [
+         {
+          "$ref": {
+           "singleton": ".",
+           "next": {
+            "entry": {
+             "i": "schemas",
+             "o": "",
+             "properties": {
+              "name": "Schemas"
+             },
+             "next": {
+              "entry": {
+               "i": "schemas",
+               "o": "",
+               "properties": {
+                "name": "OfModule"
+               },
+               "next": {
+                "target": {}
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        ]
+       },
+       "35": {
+        "schema": [
+         {
+          "$ref": {
+           "singleton": ".",
+           "next": {
+            "entry": {
+             "i": "schemas",
+             "o": "",
+             "properties": {
+              "name": "Schemas"
+             },
+             "next": {
+              "entry": {
+               "i": "schemas",
+               "o": "",
+               "properties": {
+                "name": "OfObject"
+               },
+               "next": {
+                "target": {}
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        ]
+       },
+       "36": {
+        "schema": [
+         {
+          "$ref": {
+           "singleton": ".",
+           "next": {
+            "entry": {
+             "i": "schemas",
+             "o": "",
+             "properties": {
+              "name": "Schemas"
+             },
+             "next": {
+              "entry": {
+               "i": "schemas",
+               "o": "",
+               "properties": {
+                "name": "OfRelation"
+               },
+               "next": {
+                "target": {}
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        ]
+       },
+       "37": {
+        "schema": [
+         {
+          "$ref": {
+           "singleton": ".",
+           "next": {
+            "entry": {
+             "i": "schemas",
+             "o": "",
+             "properties": {
+              "name": "Schemas"
+             },
+             "next": {
+              "entry": {
+               "i": "schemas",
+               "o": "",
+               "properties": {
+                "name": "OfObject"
+               },
+               "next": {
+                "target": {}
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        ]
+       },
+       "38": {
+        "schema": [
+         {
+          "$ref": {
+           "singleton": ".",
+           "next": {
+            "entry": {
+             "i": "schemas",
+             "o": "",
+             "properties": {
+              "name": "Schemas"
+             },
+             "next": {
+              "entry": {
+               "i": "schemas",
+               "o": "",
+               "properties": {
+                "name": "OfObject"
+               },
+               "next": {
+                "target": {}
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        ]
+       },
+       "39": {
+        "schema": [
+         {
+          "$ref": {
+           "singleton": ".",
+           "next": {
+            "entry": {
+             "i": "schemas",
+             "o": "",
+             "properties": {
+              "name": "Schemas"
+             },
+             "next": {
+              "entry": {
+               "i": "schemas",
+               "o": "",
+               "properties": {
+                "name": "OfRelation"
+               },
+               "next": {
+                "target": {}
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        ]
+       },
+       "40": {
+        "schema": [
+         {
+          "$ref": {
+           "singleton": ".",
+           "next": {
+            "entry": {
+             "i": "schemas",
+             "o": "",
+             "properties": {
+              "name": "Schemas"
+             },
+             "next": {
+              "entry": {
+               "i": "schemas",
+               "o": "",
+               "properties": {
+                "name": "OfRelation"
+               },
+               "next": {
+                "target": {}
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        ]
+       },
+       "41": {
+        "schema": [
+         {
+          "$ref": {
+           "singleton": ".",
+           "next": {
+            "entry": {
+             "i": "schemas",
+             "o": "",
+             "properties": {
+              "name": "Schemas"
+             },
+             "next": {
+              "entry": {
+               "i": "schemas",
+               "o": "",
+               "properties": {
+                "name": "OfObject"
+               },
+               "next": {
+                "target": {}
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        ]
+       },
+       "42": {
+        "schema": [
+         {
+          "$ref": {
+           "singleton": ".",
+           "next": {
+            "entry": {
+             "i": "schemas",
+             "o": "",
+             "properties": {
+              "name": "Schemas"
+             },
+             "next": {
+              "entry": {
+               "i": "schemas",
+               "o": "",
+               "properties": {
+                "name": "OfObject"
+               },
+               "next": {
+                "target": {}
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        ]
+       },
+       "43": {
+        "schema": [
+         {
+          "$ref": {
+           "singleton": ".",
+           "next": {
+            "entry": {
+             "i": "schemas",
+             "o": "",
+             "properties": {
+              "name": "Schemas"
+             },
+             "next": {
+              "entry": {
+               "i": "schemas",
+               "o": "",
+               "properties": {
+                "name": "OfRelation"
+               },
+               "next": {
+                "target": {}
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        ]
+       },
+       "44": {
+        "schema": [
+         {
+          "$ref": {
+           "singleton": ".",
+           "next": {
+            "entry": {
+             "i": "schemas",
+             "o": "",
+             "properties": {
+              "name": "Schemas"
+             },
+             "next": {
+              "entry": {
+               "i": "schemas",
+               "o": "",
+               "properties": {
+                "name": "OfObject"
+               },
+               "next": {
+                "target": {}
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        ]
+       },
+       "45": {
+        "schema": [
+         {
+          "$ref": {
+           "singleton": ".",
+           "next": {
+            "entry": {
+             "i": "schemas",
+             "o": "",
+             "properties": {
+              "name": "Schemas"
+             },
+             "next": {
+              "entry": {
+               "i": "schemas",
+               "o": "",
+               "properties": {
+                "name": "OfObject"
+               },
+               "next": {
+                "target": {}
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        ]
+       },
+       "46": {
+        "schema": [
+         {
+          "$ref": {
+           "singleton": ".",
+           "next": {
+            "entry": {
+             "i": "schemas",
+             "o": "",
+             "properties": {
+              "name": "Schemas"
+             },
+             "next": {
+              "entry": {
+               "i": "schemas",
+               "o": "",
+               "properties": {
+                "name": "OfRelation"
+               },
+               "next": {
+                "target": {}
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        ]
+       },
+       "47": {
+        "schema": [
+         {
+          "$ref": {
+           "singleton": ".",
+           "next": {
+            "entry": {
+             "i": "schemas",
+             "o": "",
+             "properties": {
+              "name": "Schemas"
+             },
+             "next": {
+              "entry": {
+               "i": "schemas",
+               "o": "",
+               "properties": {
+                "name": "OfRelation"
+               },
+               "next": {
+                "target": {}
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        ]
+       },
+       "48": {
+        "schema": [
+         {
+          "$ref": {
+           "singleton": ".",
+           "next": {
+            "entry": {
+             "i": "schemas",
+             "o": "",
+             "properties": {
+              "name": "Schemas"
+             },
+             "next": {
+              "entry": {
+               "i": "schemas",
+               "o": "",
+               "properties": {
+                "name": "OfRelation"
+               },
+               "next": {
+                "target": {}
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        ]
        }
       },
       "spec": [
@@ -1039,6 +1519,36 @@
                     {
                      "set": {
                       "value": "work"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "schema",
+                   "mutations": [
+                    {
+                     "set": {
+                      "ref": {
+                       "symbol": "34"
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "Provenance"
                      }
                     }
                    ]
@@ -1985,6 +2495,36 @@
                      "set": {
                       "ref": {
                        "symbol": "32"
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "RepliesTo"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "schema",
+                   "mutations": [
+                    {
+                     "set": {
+                      "ref": {
+                       "symbol": "33"
                       }
                      }
                     }
@@ -3359,7 +3899,7 @@
                                    {
                                     "set": {
                                      "ref": {
-                                      "symbol": "32"
+                                      "symbol": "33"
                                      }
                                     }
                                    }
@@ -4708,7 +5248,7 @@
            "mutations": [
             {
              "set": {
-              "value": "A remark about one or more organization elements, which may be resolved."
+              "value": "A remark: a thread about one or more organization elements, or a reply to a thread, which may resolve it."
              }
             }
            ]
@@ -4894,6 +5434,282 @@
                   }
                  }
                 ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "adjacency",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfAdjacency",
+                       "mutations": [
+                        {
+                         "as_property": {
+                          "name": "me",
+                          "mutations": [
+                           {
+                            "set": {
+                             "value": "thread"
+                            }
+                           }
+                          ]
+                         }
+                        },
+                        {
+                         "as_adjacency": {
+                          "name": "relation",
+                          "mutations": [
+                           {
+                            "insert": {
+                             "entries": [
+                              {
+                               "mutations": [
+                                {
+                                 "as_link": {
+                                  "name": "relation",
+                                  "mutations": [
+                                   {
+                                    "set": {
+                                     "ref": {
+                                      "symbol": "32"
+                                     }
+                                    }
+                                   }
+                                  ]
+                                 }
+                                }
+                               ]
+                              }
+                             ]
+                            }
+                           }
+                          ]
+                         }
+                        }
+                       ]
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "replies"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "adjacency",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfAdjacency",
+                       "mutations": [
+                        {
+                         "as_property": {
+                          "name": "me",
+                          "mutations": [
+                           {
+                            "set": {
+                             "value": "reply"
+                            }
+                           }
+                          ]
+                         }
+                        },
+                        {
+                         "as_adjacency": {
+                          "name": "relation",
+                          "mutations": [
+                           {
+                            "insert": {
+                             "entries": [
+                              {
+                               "mutations": [
+                                {
+                                 "as_link": {
+                                  "name": "relation",
+                                  "mutations": [
+                                   {
+                                    "set": {
+                                     "ref": {
+                                      "symbol": "32"
+                                     }
+                                    }
+                                   }
+                                  ]
+                                 }
+                                }
+                               ]
+                              }
+                             ]
+                            }
+                           }
+                          ]
+                         }
+                        }
+                       ]
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "thread"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "adjacency",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfAdjacency",
+                       "mutations": [
+                        {
+                         "as_property": {
+                          "name": "me",
+                          "mutations": [
+                           {
+                            "set": {
+                             "value": "object"
+                            }
+                           }
+                          ]
+                         }
+                        },
+                        {
+                         "as_adjacency": {
+                          "name": "relation",
+                          "mutations": [
+                           {
+                            "insert": {
+                             "entries": [
+                              {
+                               "mutations": [
+                                {
+                                 "as_link": {
+                                  "name": "relation",
+                                  "mutations": [
+                                   {
+                                    "set": {
+                                     "ref": {
+                                      "symbol": "47"
+                                     }
+                                    }
+                                   }
+                                  ]
+                                 }
+                                }
+                               ]
+                              }
+                             ]
+                            }
+                           }
+                          ]
+                         }
+                        }
+                       ]
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "adjacency",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfAdjacency",
+                       "mutations": [
+                        {
+                         "as_property": {
+                          "name": "me",
+                          "mutations": [
+                           {
+                            "set": {
+                             "value": "object"
+                            }
+                           }
+                          ]
+                         }
+                        },
+                        {
+                         "as_adjacency": {
+                          "name": "relation",
+                          "mutations": [
+                           {
+                            "insert": {
+                             "entries": [
+                              {
+                               "mutations": [
+                                {
+                                 "as_link": {
+                                  "name": "relation",
+                                  "mutations": [
+                                   {
+                                    "set": {
+                                     "ref": {
+                                      "symbol": "48"
+                                     }
+                                    }
+                                   }
+                                  ]
+                                 }
+                                }
+                               ]
+                              }
+                             ]
+                            }
+                           }
+                          ]
+                         }
+                        }
+                       ]
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
                }
               ]
              }
@@ -5072,7 +5888,7 @@
                    "mutations": [
                     {
                      "set": {
-                      "value": "resolved"
+                      "value": "resolves_thread"
                      }
                     }
                    ]
@@ -5734,7 +6550,7 @@
                                    {
                                     "set": {
                                      "ref": {
-                                      "symbol": "32"
+                                      "symbol": "33"
                                      }
                                     }
                                    }
@@ -9411,6 +10227,113 @@
            "mutations": [
             {
              "set": {
+              "value": "work.RepliesTo"
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_property": {
+           "name": "uniques",
+           "mutations": [
+            {
+             "set": {
+              "value": [
+               [
+                "thread"
+               ]
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_adjacency": {
+           "name": "links",
+           "mutations": [
+            {
+             "insert": {
+              "entries": [
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "link",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfSymbol",
+                       "mutations": []
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "reply"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "link",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfSymbol",
+                       "mutations": []
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "thread"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            }
+           ]
+          }
+         }
+        ]
+       },
+       {
+        "33": [
+         {
+          "as_property": {
+           "name": "name",
+           "mutations": [
+            {
+             "set": {
               "value": "work.Plans"
              }
             }
@@ -9855,6 +10778,3377 @@
                     {
                      "set": {
                       "value": "progress"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            }
+           ]
+          }
+         }
+        ]
+       },
+       {
+        "34": [
+         {
+          "as_property": {
+           "name": "name",
+           "mutations": [
+            {
+             "set": {
+              "value": "Provenance"
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_adjacency": {
+           "name": "schemas",
+           "mutations": [
+            {
+             "insert": {
+              "entries": [
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "schema",
+                   "mutations": [
+                    {
+                     "set": {
+                      "ref": {
+                       "symbol": "35"
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "OfWhere"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "schema",
+                   "mutations": [
+                    {
+                     "set": {
+                      "ref": {
+                       "symbol": "36"
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "InSessions"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "schema",
+                   "mutations": [
+                    {
+                     "set": {
+                      "ref": {
+                       "symbol": "37"
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "SessionDirectory"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "schema",
+                   "mutations": [
+                    {
+                     "set": {
+                      "ref": {
+                       "symbol": "38"
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "OfSession"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "schema",
+                   "mutations": [
+                    {
+                     "set": {
+                      "ref": {
+                       "symbol": "39"
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "InSession"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "schema",
+                   "mutations": [
+                    {
+                     "set": {
+                      "ref": {
+                       "symbol": "40"
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "InTransactions"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "schema",
+                   "mutations": [
+                    {
+                     "set": {
+                      "ref": {
+                       "symbol": "41"
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "TransactionDirectory"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "schema",
+                   "mutations": [
+                    {
+                     "set": {
+                      "ref": {
+                       "symbol": "42"
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "OfTransaction"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "schema",
+                   "mutations": [
+                    {
+                     "set": {
+                      "ref": {
+                       "symbol": "43"
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "InIdentities"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "schema",
+                   "mutations": [
+                    {
+                     "set": {
+                      "ref": {
+                       "symbol": "44"
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "IdentityDirectory"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "schema",
+                   "mutations": [
+                    {
+                     "set": {
+                      "ref": {
+                       "symbol": "45"
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "OfIdentity"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "schema",
+                   "mutations": [
+                    {
+                     "set": {
+                      "ref": {
+                       "symbol": "46"
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "Who"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "schema",
+                   "mutations": [
+                    {
+                     "set": {
+                      "ref": {
+                       "symbol": "47"
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "CreatedBy"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "schema",
+                   "mutations": [
+                    {
+                     "set": {
+                      "ref": {
+                       "symbol": "48"
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "ModifiedBy"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            }
+           ]
+          }
+         }
+        ]
+       },
+       {
+        "35": [
+         {
+          "as_property": {
+           "name": "name",
+           "mutations": [
+            {
+             "set": {
+              "value": "Provenance.OfWhere"
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_property": {
+           "name": "ref",
+           "mutations": [
+            {
+             "set": {
+              "value": false
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_adjacency": {
+           "name": "properties",
+           "mutations": [
+            {
+             "insert": {
+              "entries": [
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "property",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfProperty",
+                       "mutations": [
+                        {
+                         "as_adjacency": {
+                          "name": "schema",
+                          "mutations": [
+                           {
+                            "insert": {
+                             "entries": [
+                              {
+                               "mutations": [
+                                {
+                                 "as_link": {
+                                  "name": "schema",
+                                  "mutations": [
+                                   {
+                                    "set": {
+                                     "ref": {
+                                      "path": {
+                                       "singleton": ".",
+                                       "next": {
+                                        "entry": {
+                                         "i": "schemas",
+                                         "o": "",
+                                         "properties": {
+                                          "name": "Schemas"
+                                         },
+                                         "next": {
+                                          "entry": {
+                                           "i": "schemas",
+                                           "o": "",
+                                           "properties": {
+                                            "name": "OfFloat"
+                                           },
+                                           "next": {
+                                            "target": {}
+                                           }
+                                          }
+                                         }
+                                        }
+                                       }
+                                      }
+                                     }
+                                    }
+                                   }
+                                  ]
+                                 }
+                                }
+                               ]
+                              }
+                             ]
+                            }
+                           }
+                          ]
+                         }
+                        }
+                       ]
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "latitude"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "property",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfProperty",
+                       "mutations": [
+                        {
+                         "as_adjacency": {
+                          "name": "schema",
+                          "mutations": [
+                           {
+                            "insert": {
+                             "entries": [
+                              {
+                               "mutations": [
+                                {
+                                 "as_link": {
+                                  "name": "schema",
+                                  "mutations": [
+                                   {
+                                    "set": {
+                                     "ref": {
+                                      "path": {
+                                       "singleton": ".",
+                                       "next": {
+                                        "entry": {
+                                         "i": "schemas",
+                                         "o": "",
+                                         "properties": {
+                                          "name": "Schemas"
+                                         },
+                                         "next": {
+                                          "entry": {
+                                           "i": "schemas",
+                                           "o": "",
+                                           "properties": {
+                                            "name": "OfFloat"
+                                           },
+                                           "next": {
+                                            "target": {}
+                                           }
+                                          }
+                                         }
+                                        }
+                                       }
+                                      }
+                                     }
+                                    }
+                                   }
+                                  ]
+                                 }
+                                }
+                               ]
+                              }
+                             ]
+                            }
+                           }
+                          ]
+                         }
+                        }
+                       ]
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "longitude"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            }
+           ]
+          }
+         }
+        ]
+       },
+       {
+        "36": [
+         {
+          "as_property": {
+           "name": "name",
+           "mutations": [
+            {
+             "set": {
+              "value": "Provenance.InSessions"
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_property": {
+           "name": "uniques",
+           "mutations": [
+            {
+             "set": {
+              "value": [
+               [
+                "directory",
+                "id"
+               ],
+               [
+                "session"
+               ]
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_adjacency": {
+           "name": "links",
+           "mutations": [
+            {
+             "insert": {
+              "entries": [
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "link",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfSymbol",
+                       "mutations": []
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "directory"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "link",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfSymbol",
+                       "mutations": []
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "session"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_adjacency": {
+           "name": "properties",
+           "mutations": [
+            {
+             "insert": {
+              "entries": [
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "property",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfProperty",
+                       "mutations": [
+                        {
+                         "as_adjacency": {
+                          "name": "schema",
+                          "mutations": [
+                           {
+                            "insert": {
+                             "entries": [
+                              {
+                               "mutations": [
+                                {
+                                 "as_link": {
+                                  "name": "schema",
+                                  "mutations": [
+                                   {
+                                    "set": {
+                                     "ref": {
+                                      "path": {
+                                       "singleton": ".",
+                                       "next": {
+                                        "entry": {
+                                         "i": "schemas",
+                                         "o": "",
+                                         "properties": {
+                                          "name": "Schemas"
+                                         },
+                                         "next": {
+                                          "entry": {
+                                           "i": "schemas",
+                                           "o": "",
+                                           "properties": {
+                                            "name": "OfStr"
+                                           },
+                                           "next": {
+                                            "target": {}
+                                           }
+                                          }
+                                         }
+                                        }
+                                       }
+                                      }
+                                     }
+                                    }
+                                   }
+                                  ]
+                                 }
+                                }
+                               ]
+                              }
+                             ]
+                            }
+                           }
+                          ]
+                         }
+                        }
+                       ]
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "id"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            }
+           ]
+          }
+         }
+        ]
+       },
+       {
+        "37": [
+         {
+          "as_property": {
+           "name": "name",
+           "mutations": [
+            {
+             "set": {
+              "value": "Provenance.SessionDirectory"
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_property": {
+           "name": "ref",
+           "mutations": [
+            {
+             "set": {
+              "value": true
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_property": {
+           "name": "singleton",
+           "mutations": [
+            {
+             "set": {
+              "value": "Provenance.Sessions"
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_adjacency": {
+           "name": "adjacencies",
+           "mutations": [
+            {
+             "insert": {
+              "entries": [
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "adjacency",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfAdjacency",
+                       "mutations": [
+                        {
+                         "as_property": {
+                          "name": "me",
+                          "mutations": [
+                           {
+                            "set": {
+                             "value": "directory"
+                            }
+                           }
+                          ]
+                         }
+                        },
+                        {
+                         "as_adjacency": {
+                          "name": "relation",
+                          "mutations": [
+                           {
+                            "insert": {
+                             "entries": [
+                              {
+                               "mutations": [
+                                {
+                                 "as_link": {
+                                  "name": "relation",
+                                  "mutations": [
+                                   {
+                                    "set": {
+                                     "ref": {
+                                      "symbol": "36"
+                                     }
+                                    }
+                                   }
+                                  ]
+                                 }
+                                }
+                               ]
+                              }
+                             ]
+                            }
+                           }
+                          ]
+                         }
+                        }
+                       ]
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "sessions"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            }
+           ]
+          }
+         }
+        ]
+       },
+       {
+        "38": [
+         {
+          "as_property": {
+           "name": "name",
+           "mutations": [
+            {
+             "set": {
+              "value": "Provenance.OfSession"
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_property": {
+           "name": "ref",
+           "mutations": [
+            {
+             "set": {
+              "value": true
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_adjacency": {
+           "name": "adjacencies",
+           "mutations": [
+            {
+             "insert": {
+              "entries": [
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "adjacency",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfAdjacency",
+                       "mutations": [
+                        {
+                         "as_property": {
+                          "name": "me",
+                          "mutations": [
+                           {
+                            "set": {
+                             "value": "session"
+                            }
+                           }
+                          ]
+                         }
+                        },
+                        {
+                         "as_property": {
+                          "name": "owner",
+                          "mutations": [
+                           {
+                            "set": {
+                             "value": true
+                            }
+                           }
+                          ]
+                         }
+                        },
+                        {
+                         "as_adjacency": {
+                          "name": "relation",
+                          "mutations": [
+                           {
+                            "insert": {
+                             "entries": [
+                              {
+                               "mutations": [
+                                {
+                                 "as_link": {
+                                  "name": "relation",
+                                  "mutations": [
+                                   {
+                                    "set": {
+                                     "ref": {
+                                      "symbol": "36"
+                                     }
+                                    }
+                                   }
+                                  ]
+                                 }
+                                }
+                               ]
+                              }
+                             ]
+                            }
+                           }
+                          ]
+                         }
+                        }
+                       ]
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "directory"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "adjacency",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfAdjacency",
+                       "mutations": [
+                        {
+                         "as_property": {
+                          "name": "me",
+                          "mutations": [
+                           {
+                            "set": {
+                             "value": "session"
+                            }
+                           }
+                          ]
+                         }
+                        },
+                        {
+                         "as_adjacency": {
+                          "name": "relation",
+                          "mutations": [
+                           {
+                            "insert": {
+                             "entries": [
+                              {
+                               "mutations": [
+                                {
+                                 "as_link": {
+                                  "name": "relation",
+                                  "mutations": [
+                                   {
+                                    "set": {
+                                     "ref": {
+                                      "symbol": "39"
+                                     }
+                                    }
+                                   }
+                                  ]
+                                 }
+                                }
+                               ]
+                              }
+                             ]
+                            }
+                           }
+                          ]
+                         }
+                        }
+                       ]
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "transactions"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "adjacency",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfAdjacency",
+                       "mutations": [
+                        {
+                         "as_property": {
+                          "name": "me",
+                          "mutations": [
+                           {
+                            "set": {
+                             "value": "session"
+                            }
+                           }
+                          ]
+                         }
+                        },
+                        {
+                         "as_adjacency": {
+                          "name": "relation",
+                          "mutations": [
+                           {
+                            "insert": {
+                             "entries": [
+                              {
+                               "mutations": [
+                                {
+                                 "as_link": {
+                                  "name": "relation",
+                                  "mutations": [
+                                   {
+                                    "set": {
+                                     "ref": {
+                                      "symbol": "46"
+                                     }
+                                    }
+                                   }
+                                  ]
+                                 }
+                                }
+                               ]
+                              }
+                             ]
+                            }
+                           }
+                          ]
+                         }
+                        }
+                       ]
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "who"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_adjacency": {
+           "name": "properties",
+           "mutations": [
+            {
+             "insert": {
+              "entries": [
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "property",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfProperty",
+                       "mutations": [
+                        {
+                         "as_adjacency": {
+                          "name": "schema",
+                          "mutations": [
+                           {
+                            "insert": {
+                             "entries": [
+                              {
+                               "mutations": [
+                                {
+                                 "as_link": {
+                                  "name": "schema",
+                                  "mutations": [
+                                   {
+                                    "set": {
+                                     "ref": {
+                                      "path": {
+                                       "singleton": ".",
+                                       "next": {
+                                        "entry": {
+                                         "i": "schemas",
+                                         "o": "",
+                                         "properties": {
+                                          "name": "Schemas"
+                                         },
+                                         "next": {
+                                          "entry": {
+                                           "i": "schemas",
+                                           "o": "",
+                                           "properties": {
+                                            "name": "OfStr"
+                                           },
+                                           "next": {
+                                            "target": {}
+                                           }
+                                          }
+                                         }
+                                        }
+                                       }
+                                      }
+                                     }
+                                    }
+                                   }
+                                  ]
+                                 }
+                                }
+                               ]
+                              }
+                             ]
+                            }
+                           }
+                          ]
+                         }
+                        }
+                       ]
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "started"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "property",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfProperty",
+                       "mutations": [
+                        {
+                         "as_adjacency": {
+                          "name": "schema",
+                          "mutations": [
+                           {
+                            "insert": {
+                             "entries": [
+                              {
+                               "mutations": [
+                                {
+                                 "as_link": {
+                                  "name": "schema",
+                                  "mutations": [
+                                   {
+                                    "set": {
+                                     "ref": {
+                                      "path": {
+                                       "singleton": ".",
+                                       "next": {
+                                        "entry": {
+                                         "i": "schemas",
+                                         "o": "",
+                                         "properties": {
+                                          "name": "Schemas"
+                                         },
+                                         "next": {
+                                          "entry": {
+                                           "i": "schemas",
+                                           "o": "",
+                                           "properties": {
+                                            "name": "OfStr"
+                                           },
+                                           "next": {
+                                            "target": {}
+                                           }
+                                          }
+                                         }
+                                        }
+                                       }
+                                      }
+                                     }
+                                    }
+                                   }
+                                  ]
+                                 }
+                                }
+                               ]
+                              }
+                             ]
+                            }
+                           }
+                          ]
+                         }
+                        }
+                       ]
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "locale"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "property",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfProperty",
+                       "mutations": [
+                        {
+                         "as_adjacency": {
+                          "name": "schema",
+                          "mutations": [
+                           {
+                            "insert": {
+                             "entries": [
+                              {
+                               "mutations": [
+                                {
+                                 "as_link": {
+                                  "name": "schema",
+                                  "mutations": [
+                                   {
+                                    "set": {
+                                     "ref": {
+                                      "path": {
+                                       "singleton": ".",
+                                       "next": {
+                                        "entry": {
+                                         "i": "schemas",
+                                         "o": "",
+                                         "properties": {
+                                          "name": "Schemas"
+                                         },
+                                         "next": {
+                                          "entry": {
+                                           "i": "schemas",
+                                           "o": "",
+                                           "properties": {
+                                            "name": "OfStr"
+                                           },
+                                           "next": {
+                                            "target": {}
+                                           }
+                                          }
+                                         }
+                                        }
+                                       }
+                                      }
+                                     }
+                                    }
+                                   }
+                                  ]
+                                 }
+                                }
+                               ]
+                              }
+                             ]
+                            }
+                           }
+                          ]
+                         }
+                        }
+                       ]
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "device"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            }
+           ]
+          }
+         }
+        ]
+       },
+       {
+        "39": [
+         {
+          "as_property": {
+           "name": "name",
+           "mutations": [
+            {
+             "set": {
+              "value": "Provenance.InSession"
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_property": {
+           "name": "uniques",
+           "mutations": [
+            {
+             "set": {
+              "value": [
+               [
+                "session"
+               ]
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_adjacency": {
+           "name": "links",
+           "mutations": [
+            {
+             "insert": {
+              "entries": [
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "link",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfSymbol",
+                       "mutations": []
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "transaction"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "link",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfSymbol",
+                       "mutations": []
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "session"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            }
+           ]
+          }
+         }
+        ]
+       },
+       {
+        "40": [
+         {
+          "as_property": {
+           "name": "name",
+           "mutations": [
+            {
+             "set": {
+              "value": "Provenance.InTransactions"
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_property": {
+           "name": "uniques",
+           "mutations": [
+            {
+             "set": {
+              "value": [
+               [
+                "directory",
+                "uid"
+               ],
+               [
+                "transaction"
+               ]
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_adjacency": {
+           "name": "links",
+           "mutations": [
+            {
+             "insert": {
+              "entries": [
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "link",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfSymbol",
+                       "mutations": []
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "directory"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "link",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfSymbol",
+                       "mutations": []
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "transaction"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_adjacency": {
+           "name": "properties",
+           "mutations": [
+            {
+             "insert": {
+              "entries": [
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "property",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfProperty",
+                       "mutations": [
+                        {
+                         "as_adjacency": {
+                          "name": "schema",
+                          "mutations": [
+                           {
+                            "insert": {
+                             "entries": [
+                              {
+                               "mutations": [
+                                {
+                                 "as_link": {
+                                  "name": "schema",
+                                  "mutations": [
+                                   {
+                                    "set": {
+                                     "ref": {
+                                      "path": {
+                                       "singleton": ".",
+                                       "next": {
+                                        "entry": {
+                                         "i": "schemas",
+                                         "o": "",
+                                         "properties": {
+                                          "name": "Schemas"
+                                         },
+                                         "next": {
+                                          "entry": {
+                                           "i": "schemas",
+                                           "o": "",
+                                           "properties": {
+                                            "name": "OfStr"
+                                           },
+                                           "next": {
+                                            "target": {}
+                                           }
+                                          }
+                                         }
+                                        }
+                                       }
+                                      }
+                                     }
+                                    }
+                                   }
+                                  ]
+                                 }
+                                }
+                               ]
+                              }
+                             ]
+                            }
+                           }
+                          ]
+                         }
+                        }
+                       ]
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "uid"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            }
+           ]
+          }
+         }
+        ]
+       },
+       {
+        "41": [
+         {
+          "as_property": {
+           "name": "name",
+           "mutations": [
+            {
+             "set": {
+              "value": "Provenance.TransactionDirectory"
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_property": {
+           "name": "ref",
+           "mutations": [
+            {
+             "set": {
+              "value": true
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_property": {
+           "name": "singleton",
+           "mutations": [
+            {
+             "set": {
+              "value": "Provenance.Transactions"
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_adjacency": {
+           "name": "adjacencies",
+           "mutations": [
+            {
+             "insert": {
+              "entries": [
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "adjacency",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfAdjacency",
+                       "mutations": [
+                        {
+                         "as_property": {
+                          "name": "me",
+                          "mutations": [
+                           {
+                            "set": {
+                             "value": "directory"
+                            }
+                           }
+                          ]
+                         }
+                        },
+                        {
+                         "as_adjacency": {
+                          "name": "relation",
+                          "mutations": [
+                           {
+                            "insert": {
+                             "entries": [
+                              {
+                               "mutations": [
+                                {
+                                 "as_link": {
+                                  "name": "relation",
+                                  "mutations": [
+                                   {
+                                    "set": {
+                                     "ref": {
+                                      "symbol": "40"
+                                     }
+                                    }
+                                   }
+                                  ]
+                                 }
+                                }
+                               ]
+                              }
+                             ]
+                            }
+                           }
+                          ]
+                         }
+                        }
+                       ]
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "transactions"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            }
+           ]
+          }
+         }
+        ]
+       },
+       {
+        "42": [
+         {
+          "as_property": {
+           "name": "name",
+           "mutations": [
+            {
+             "set": {
+              "value": "Provenance.OfTransaction"
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_property": {
+           "name": "ref",
+           "mutations": [
+            {
+             "set": {
+              "value": true
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_adjacency": {
+           "name": "adjacencies",
+           "mutations": [
+            {
+             "insert": {
+              "entries": [
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "adjacency",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfAdjacency",
+                       "mutations": [
+                        {
+                         "as_property": {
+                          "name": "me",
+                          "mutations": [
+                           {
+                            "set": {
+                             "value": "transaction"
+                            }
+                           }
+                          ]
+                         }
+                        },
+                        {
+                         "as_property": {
+                          "name": "owner",
+                          "mutations": [
+                           {
+                            "set": {
+                             "value": true
+                            }
+                           }
+                          ]
+                         }
+                        },
+                        {
+                         "as_adjacency": {
+                          "name": "relation",
+                          "mutations": [
+                           {
+                            "insert": {
+                             "entries": [
+                              {
+                               "mutations": [
+                                {
+                                 "as_link": {
+                                  "name": "relation",
+                                  "mutations": [
+                                   {
+                                    "set": {
+                                     "ref": {
+                                      "symbol": "40"
+                                     }
+                                    }
+                                   }
+                                  ]
+                                 }
+                                }
+                               ]
+                              }
+                             ]
+                            }
+                           }
+                          ]
+                         }
+                        }
+                       ]
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "directory"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "adjacency",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfAdjacency",
+                       "mutations": [
+                        {
+                         "as_property": {
+                          "name": "me",
+                          "mutations": [
+                           {
+                            "set": {
+                             "value": "transaction"
+                            }
+                           }
+                          ]
+                         }
+                        },
+                        {
+                         "as_adjacency": {
+                          "name": "relation",
+                          "mutations": [
+                           {
+                            "insert": {
+                             "entries": [
+                              {
+                               "mutations": [
+                                {
+                                 "as_link": {
+                                  "name": "relation",
+                                  "mutations": [
+                                   {
+                                    "set": {
+                                     "ref": {
+                                      "symbol": "39"
+                                     }
+                                    }
+                                   }
+                                  ]
+                                 }
+                                }
+                               ]
+                              }
+                             ]
+                            }
+                           }
+                          ]
+                         }
+                        }
+                       ]
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "session"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "adjacency",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfAdjacency",
+                       "mutations": [
+                        {
+                         "as_property": {
+                          "name": "me",
+                          "mutations": [
+                           {
+                            "set": {
+                             "value": "transaction"
+                            }
+                           }
+                          ]
+                         }
+                        },
+                        {
+                         "as_adjacency": {
+                          "name": "relation",
+                          "mutations": [
+                           {
+                            "insert": {
+                             "entries": [
+                              {
+                               "mutations": [
+                                {
+                                 "as_link": {
+                                  "name": "relation",
+                                  "mutations": [
+                                   {
+                                    "set": {
+                                     "ref": {
+                                      "symbol": "47"
+                                     }
+                                    }
+                                   }
+                                  ]
+                                 }
+                                }
+                               ]
+                              }
+                             ]
+                            }
+                           }
+                          ]
+                         }
+                        }
+                       ]
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "created"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "adjacency",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfAdjacency",
+                       "mutations": [
+                        {
+                         "as_property": {
+                          "name": "me",
+                          "mutations": [
+                           {
+                            "set": {
+                             "value": "transaction"
+                            }
+                           }
+                          ]
+                         }
+                        },
+                        {
+                         "as_adjacency": {
+                          "name": "relation",
+                          "mutations": [
+                           {
+                            "insert": {
+                             "entries": [
+                              {
+                               "mutations": [
+                                {
+                                 "as_link": {
+                                  "name": "relation",
+                                  "mutations": [
+                                   {
+                                    "set": {
+                                     "ref": {
+                                      "symbol": "48"
+                                     }
+                                    }
+                                   }
+                                  ]
+                                 }
+                                }
+                               ]
+                              }
+                             ]
+                            }
+                           }
+                          ]
+                         }
+                        }
+                       ]
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "modified"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_adjacency": {
+           "name": "properties",
+           "mutations": [
+            {
+             "insert": {
+              "entries": [
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "property",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfProperty",
+                       "mutations": [
+                        {
+                         "as_adjacency": {
+                          "name": "schema",
+                          "mutations": [
+                           {
+                            "insert": {
+                             "entries": [
+                              {
+                               "mutations": [
+                                {
+                                 "as_link": {
+                                  "name": "schema",
+                                  "mutations": [
+                                   {
+                                    "set": {
+                                     "ref": {
+                                      "path": {
+                                       "singleton": ".",
+                                       "next": {
+                                        "entry": {
+                                         "i": "schemas",
+                                         "o": "",
+                                         "properties": {
+                                          "name": "Schemas"
+                                         },
+                                         "next": {
+                                          "entry": {
+                                           "i": "schemas",
+                                           "o": "",
+                                           "properties": {
+                                            "name": "OfStr"
+                                           },
+                                           "next": {
+                                            "target": {}
+                                           }
+                                          }
+                                         }
+                                        }
+                                       }
+                                      }
+                                     }
+                                    }
+                                   }
+                                  ]
+                                 }
+                                }
+                               ]
+                              }
+                             ]
+                            }
+                           }
+                          ]
+                         }
+                        }
+                       ]
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "when"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "property",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfProperty",
+                       "mutations": [
+                        {
+                         "as_adjacency": {
+                          "name": "schema",
+                          "mutations": [
+                           {
+                            "insert": {
+                             "entries": [
+                              {
+                               "mutations": [
+                                {
+                                 "as_link": {
+                                  "name": "schema",
+                                  "mutations": [
+                                   {
+                                    "set": {
+                                     "ref": {
+                                      "symbol": "35"
+                                     }
+                                    }
+                                   }
+                                  ]
+                                 }
+                                }
+                               ]
+                              }
+                             ]
+                            }
+                           }
+                          ]
+                         }
+                        }
+                       ]
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "where"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            }
+           ]
+          }
+         }
+        ]
+       },
+       {
+        "43": [
+         {
+          "as_property": {
+           "name": "name",
+           "mutations": [
+            {
+             "set": {
+              "value": "Provenance.InIdentities"
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_property": {
+           "name": "uniques",
+           "mutations": [
+            {
+             "set": {
+              "value": [
+               [
+                "directory",
+                "name"
+               ],
+               [
+                "identity"
+               ]
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_adjacency": {
+           "name": "links",
+           "mutations": [
+            {
+             "insert": {
+              "entries": [
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "link",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfSymbol",
+                       "mutations": []
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "directory"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "link",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfSymbol",
+                       "mutations": []
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "identity"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_adjacency": {
+           "name": "properties",
+           "mutations": [
+            {
+             "insert": {
+              "entries": [
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "property",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfProperty",
+                       "mutations": [
+                        {
+                         "as_adjacency": {
+                          "name": "schema",
+                          "mutations": [
+                           {
+                            "insert": {
+                             "entries": [
+                              {
+                               "mutations": [
+                                {
+                                 "as_link": {
+                                  "name": "schema",
+                                  "mutations": [
+                                   {
+                                    "set": {
+                                     "ref": {
+                                      "path": {
+                                       "singleton": ".",
+                                       "next": {
+                                        "entry": {
+                                         "i": "schemas",
+                                         "o": "",
+                                         "properties": {
+                                          "name": "Schemas"
+                                         },
+                                         "next": {
+                                          "entry": {
+                                           "i": "schemas",
+                                           "o": "",
+                                           "properties": {
+                                            "name": "OfStr"
+                                           },
+                                           "next": {
+                                            "target": {}
+                                           }
+                                          }
+                                         }
+                                        }
+                                       }
+                                      }
+                                     }
+                                    }
+                                   }
+                                  ]
+                                 }
+                                }
+                               ]
+                              }
+                             ]
+                            }
+                           }
+                          ]
+                         }
+                        }
+                       ]
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "name"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            }
+           ]
+          }
+         }
+        ]
+       },
+       {
+        "44": [
+         {
+          "as_property": {
+           "name": "name",
+           "mutations": [
+            {
+             "set": {
+              "value": "Provenance.IdentityDirectory"
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_property": {
+           "name": "ref",
+           "mutations": [
+            {
+             "set": {
+              "value": true
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_property": {
+           "name": "singleton",
+           "mutations": [
+            {
+             "set": {
+              "value": "Provenance.Identities"
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_adjacency": {
+           "name": "adjacencies",
+           "mutations": [
+            {
+             "insert": {
+              "entries": [
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "adjacency",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfAdjacency",
+                       "mutations": [
+                        {
+                         "as_property": {
+                          "name": "me",
+                          "mutations": [
+                           {
+                            "set": {
+                             "value": "directory"
+                            }
+                           }
+                          ]
+                         }
+                        },
+                        {
+                         "as_adjacency": {
+                          "name": "relation",
+                          "mutations": [
+                           {
+                            "insert": {
+                             "entries": [
+                              {
+                               "mutations": [
+                                {
+                                 "as_link": {
+                                  "name": "relation",
+                                  "mutations": [
+                                   {
+                                    "set": {
+                                     "ref": {
+                                      "symbol": "43"
+                                     }
+                                    }
+                                   }
+                                  ]
+                                 }
+                                }
+                               ]
+                              }
+                             ]
+                            }
+                           }
+                          ]
+                         }
+                        }
+                       ]
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "identities"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            }
+           ]
+          }
+         }
+        ]
+       },
+       {
+        "45": [
+         {
+          "as_property": {
+           "name": "name",
+           "mutations": [
+            {
+             "set": {
+              "value": "Provenance.OfIdentity"
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_property": {
+           "name": "ref",
+           "mutations": [
+            {
+             "set": {
+              "value": true
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_adjacency": {
+           "name": "adjacencies",
+           "mutations": [
+            {
+             "insert": {
+              "entries": [
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "adjacency",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfAdjacency",
+                       "mutations": [
+                        {
+                         "as_property": {
+                          "name": "me",
+                          "mutations": [
+                           {
+                            "set": {
+                             "value": "identity"
+                            }
+                           }
+                          ]
+                         }
+                        },
+                        {
+                         "as_property": {
+                          "name": "owner",
+                          "mutations": [
+                           {
+                            "set": {
+                             "value": true
+                            }
+                           }
+                          ]
+                         }
+                        },
+                        {
+                         "as_adjacency": {
+                          "name": "relation",
+                          "mutations": [
+                           {
+                            "insert": {
+                             "entries": [
+                              {
+                               "mutations": [
+                                {
+                                 "as_link": {
+                                  "name": "relation",
+                                  "mutations": [
+                                   {
+                                    "set": {
+                                     "ref": {
+                                      "symbol": "43"
+                                     }
+                                    }
+                                   }
+                                  ]
+                                 }
+                                }
+                               ]
+                              }
+                             ]
+                            }
+                           }
+                          ]
+                         }
+                        }
+                       ]
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "directory"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "adjacency",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfAdjacency",
+                       "mutations": [
+                        {
+                         "as_property": {
+                          "name": "me",
+                          "mutations": [
+                           {
+                            "set": {
+                             "value": "identity"
+                            }
+                           }
+                          ]
+                         }
+                        },
+                        {
+                         "as_adjacency": {
+                          "name": "relation",
+                          "mutations": [
+                           {
+                            "insert": {
+                             "entries": [
+                              {
+                               "mutations": [
+                                {
+                                 "as_link": {
+                                  "name": "relation",
+                                  "mutations": [
+                                   {
+                                    "set": {
+                                     "ref": {
+                                      "symbol": "46"
+                                     }
+                                    }
+                                   }
+                                  ]
+                                 }
+                                }
+                               ]
+                              }
+                             ]
+                            }
+                           }
+                          ]
+                         }
+                        }
+                       ]
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "sessions"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            }
+           ]
+          }
+         }
+        ]
+       },
+       {
+        "46": [
+         {
+          "as_property": {
+           "name": "name",
+           "mutations": [
+            {
+             "set": {
+              "value": "Provenance.Who"
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_property": {
+           "name": "uniques",
+           "mutations": [
+            {
+             "set": {
+              "value": [
+               [
+                "identity"
+               ]
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_adjacency": {
+           "name": "links",
+           "mutations": [
+            {
+             "insert": {
+              "entries": [
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "link",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfSymbol",
+                       "mutations": []
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "session"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "link",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfSymbol",
+                       "mutations": []
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "identity"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            }
+           ]
+          }
+         }
+        ]
+       },
+       {
+        "47": [
+         {
+          "as_property": {
+           "name": "name",
+           "mutations": [
+            {
+             "set": {
+              "value": "Provenance.CreatedBy"
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_property": {
+           "name": "uniques",
+           "mutations": [
+            {
+             "set": {
+              "value": [
+               [
+                "transaction"
+               ]
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_adjacency": {
+           "name": "links",
+           "mutations": [
+            {
+             "insert": {
+              "entries": [
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "link",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfSymbol",
+                       "mutations": []
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "object"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "link",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfSymbol",
+                       "mutations": []
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "transaction"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            }
+           ]
+          }
+         }
+        ]
+       },
+       {
+        "48": [
+         {
+          "as_property": {
+           "name": "name",
+           "mutations": [
+            {
+             "set": {
+              "value": "Provenance.ModifiedBy"
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_property": {
+           "name": "uniques",
+           "mutations": [
+            {
+             "set": {
+              "value": [
+               [
+                "transaction"
+               ]
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_adjacency": {
+           "name": "links",
+           "mutations": [
+            {
+             "insert": {
+              "entries": [
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "link",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfSymbol",
+                       "mutations": []
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "object"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "link",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfSymbol",
+                       "mutations": []
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "transaction"
                      }
                     }
                    ]

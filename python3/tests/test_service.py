@@ -77,9 +77,13 @@ def test_chip_view_falls_back_to_the_first_scalars(client):
     store = store_of(client)
     body = Plain.ToPlain(store).Transaction(store.Mutations.OfTransaction(lambda t: t.mutations([lambda mu: mu.map(
         lambda m: m.symbols([lambda p: p.symbols({"x": store.work.Comment})]))])))
-    [frame] = frames(client.post("/views/chip", json=body))
-    assert label_of(frame) == {"text": "Should chips show adjacencies?", "resolved": False}
-    assert frame["entries"] == []
+    got = frames(client.post("/views/chip", json=body))
+    assert [label_of(f) for f in got] == [  # a thread, then its two replies, the second resolving it
+        {"text": "Should chips show adjacencies?"},
+        {"text": "Not by default: a chip stays small. The inspector lists them.", "resolves_thread": False},
+        {"text": "Agreed, *no adjacencies* on chips.", "resolves_thread": True},
+    ]
+    assert all(f["entries"] == [] for f in got)
 
 
 def test_detail_view_gives_every_adjacency_and_each_linked_label(client):
@@ -156,3 +160,62 @@ def test_an_edit_is_committed_journaled_and_kept():
         {"id": "TSK-001"})), {"title": "**Bold**"})
     [kept] = frames(again.post("/views/detail", json=detail))
     assert label_of(kept) == {"title": "**Bold**"}
+
+
+def test_a_proposed_object_is_created_with_its_entry_and_owned():
+    """CAP-018: a reply proposed through a thread's replies is made with its entry, placed in its directory (its
+    ID given there), journaled, and the thread's detail given back with it."""
+    plugin = Persistence.Memory()
+    client = TestClient(Service.work_tracker(plugin))
+    store = store_of(client)
+    thread = store.singleton("work.Comments").comments({"id": "CMT-001"})
+    body = Conformance._propose(store, lambda s: References.of(s, thread), "replies", "reply", "work.Comment",
+                                {"text": "Closing this.", "resolves_thread": True})
+    [frame] = frames(client.post("/views/detail", json=body))
+    assert [str(e.reply.text) for e in thread.replies][-1] == "Closing this."
+    reply = [e.reply for e in thread.replies][-1]
+    assert [str(e.id) for e in reply.directory] == ["CMT-004"]
+    assert len(frame["entries"]) > 0 and len(plugin.entries) == 1
+
+
+def _stamped_edit():
+    """An edit of the thread CMT-001 through a service with a fixed clock and uid, in the session `tab-7`: the store,
+    the plugin, and the detail frame the edit gave."""
+    import datetime
+    moment = datetime.datetime(2026, 10, 26, 9, 15, tzinfo=datetime.timezone.utc)
+    plugin = Persistence.Memory()
+    client = TestClient(Service.work_tracker(plugin, user="ada", clock=lambda: moment, uids=lambda: "tx-1"))
+    store = store_of(client)
+    thread = store.singleton("work.Comments").comments({"id": "CMT-001"})
+    body = Conformance._edit(store, lambda s: References.of(s, thread), {"text": "Edited."})
+    body["session"] = {"locale": "en-GB"}  # the client's part
+    [frame] = frames(client.post("/views/detail", json=body, headers={"x-mbse-session": "tab-7"}))
+    return store, plugin, frame
+
+
+def test_a_write_is_stamped_and_its_provenance_is_in_the_detail():
+    """CAP-015: the service stamps a write's `when`, uid, session id and identity, keeping the client's locale; the
+    detail of a comment carries the record that created it and the one that last wrote it, with their session and
+    identity."""
+    _, plugin, frame = _stamped_edit()
+    [journaled] = plugin.entries
+    assert journaled["uid"] == "tx-1" and journaled["when"] == "2026-10-26T09:15:00Z"
+    assert journaled["session"] == {"locale": "en-GB", "id": "tab-7", "who": "ada"}
+    relations = [e["relation"]["next"]["entry"]["next"]["entry"]["properties"]["name"] for e in frame["entries"]]
+    assert {"CreatedBy", "ModifiedBy", "InSession", "Who"} <= set(relations)
+    values = [a["properties"] for a in frame["assigns"]]
+    assert {"when": {"str": "2026-10-26T09:15:00Z"}} in values  # the edit's record
+    assert any(v.get("locale") == {"str": "en-GB"} for v in values)  # its session
+
+
+def test_a_restart_replays_the_same_records():
+    """CAP-015: a restart reads the snapshot, then replays the stamped journal, into the same records."""
+    store, plugin, _ = _stamped_edit()
+    replayed = store_of(TestClient(Service.app([], plugin)))
+    assert [str(e.uid) for e in replayed.singleton("Provenance.Transactions").transactions] == \
+        [str(e.uid) for e in store.singleton("Provenance.Transactions").transactions]
+
+
+def test_stamp_leaves_a_read_as_it_is():
+    read = {"mutations": [{"map": {"symbols": [{}]}}]}
+    assert Service.stamp(read, "tab-1", "ada") is read

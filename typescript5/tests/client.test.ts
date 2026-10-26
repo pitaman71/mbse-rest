@@ -135,6 +135,26 @@ describe("edits (CAP-014): the client builds each one the corpus holds, and read
     assert.equal(Views.summary(store, frame!), "Define them in a *module-scope* `install`.");
   });
 
+  const proposals: Record<string, [string, string, Record<string, unknown>]> = {
+    "propose-thread": ["comments", "comment", { text: "Who reviews the **views**?" }],
+    "propose-reply": ["replies", "reply", { text: "Closing this.", resolves_thread: true }],
+  };
+  for (const [name, [adjacency, link, values]] of Object.entries(proposals)) {
+    test(`${name} (CAP-018)`, async () => {
+      const store = await storeWithSchemas();
+      const plain = Views.propose(store, reference(store, name), adjacency, link, store.registered("work.Comment"), values);
+      assert.equal(J.dumps(plain), canonical(read(`${name}.request.json`)));
+    });
+  }
+
+  test("a proposal gives the inbound object's detail with its new entry (CAP-018)", async () => {
+    const store = await storeWithSchemas();
+    const [adjacency, link, values] = proposals["propose-reply"]!;
+    const [frame] = await client.propose(store, reference(store, "propose-reply"), adjacency, link,
+      store.registered("work.Comment"), values);
+    assert.ok(frame!.entries.length > 0);
+  });
+
   test("an edit of no property, or of one the object's schema lacks, is refused before it is sent", async () => {
     const store = await storeWithSchemas();
     const task = reference(store, "edit-task-title");
@@ -196,7 +216,11 @@ describe("responses: the client reads each stream the corpus holds", () => {
 
   test("CAP-006: a chip's other scalar properties", async () => {
     const [store, comments] = await frames("chip-comments");
-    assert.deepEqual([...Views.chip(store, comments[0]!)], [["text", "Should chips show adjacencies?"], ["resolved", false]]);
+    assert.deepEqual(comments.map((f) => [...Views.chip(store, f)]), [
+      [["text", "Should chips show adjacencies?"]],
+      [["text", "Not by default: a chip stays small. The inspector lists them."], ["resolves_thread", false]],
+      [["text", "Agreed, *no adjacencies* on chips."], ["resolves_thread", true]],
+    ]);
     const [, tasks] = await frames("chip-tasks");
     assert.deepEqual(tasks.map((f) => Views.label(store, f)), ["Install the schemas", "Seed the demo"]);
     assert.equal(Views.chip(store, tasks[0]!).size, 0);
@@ -218,5 +242,37 @@ describe("responses: the client reads each stream the corpus holds", () => {
     assert.deepEqual(got.map((f) => Views.label(store, f, "y")), ["No-code index view", "Logical view as chip"]);
     assert.deepEqual([...Views.entryProperties(got[0]!.entries[0])],
       [["original", "2026-11-30"], ["forecast", "2026-12-07"], ["progress", 0.25]]);
+  });
+});
+
+describe("provenance (CAP-015, CAP-020)", () => {
+  test("a comment's detail carries the transaction that created it, its session's identity", async () => {
+    const store = await storeWithSchemas();
+    const [frame] = await client.view(store, "detail", J.loads(read("ui-detail-CMT-001.request.json")));
+    const { created, modified } = Views.provenance(store, frame!, frame!.binds.get("x"));
+    assert.deepEqual(created, { when: "2026-10-26T14:30:05Z", who: "unknown" });  // the seed's, unstamped by a session
+    assert.equal(modified, undefined);
+  });
+
+  test("an adjacency view carries each linked comment's provenance; a task, whose schema has no history, none", async () => {
+    const store = await storeWithSchemas();
+    const frames = await client.view(store, "adjacency",
+      J.loads(read("ui-adjacency-CAP-002-comments-work.Comment.request.json")));
+    assert.ok(frames.length > 0 && frames.every((f) => Views.provenance(store, f, f.binds.get("y")).created !== undefined));
+    const [task] = await client.view(store, "detail", J.loads(read("ui-detail-TSK-001.request.json")));
+    assert.deepEqual(Views.provenance(store, task!, task!.binds.get("x")), {});
+  });
+
+  test("a client in a session names it in a header, and writes its locale and device into an edit", async () => {
+    const seen: { headers: Record<string, string>; body: string }[] = [];
+    const watching = async (input: string, init?: RequestInit): Promise<Response> => {
+      seen.push({ headers: init?.headers as Record<string, string>, body: String(init?.body ?? "") });
+      return corpus(input, init);
+    };
+    const store = await storeWithSchemas();
+    const inSession = new Client("http://corpus", { fetch: watching, session: { id: "tab-7", locale: "en-GB" } });
+    await inSession.edit(store, reference(store, "edit-task-clear"), { description: null }).catch(() => undefined);
+    assert.equal(seen[0]!.headers["x-mbse-session"], "tab-7");
+    assert.deepEqual((J.loads(seen[0]!.body) as Map<string, unknown>).get("session"), new Map([["locale", "en-GB"]]));
   });
 });

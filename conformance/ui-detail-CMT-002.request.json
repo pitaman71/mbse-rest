@@ -1,0 +1,33 @@
+{
+ "mutations": [
+  {
+   "map": {
+    "symbols": [
+     {
+      "symbols": {
+       "x": {
+        "reference": {
+         "path": {
+          "singleton": "work.Comments",
+          "next": {
+           "entry": {
+            "i": "comments",
+            "o": "directory",
+            "properties": {
+             "id": "CMT-002"
+            },
+            "next": {
+             "target": {}
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    ]
+   }
+  }
+ ]
+}
