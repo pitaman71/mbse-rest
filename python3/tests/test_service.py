@@ -208,7 +208,6 @@ def test_a_write_is_stamped_and_its_provenance_is_in_the_detail():
     assert any(v.get("locale") == {"str": "en-GB"} for v in values)  # its session
 
 
-@pytest.mark.xfail(strict=True, reason="mbse-schemas 0.26.0 records reading a snapshot as a new transaction (TODO.md)")
 def test_a_restart_replays_the_same_records():
     """CAP-015: a restart reads the snapshot, then replays the stamped journal, into the same records."""
     store, plugin, _ = _stamped_edit()

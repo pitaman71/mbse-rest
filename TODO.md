@@ -13,8 +13,5 @@
 4. **The demo's identity and session** (CAP-015). The service's identity is configured (`MBSE_REST_USER`), and the
    session is whatever the client names in the `x-mbse-session` header, trusted: both stand in for a validated
    token, which the service will unpack and check, writing the session and identity it gives.
-5. **Reading a snapshot is recorded** (mbse-schemas 0.26.0): a restart records the snapshot's reading as a new
-   transaction, linking each object's `CreatedBy` to it beside its first. Reported to mbse-schemas;
-   `test_a_restart_replays_the_same_records` is an expected failure until it is fixed.
-6. **An object's provenance is found by a map over every transaction record** (`Views._history`): fine for a demo,
+5. **An object's provenance is found by a map over every transaction record** (`Views._history`): fine for a demo,
    slow for a long history. An index of records by object, or a lookup from the object's side, would replace it.

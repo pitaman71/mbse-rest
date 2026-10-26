@@ -185,7 +185,7 @@ dev = [
 
 [[package]]
 name = "mbse-schemas"
-version = "0.26.0"
+version = "0.26.1"
 source = { editable = "../../mbse-schemas/python3" }
 
 [package.metadata]
