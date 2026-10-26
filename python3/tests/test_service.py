@@ -77,9 +77,13 @@ def test_chip_view_falls_back_to_the_first_scalars(client):
     store = store_of(client)
     body = Plain.ToPlain(store).Transaction(store.Mutations.OfTransaction(lambda t: t.mutations([lambda mu: mu.map(
         lambda m: m.symbols([lambda p: p.symbols({"x": store.work.Comment})]))])))
-    [frame] = frames(client.post("/views/chip", json=body))
-    assert label_of(frame) == {"text": "Should chips show adjacencies?", "resolved": False}
-    assert frame["entries"] == []
+    got = frames(client.post("/views/chip", json=body))
+    assert [label_of(f) for f in got] == [  # a thread, then its two replies, the second resolving it
+        {"text": "Should chips show adjacencies?"},
+        {"text": "Not by default: a chip stays small. The inspector lists them.", "resolves_thread": False},
+        {"text": "Agreed, *no adjacencies* on chips.", "resolves_thread": True},
+    ]
+    assert all(f["entries"] == [] for f in got)
 
 
 def test_detail_view_gives_every_adjacency_and_each_linked_label(client):

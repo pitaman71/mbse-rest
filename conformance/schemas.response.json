@@ -994,6 +994,36 @@
           }
          }
         ]
+       },
+       "33": {
+        "schema": [
+         {
+          "$ref": {
+           "singleton": ".",
+           "next": {
+            "entry": {
+             "i": "schemas",
+             "o": "",
+             "properties": {
+              "name": "Schemas"
+             },
+             "next": {
+              "entry": {
+               "i": "schemas",
+               "o": "",
+               "properties": {
+                "name": "OfRelation"
+               },
+               "next": {
+                "target": {}
+               }
+              }
+             }
+            }
+           }
+          }
+         }
+        ]
        }
       },
       "spec": [
@@ -1985,6 +2015,36 @@
                      "set": {
                       "ref": {
                        "symbol": "32"
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "RepliesTo"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "schema",
+                   "mutations": [
+                    {
+                     "set": {
+                      "ref": {
+                       "symbol": "33"
                       }
                      }
                     }
@@ -3359,7 +3419,7 @@
                                    {
                                     "set": {
                                      "ref": {
-                                      "symbol": "32"
+                                      "symbol": "33"
                                      }
                                     }
                                    }
@@ -4708,7 +4768,7 @@
            "mutations": [
             {
              "set": {
-              "value": "A remark about one or more organization elements, which may be resolved."
+              "value": "A remark: a thread about one or more organization elements, or a reply to a thread, which may resolve it."
              }
             }
            ]
@@ -4894,6 +4954,156 @@
                   }
                  }
                 ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "adjacency",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfAdjacency",
+                       "mutations": [
+                        {
+                         "as_property": {
+                          "name": "me",
+                          "mutations": [
+                           {
+                            "set": {
+                             "value": "thread"
+                            }
+                           }
+                          ]
+                         }
+                        },
+                        {
+                         "as_adjacency": {
+                          "name": "relation",
+                          "mutations": [
+                           {
+                            "insert": {
+                             "entries": [
+                              {
+                               "mutations": [
+                                {
+                                 "as_link": {
+                                  "name": "relation",
+                                  "mutations": [
+                                   {
+                                    "set": {
+                                     "ref": {
+                                      "symbol": "32"
+                                     }
+                                    }
+                                   }
+                                  ]
+                                 }
+                                }
+                               ]
+                              }
+                             ]
+                            }
+                           }
+                          ]
+                         }
+                        }
+                       ]
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "replies"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "adjacency",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfAdjacency",
+                       "mutations": [
+                        {
+                         "as_property": {
+                          "name": "me",
+                          "mutations": [
+                           {
+                            "set": {
+                             "value": "reply"
+                            }
+                           }
+                          ]
+                         }
+                        },
+                        {
+                         "as_adjacency": {
+                          "name": "relation",
+                          "mutations": [
+                           {
+                            "insert": {
+                             "entries": [
+                              {
+                               "mutations": [
+                                {
+                                 "as_link": {
+                                  "name": "relation",
+                                  "mutations": [
+                                   {
+                                    "set": {
+                                     "ref": {
+                                      "symbol": "32"
+                                     }
+                                    }
+                                   }
+                                  ]
+                                 }
+                                }
+                               ]
+                              }
+                             ]
+                            }
+                           }
+                          ]
+                         }
+                        }
+                       ]
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "thread"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
                }
               ]
              }
@@ -5072,7 +5282,7 @@
                    "mutations": [
                     {
                      "set": {
-                      "value": "resolved"
+                      "value": "resolves_thread"
                      }
                     }
                    ]
@@ -5734,7 +5944,7 @@
                                    {
                                     "set": {
                                      "ref": {
-                                      "symbol": "32"
+                                      "symbol": "33"
                                      }
                                     }
                                    }
@@ -9405,6 +9615,113 @@
        },
        {
         "32": [
+         {
+          "as_property": {
+           "name": "name",
+           "mutations": [
+            {
+             "set": {
+              "value": "work.RepliesTo"
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_property": {
+           "name": "uniques",
+           "mutations": [
+            {
+             "set": {
+              "value": [
+               [
+                "thread"
+               ]
+              ]
+             }
+            }
+           ]
+          }
+         },
+         {
+          "as_adjacency": {
+           "name": "links",
+           "mutations": [
+            {
+             "insert": {
+              "entries": [
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "link",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfSymbol",
+                       "mutations": []
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "reply"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               },
+               {
+                "mutations": [
+                 {
+                  "as_link": {
+                   "name": "link",
+                   "mutations": [
+                    {
+                     "set": {
+                      "def": {
+                       "schema": "Schemas.OfSymbol",
+                       "mutations": []
+                      }
+                     }
+                    }
+                   ]
+                  }
+                 },
+                 {
+                  "as_property": {
+                   "name": "name",
+                   "mutations": [
+                    {
+                     "set": {
+                      "value": "thread"
+                     }
+                    }
+                   ]
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            }
+           ]
+          }
+         }
+        ]
+       },
+       {
+        "33": [
          {
           "as_property": {
            "name": "name",

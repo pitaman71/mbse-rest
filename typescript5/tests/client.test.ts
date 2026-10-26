@@ -196,7 +196,11 @@ describe("responses: the client reads each stream the corpus holds", () => {
 
   test("CAP-006: a chip's other scalar properties", async () => {
     const [store, comments] = await frames("chip-comments");
-    assert.deepEqual([...Views.chip(store, comments[0]!)], [["text", "Should chips show adjacencies?"], ["resolved", false]]);
+    assert.deepEqual(comments.map((f) => [...Views.chip(store, f)]), [
+      [["text", "Should chips show adjacencies?"]],
+      [["text", "Not by default: a chip stays small. The inspector lists them."], ["resolves_thread", false]],
+      [["text", "Agreed, *no adjacencies* on chips."], ["resolves_thread", true]],
+    ]);
     const [, tasks] = await frames("chip-tasks");
     assert.deepEqual(tasks.map((f) => Views.label(store, f)), ["Install the schemas", "Seed the demo"]);
     assert.equal(Views.chip(store, tasks[0]!).size, 0);
