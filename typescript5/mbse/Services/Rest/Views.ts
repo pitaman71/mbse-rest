@@ -1,5 +1,5 @@
-/** The logical view kinds (mbse-basis FEA-003: no-code logical views), the client's side: each kind's template filled, and what a
- * frame of each kind carries read back (CAP-005 to CAP-008). The server's side is `python3/mbse/Services/Rest/Views.py`;
+/** The logical view kinds (mbse-basis [FEA-003: no-code logical views](../../../../../mbse-basis/docs/features/FEA-003.md)), the client's side: each kind's template filled, and what a
+ * frame of each kind carries read back ([CAP-005: label and summary view](../../../../../mbse-basis/docs/capabilities/CAP-005.md) to [CAP-008: adjacency as a list of chips](../../../../../mbse-basis/docs/capabilities/CAP-008.md)). The server's side is `python3/mbse/Services/Rest/Views.py`;
  * `docs/CONTRACT.md` is the prose, and the golden corpus in `conformance/` checks that both agree. */
 
 import { JSON as J, Plain } from "@mbse/schemas/Framework";
@@ -10,11 +10,11 @@ export type Kind = (typeof KINDS)[number];
 export const SYMBOLS: Readonly<Record<Kind, readonly string[]>> = {
   label: ["x"], chip: ["x"], detail: ["x"], adjacency: ["x", "y"],
 };
-export const LABELS = ["label", "name", "title"] as const; // CAP-005: the label is the first of these
-export const SUMMARIES = ["summary", "description"] as const; // CAP-005: the summary is the first of these
-export const CHIP_SCALARS = 3; // CAP-006: the other scalar properties a chip includes
+export const LABELS = ["label", "name", "title"] as const; // [CAP-005: label and summary view](../../../../../mbse-basis/docs/capabilities/CAP-005.md): the label is the first of these
+export const SUMMARIES = ["summary", "description"] as const; // [CAP-005: label and summary view](../../../../../mbse-basis/docs/capabilities/CAP-005.md): the summary is the first of these
+export const CHIP_SCALARS = 3; // [CAP-006: chip view](../../../../../mbse-basis/docs/capabilities/CAP-006.md): the other scalar properties a chip includes
 
-/** A kind's template, its symbols given (CAP-004, CAP-012): each one a schema (`store.registered("work.Task")`), which
+/** A kind's template, its symbols given ([CAP-004: logical view templates](../../../../../mbse-basis/docs/capabilities/CAP-004.md), [CAP-012: logical view endpoints](../../../../../mbse-basis/docs/capabilities/CAP-012.md)): each one a schema (`store.registered("work.Task")`), which
  * ranges over every extant object of it, or a `References.OfObject` value, which binds the one object it designates.
  * For `adjacency`, `adjacency` names the adjacency of `x`'s schema whose entries link `y`, written in the spec,
  * `_.x.<adjacency>([_.y])`. Gives the transaction's expression, the request's body. */
@@ -36,7 +36,7 @@ export function request(store: any, kind: Kind, given: Readonly<Record<string, u
   return Plain.ToPlain(store).Transaction(transaction);
 }
 
-/** What a client says of its interactive session in a write (CAP-015): its locale and device, where known. The
+/** What a client says of its interactive session in a write ([CAP-015: transaction provenance](../../../../../mbse-basis/docs/capabilities/CAP-015.md)): its locale and device, where known. The
  * session's id and identity are the service's to stamp. */
 export interface Session {
   readonly locale?: string | undefined;
@@ -54,7 +54,7 @@ function inSession(t: any, session: Session | undefined): any {
   });
 }
 
-/** An edit of one object's properties (CAP-014): the detail view's template, `x` given the object's reference, then an
+/** An edit of one object's properties ([CAP-014: properties as markdown](../../../../../mbse-basis/docs/capabilities/CAP-014.md)): the detail view's template, `x` given the object's reference, then an
  * update that writes each property given its value (`null` clears it). Posted to the detail view, it gives the object's
  * detail as the edit left it, once committed. Gives the transaction's expression, the request's body. */
 export function edit(store: any, reference: unknown, values: Readonly<Record<string, unknown>>, session?: Session):
@@ -69,7 +69,7 @@ export function edit(store: any, reference: unknown, values: Readonly<Record<str
   return Plain.ToPlain(store).Transaction(transaction);
 }
 
-/** A new object proposed through an adjacency (CAP-018): `x`, the inbound object's reference, gains an entry in its
+/** A new object proposed through an adjacency ([CAP-018: adjacency inspector](../../../../../mbse-basis/docs/capabilities/CAP-018.md)): `x`, the inbound object's reference, gains an entry in its
  * `adjacency`, whose other link, `link`, holds a new object of `schema` (the store's schema object), with `values` its
  * properties and `entry` the entry's. Posted to the detail view, it gives `x`'s detail with the new entry, once the
  * service has committed it; an owned object is placed in its directory, its key given there. Gives the transaction's
@@ -185,7 +185,7 @@ const first = (held: ReadonlyMap<string, unknown>, names: readonly string[]): st
   return name === undefined ? null : String(held.get(name));
 };
 
-/** CAP-005: an object's label, the first of `LABELS` the frame assigns it; else its schema's name, where the caller
+/** [CAP-005: label and summary view](../../../../../mbse-basis/docs/capabilities/CAP-005.md): an object's label, the first of `LABELS` the frame assigns it; else its schema's name, where the caller
  * knows it, and its path's last key. */
 export function label(store: any, frame: Frame, symbol = "x", schemaName?: string): string {
   const reference = frame.binds.get(symbol);
@@ -199,12 +199,12 @@ function labelOf(store: any, frame: Frame, reference: unknown, schemaName?: stri
   return schemaName === undefined ? key : `${schemaName} ${key}`;
 }
 
-/** CAP-005: an object's summary, the first of `SUMMARIES` the frame assigns it; else empty. */
+/** [CAP-005: label and summary view](../../../../../mbse-basis/docs/capabilities/CAP-005.md): an object's summary, the first of `SUMMARIES` the frame assigns it; else empty. */
 export function summary(store: any, frame: Frame, symbol = "x"): string {
   return first(properties(store, frame, symbol), SUMMARIES) ?? "";
 }
 
-/** CAP-006: a chip's other properties, those the frame assigns besides its label's and its summary's. */
+/** [CAP-006: chip view](../../../../../mbse-basis/docs/capabilities/CAP-006.md): a chip's other properties, those the frame assigns besides its label's and its summary's. */
 export function chip(store: any, frame: Frame, symbol = "x"): ReadonlyMap<string, unknown> {
   const held = properties(store, frame, symbol);
   const skip: (string | undefined)[] = [LABELS.find((n) => held.has(n)), SUMMARIES.find((n) => held.has(n))];
@@ -222,7 +222,7 @@ export function relationName(store: any, entry: any): string {
   return names.join(".");
 }
 
-/** CAP-005, an entry's label: its relation's name and its linked objects' labels, as the frame gives them. */
+/** [CAP-005: label and summary view](../../../../../mbse-basis/docs/capabilities/CAP-005.md), an entry's label: its relation's name and its linked objects' labels, as the frame gives them. */
 export function entryLabel(store: any, frame: Frame, entry: any): string {
   const links = items(entry.links).map(([, any]) => objectOf(any));
   return `${relationName(store, entry)}: ${links.map((link) => labelOf(store, frame, link)).join(", ")}`;
@@ -238,7 +238,7 @@ export function entryLinks(entry: any): ReadonlyMap<string, unknown> {
   return new Map(items(entry.links).map(([name, any]) => [String(name), objectOf(any)]));
 }
 
-/** One transaction in an object's provenance (CAP-015), as a frame carries it. */
+/** One transaction in an object's provenance ([CAP-015: transaction provenance](../../../../../mbse-basis/docs/capabilities/CAP-015.md)), as a frame carries it. */
 export interface Written {
   /** When the transaction executed, UTC ISO 8601 text. */
   readonly when: string;
@@ -248,7 +248,7 @@ export interface Written {
   readonly device?: string;
 }
 
-/** CAP-020: an object's provenance as `frame` carries it (the detail view's `x`, an adjacency view's `y`): the
+/** [CAP-020: provenance display](../../../../../mbse-basis/docs/capabilities/CAP-020.md): an object's provenance as `frame` carries it (the detail view's `x`, an adjacency view's `y`): the
  * transaction that created it and the one that last wrote it after, where the frame has them. */
 export function provenance(store: any, frame: Frame, reference: unknown):
     { readonly created?: Written; readonly modified?: Written } {

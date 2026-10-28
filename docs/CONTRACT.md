@@ -9,10 +9,10 @@ The code is the contract's other half, and the golden corpus (`conformance/`) ch
 
 | Part | Python (server) | TypeScript (client) |
 |---|---|---|
-| Endpoints | [`python3/mbse/Services/Rest/Service.py`](../python3/mbse/Services/Rest/Service.py) | [`typescript5/mbse/Services/Rest/Client.ts`](../typescript5/mbse/Services/Rest/Client.ts) |
-| View kinds | [`python3/mbse/Services/Rest/Views.py`](../python3/mbse/Services/Rest/Views.py) (fills frames) | [`typescript5/mbse/Services/Rest/Views.ts`](../typescript5/mbse/Services/Rest/Views.ts) (fills templates, reads frames) |
-| Persistence | [`python3/mbse/Services/Rest/Persistence.py`](../python3/mbse/Services/Rest/Persistence.py) | none: persistence is the server's |
-| Corpus | [`python3/mbse/Services/Rest/Conformance.py`](../python3/mbse/Services/Rest/Conformance.py) writes `conformance/` | [`typescript5/tests/client.test.ts`](../typescript5/tests/client.test.ts) reads it |
+| Endpoints | `python3/mbse/Services/Rest/Service.py` | `typescript5/mbse/Services/Rest/Client.ts` |
+| View kinds | `python3/mbse/Services/Rest/Views.py` (fills frames) | `typescript5/mbse/Services/Rest/Views.ts` (fills templates, reads frames) |
+| Persistence | `python3/mbse/Services/Rest/Persistence.py` | none: persistence is the server's |
+| Corpus | `python3/mbse/Services/Rest/Conformance.py` writes `conformance/` | `typescript5/tests/client.test.ts` reads it |
 
 ## Wire format
 
@@ -30,12 +30,12 @@ alone (`Plain`, `JSON`): a transaction is its expression (`Plain.ToPlain(store).
 
 | Method and path | For | Request | Response |
 |---|---|---|---|
-| `GET /schemas` | [CAP-002](../../mbse-basis/docs/capabilities/CAP-002.md) | none | the store's schema snapshot, while [CAP-003](../../mbse-basis/docs/capabilities/CAP-003.md) is blocked: the schemas transaction of `Plain.ToPlain(store).Snapshot()` |
-| `GET /schemas/{name}` | [CAP-003](../../mbse-basis/docs/capabilities/CAP-003.md) | none | 501 until mbse-schemas writes one schema object (Gaps, 1); 404 for a name the store lacks |
-| `GET /views` | [CAP-004](../../mbse-basis/docs/capabilities/CAP-004.md) | none | `{"label": T, "chip": T, "detail": T, "adjacency": T}`, each `T` a template, a transaction's expression |
-| `POST /views/{kind}` | [CAP-012](../../mbse-basis/docs/capabilities/CAP-012.md) | a template of `kind`, its symbols given: a transaction's expression | the frames, NDJSON; 404 for an unknown kind, 400 for a transaction refused |
+| `GET /schemas` | [CAP-002: named schema list](../../mbse-basis/docs/capabilities/CAP-002.md) | none | the store's schema snapshot, while [CAP-003: schema inspector](../../mbse-basis/docs/capabilities/CAP-003.md) is blocked: the schemas transaction of `Plain.ToPlain(store).Snapshot()` |
+| `GET /schemas/{name}` | [CAP-003: schema inspector](../../mbse-basis/docs/capabilities/CAP-003.md) | none | 501 until mbse-schemas writes one schema object (Gaps, 1); 404 for a name the store lacks |
+| `GET /views` | [CAP-004: logical view templates](../../mbse-basis/docs/capabilities/CAP-004.md) | none | `{"label": T, "chip": T, "detail": T, "adjacency": T}`, each `T` a template, a transaction's expression |
+| `POST /views/{kind}` | [CAP-012: logical view endpoints](../../mbse-basis/docs/capabilities/CAP-012.md) | a template of `kind`, its symbols given: a transaction's expression | the frames, NDJSON; 404 for an unknown kind, 400 for a transaction refused |
 
-**Endpoints take no arguments** ([CAP-012](../../mbse-basis/docs/capabilities/CAP-012.md)): no query parameters, and no path segment that binds anything. A view's
+**Endpoints take no arguments** ([CAP-012: logical view endpoints](../../mbse-basis/docs/capabilities/CAP-012.md)): no query parameters, and no path segment that binds anything. A view's
 path names its endpoint, one per kind; the mutation expression in the request's body carries the query's bindings,
 each symbol given a schema or a `References.OfObject`, and whatever the spec adds. `GET /schemas/{name}` keeps its
 name for now, answering 501 (tech debt, TODO.md, 1).
@@ -45,7 +45,7 @@ A client reads `GET /schemas` into its own store first (`Client.loadSchemas`, wh
 list of their names is the store's own (`schemaNames(store)`). Giving a template's symbol a schema, and reading a value
 of a value object schema, needs the app's schemas there; the frames themselves need only the framework's.
 
-[CAP-003](../../mbse-basis/docs/capabilities/CAP-003.md)'s intended body, once mbse-schemas can write it: the schema as a document of one upsert, as the snapshot's
+[CAP-003: schema inspector](../../mbse-basis/docs/capabilities/CAP-003.md)'s intended body, once mbse-schemas can write it: the schema as a document of one upsert, as the snapshot's
 first transaction writes each schema (a schema with no name of its own defined where it is linked, `{"def": ...}`;
 a named one referred to by path, `{"ref": {"path": ...}}`).
 
@@ -62,7 +62,7 @@ A template is one map whose one pattern declares the kind's symbols, each given 
 | `label` | `x` | `x` a schema (every object of it) or a `References.OfObject` (that one object) |
 | `chip` | `x` | as `label` |
 | `detail` | `x` | as `label`; usually a reference |
-| `adjacency` | `x`, `y` | `x` a reference, `y` a schema; and adds to the pattern's spec `_.x.<adjacency>([_.y])`, naming the adjacency ([CAP-004](../../mbse-basis/docs/capabilities/CAP-004.md)) |
+| `adjacency` | `x`, `y` | `x` a reference, `y` a schema; and adds to the pattern's spec `_.x.<adjacency>([_.y])`, naming the adjacency ([CAP-004: logical view templates](../../mbse-basis/docs/capabilities/CAP-004.md)) |
 
 The client builds the filled template with mbse-schemas' builders, `Views.request(store, kind, given, adjacency?)`,
 never by editing JSON: for example, the capabilities of a goal,
@@ -71,7 +71,7 @@ never by editing JSON: for example, the capabilities of a goal,
 Views.request(store, "adjacency", { x: goalReference, y: store.registered("work.Capability") }, "capabilities");
 ```
 
-A template carries no spec; the client may add to it ([CAP-004](../../mbse-basis/docs/capabilities/CAP-004.md)), as the `adjacency` view does to name the adjacency
+A template carries no spec; the client may add to it ([CAP-004: logical view templates](../../mbse-basis/docs/capabilities/CAP-004.md)), as the `adjacency` view does to name the adjacency
 it follows, a member of `x`'s schema, in plain builder notation, as above.
 
 ## View kinds (CAP-005 to CAP-008)
@@ -82,12 +82,12 @@ once, in the order met; `entries`, a `References.OfEntry` for each entry it witn
 
 | Kind | `assigns` | `entries` |
 |---|---|---|
-| `label` ([CAP-005](../../mbse-basis/docs/capabilities/CAP-005.md)) | `x`: its label's and its summary's properties | none |
+| `label` ([CAP-005: label and summary view](../../mbse-basis/docs/capabilities/CAP-005.md)) | `x`: its label's and its summary's properties | none |
 | `chip` ([CAP-006: chip view](../../mbse-basis/docs/capabilities/CAP-006.md)) | `x`: `label`'s, then the first three other scalar properties its schema declares that it holds | none |
 | `detail` ([CAP-007: detail view](../../mbse-basis/docs/capabilities/CAP-007.md)) | `x`: every property it holds; then each object its entries link: `label`'s | every entry of each of `x`'s named adjacencies, in the schema's order |
-| `adjacency` ([CAP-008](../../mbse-basis/docs/capabilities/CAP-008.md)) | `y`: `chip`'s | every entry of `x`'s named adjacencies that links `y` |
+| `adjacency` ([CAP-008: adjacency as a list of chips](../../mbse-basis/docs/capabilities/CAP-008.md)) | `y`: `chip`'s | every entry of `x`'s named adjacencies that links `y` |
 
-- **Label and summary** ([CAP-005](../../mbse-basis/docs/capabilities/CAP-005.md)'s convention). The label's property is the first of `label`, `name` and `title` that
+- **Label and summary** ([CAP-005: label and summary view](../../mbse-basis/docs/capabilities/CAP-005.md)'s convention). The label's property is the first of `label`, `name` and `title` that
   the object holds; the summary's, the first of `summary` and `description` that it holds. The values are the properties' own, so `assigns` names them as
   the schema does (`title`, not `label`). The client reads them back: `Views.label`, `Views.summary`, `Views.chip`.
 - **Fallbacks** (client side, from what the frame carries). An object's label, where it holds none: its schema's
@@ -95,11 +95,11 @@ once, in the order met; `entries`, a `References.OfEntry` for each entry it witn
   values, or, a singleton, the singleton's name: `work.Comment CMT-001`, `work.ProjectDirectory work.Projects`. An
   entry's label: its relation's name and its linked objects' labels in its links' order,
   `work.Plans: Demoable index site, No-code index view` (`Views.entryLabel`). A summary, where none is held, is empty.
-- **Entry views** ([CAP-005](../../mbse-basis/docs/capabilities/CAP-005.md) and [CAP-006](../../mbse-basis/docs/capabilities/CAP-006.md) of a `References.OfEntry`) are requested as mutation expressions, as any view
+- **Entry views** ([CAP-005: label and summary view](../../mbse-basis/docs/capabilities/CAP-005.md) and [CAP-006: chip view](../../mbse-basis/docs/capabilities/CAP-006.md) of a `References.OfEntry`) are requested as mutation expressions, as any view
   is, and come back in frames' `entries`, with the entry's properties; the client labels them (`Views.entryLabel`).
 - **Counted objects** have no reference: a frame that binds one is left out of the stream, and an entry that links one
   out of `entries` ([FEA-003: no-code logical views](../../mbse-basis/docs/features/FEA-003.md)).
-- A view's transaction may write ([CAP-013](../../mbse-basis/docs/capabilities/CAP-013.md)'s flow): whatever it writes is committed, and journaled, before its frames
+- A view's transaction may write ([CAP-013: an in-memory store journaled to DynamoDB](../../mbse-basis/docs/capabilities/CAP-013.md)'s flow): whatever it writes is committed, and journaled, before its frames
   are filled.
 
 ## Edits (CAP-014)
@@ -177,7 +177,7 @@ class Plugin(Protocol):
   same protocol. Every plugin must pass `PersistenceCases.CASES`, each a function given a maker of a fresh plugin,
   which checks the service's use of it through the protocol alone (`load`, and a `Counting` wrapper for how often it
   journals and snapshots), never a plugin's own attributes; mbse-rest runs them with `Memory`
-  ([`python3/tests/test_service.py`](../python3/tests/test_service.py)), mbse-dynamodb with its own plugin.
+  (`python3/tests/test_service.py`), mbse-dynamodb with its own plugin.
 
 ## The golden corpus
 
@@ -187,9 +187,9 @@ class Plugin(Protocol):
 
 Beside the hand-written cases, the corpus holds a case for every view mbse-react asks of the seed (`ui-*`), generated
 from the store so that the UI can develop against the corpus alone: each app reference object schema's chips
-(`ui-chip-<schema>`, [CAP-006](../../mbse-basis/docs/capabilities/CAP-006.md)) and entries (`ui-entries-<schema>`, [CAP-007](../../mbse-basis/docs/capabilities/CAP-007.md) with `x` given the schema, the relation
-browser's), each object's detail (`ui-detail-<key>`, [CAP-007](../../mbse-basis/docs/capabilities/CAP-007.md)), and each object's named adjacencies, one case for each
-schema whose objects their entries may link (`ui-adjacency-<key>-<adjacency>-<schema>`, [CAP-008](../../mbse-basis/docs/capabilities/CAP-008.md)). They only read, so
+(`ui-chip-<schema>`, [CAP-006: chip view](../../mbse-basis/docs/capabilities/CAP-006.md)) and entries (`ui-entries-<schema>`, [CAP-007: detail view](../../mbse-basis/docs/capabilities/CAP-007.md) with `x` given the schema, the relation
+browser's), each object's detail (`ui-detail-<key>`, [CAP-007: detail view](../../mbse-basis/docs/capabilities/CAP-007.md)), and each object's named adjacencies, one case for each
+schema whose objects their entries may link (`ui-adjacency-<key>-<adjacency>-<schema>`, [CAP-008: adjacency as a list of chips](../../mbse-basis/docs/capabilities/CAP-008.md)). They only read, so
 they share one server. Each carries `view`, what its request is made of: its `kind`, what each symbol is `given` (a
 `schema` by name, or a `reference`, a `References.OfObject` in mbse-schemas' JSON), and, an adjacency view's, its
 `adjacency`; the client's tests build each such request again from it, byte for byte.
@@ -210,7 +210,7 @@ Every refusal is `{"error": "<message>"}`, `application/json`; the message is fo
 | 404 | a path the service does not serve, a view kind it lacks, a schema name its store lacks |
 | 405 | a method a path does not take |
 | 500 | a fault of the service's own |
-| 501 | `GET /schemas/{name}` ([CAP-003](../../mbse-basis/docs/capabilities/CAP-003.md)), until Gaps, 1 is closed |
+| 501 | `GET /schemas/{name}` ([CAP-003: schema inspector](../../mbse-basis/docs/capabilities/CAP-003.md)), until Gaps, 1 is closed |
 | 503 | the plugin failed: a transaction that wrote could not be journaled, and is undone, so that it may be sent again; or, after that, the store could not be read back from the plugin, and then every request answers 503 until the service restarts |
 
 - **What the plugin has not journaled is undone.** Transactions on one store do not nest, so a transaction that
@@ -263,7 +263,7 @@ cd python3 && uv run python -m mbse.Services.Rest   # serves with uvicorn, as th
 
 ## The client (M1)
 
-[`typescript5/mbse/Services/Rest/Client.ts`](../typescript5/mbse/Services/Rest/Client.ts) (`@mbse/rest/Services/Rest/Client`), over mbse-schemas' TypeScript
+`typescript5/mbse/Services/Rest/Client.ts` (`@mbse/rest/Services/Rest/Client`), over mbse-schemas' TypeScript
 implementation. A store (`newStore()`) reads the schemas once, then gives symbols schemas and reads frames back
 (`Views`).
 
@@ -283,13 +283,13 @@ for await (const frame of client.stream(store, "detail", Views.request(store, "d
 | Member | For |
 |---|---|
 | `new Client(base = "", options?)` | `base` without its trailing slash; `options` is `{fetch?, headers?}`, or a fetch (as in M0) |
-| `loadSchemas(store, {signal}?)` | [CAP-002](../../mbse-basis/docs/capabilities/CAP-002.md): reads the schema snapshot into `store`; gives `schemaNames(store)` |
-| `schema(name, {signal}?)` | [CAP-003](../../mbse-basis/docs/capabilities/CAP-003.md): rejects with `Unimplemented` (501) for now, `NotFound` for an unknown name |
-| `templates({signal}?)` | [CAP-004](../../mbse-basis/docs/capabilities/CAP-004.md): a `Map` of each kind's template |
-| `stream(store, kind, transaction, {signal}?)` | [CAP-012](../../mbse-basis/docs/capabilities/CAP-012.md): an async generator of `Views.Frame`, read as the response arrives |
-| `view(store, kind, transaction, {signal}?)` | [CAP-012](../../mbse-basis/docs/capabilities/CAP-012.md): every frame, as an array |
+| `loadSchemas(store, {signal}?)` | [CAP-002: named schema list](../../mbse-basis/docs/capabilities/CAP-002.md): reads the schema snapshot into `store`; gives `schemaNames(store)` |
+| `schema(name, {signal}?)` | [CAP-003: schema inspector](../../mbse-basis/docs/capabilities/CAP-003.md): rejects with `Unimplemented` (501) for now, `NotFound` for an unknown name |
+| `templates({signal}?)` | [CAP-004: logical view templates](../../mbse-basis/docs/capabilities/CAP-004.md): a `Map` of each kind's template |
+| `stream(store, kind, transaction, {signal}?)` | [CAP-012: logical view endpoints](../../mbse-basis/docs/capabilities/CAP-012.md): an async generator of `Views.Frame`, read as the response arrives |
+| `view(store, kind, transaction, {signal}?)` | [CAP-012: logical view endpoints](../../mbse-basis/docs/capabilities/CAP-012.md): every frame, as an array |
 | `viewOf(store, kind, given, {adjacency?, signal?})` | `view` of `Views.request(store, kind, given, adjacency)` |
-| `label(store, x)`, `chip(store, x)`, `detail(store, x)`, `adjacency(store, x, adjacency, y)` | [CAP-005](../../mbse-basis/docs/capabilities/CAP-005.md) to [CAP-008](../../mbse-basis/docs/capabilities/CAP-008.md), `x` a schema or a `References.OfObject`, each with `{signal}?` last |
+| `label(store, x)`, `chip(store, x)`, `detail(store, x)`, `adjacency(store, x, adjacency, y)` | [CAP-005: label and summary view](../../mbse-basis/docs/capabilities/CAP-005.md) to [CAP-008: adjacency as a list of chips](../../mbse-basis/docs/capabilities/CAP-008.md), `x` a schema or a `References.OfObject`, each with `{signal}?` last |
 | `url(path)` | the URL a call is sent to |
 
 Errors, each a `RestError` (an `Error`):
@@ -323,11 +323,11 @@ Reported, not worked around (AGENTS.md):
    schema object: Python raises `AttributeError` (`_ObjectData` has no `as_schema`); given the schema's builder
    instead, `ValueError: a 'Schemas.OfObject' is owned through an adjacency with no name`; TypeScript raises
    `TypeError: root.as_schema is not a function`. Only the whole store's schemas are written, as the snapshot's first
-   transaction. [CAP-003](../../mbse-basis/docs/capabilities/CAP-003.md) answers 501 until it can.
+   transaction. [CAP-003: schema inspector](../../mbse-basis/docs/capabilities/CAP-003.md) answers 501 until it can.
 2. **Resolved by mbse-schemas c835f83** ("References, Decided 8: a reference symbol's schema from its path, through
    the schemas"). A spec over a symbol given a reference was refused when the store did not hold the object
    (`LookupError: symbol 'x' is given a reference that designates nothing the store holds`), so a client's store,
-   which holds the app's schemas but none of its data, could not build [CAP-008](../../mbse-basis/docs/capabilities/CAP-008.md)'s request. It now records in plain
+   which holds the app's schemas but none of its data, could not build [CAP-008: adjacency as a list of chips](../../mbse-basis/docs/capabilities/CAP-008.md)'s request. It now records in plain
    builder notation, `.symbols({x: reference, y: Capability}).spec([_ => _.x.capabilities([_.y])])`, and the client
    builds every adjacency request byte for byte against the corpus.
 3. **An install cannot be built as an expression without running it.** `store.transaction(install)` gives `install`
@@ -346,7 +346,7 @@ Where mbse-basis' capabilities are silent, the simplest default consistent with 
 3. **CAP-003** answers 501 with an error body until Gaps, 1 is closed; the path is fixed now.
 4. **Templates**: kinds `label`, `chip`, `detail`, `adjacency`; symbols `x` (the object viewed) and `y` (what `x`
    links); each template one map of one pattern, its symbols unassigned (`{}`), which the executor refuses as such.
-5. **Relation entries ([CAP-005](../../mbse-basis/docs/capabilities/CAP-005.md), [CAP-006](../../mbse-basis/docs/capabilities/CAP-006.md) given a `References.OfEntry`)** have no template of their own: a pattern's
+5. **Relation entries ([CAP-005: label and summary view](../../mbse-basis/docs/capabilities/CAP-005.md), [CAP-006: chip view](../../mbse-basis/docs/capabilities/CAP-006.md) given a `References.OfEntry`)** have no template of their own: a pattern's
    symbol binds an object, never an entry. Entries arrive in `detail` and `adjacency` frames, with their properties,
    and the client labels them (`Views.entryLabel`).
 6. **Label fallbacks** as in View kinds: the schema's name only where the caller knows it (a frame does not carry an
@@ -354,12 +354,12 @@ Where mbse-basis' capabilities are silent, the simplest default consistent with 
 7. **Chip**: "the first three other scalar properties" counts those the object holds, in the schema's order.
 8. **Detail** includes every named adjacency (anonymous ones are not members), entries in the schema's adjacency order
    and each adjacency's own, and the `label` view of each linked object, so that the inspector can show each entry
-   without a second request ([FEA-003](../../mbse-basis/docs/features/FEA-003.md), "sensibly nested").
+   without a second request ([FEA-003: no-code logical views](../../mbse-basis/docs/features/FEA-003.md), "sensibly nested").
 9. **Adjacency** witnesses every entry of `x`'s named adjacencies that links `y`, rather than reading the adjacency's
    name from the request's spec; for the WorkTracker the two agree.
 10. **NDJSON** for the stream, its status decided before the first frame (the server computes the frames, then
     writes them).
-11. **Writes through view endpoints** are accepted and journaled ([CAP-013](../../mbse-basis/docs/capabilities/CAP-013.md)'s flow), detected by an `upsert` or `update`
+11. **Writes through view endpoints** are accepted and journaled ([CAP-013: an in-memory store journaled to DynamoDB](../../mbse-basis/docs/capabilities/CAP-013.md)'s flow), detected by an `upsert` or `update`
     term in the expression.
 12. **The plugin gives data, the service replays it** (`load` returns the snapshot and the journal), so that a plugin
     is storage only; first start runs the installs, then snapshots (Gaps, 3); a snapshot every 100 journaled
@@ -394,10 +394,10 @@ Decided in M1 (none changes a request or a response the corpus holds):
     `Views.request`, as before, so they send what the corpus holds byte for byte.
 25. **No server runs in the tests**: the entry point is tested by what it hands uvicorn; every endpoint through
     FastAPI's test client.
-26. **An edit is an `update` after the detail view's map** ([CAP-014](../../mbse-basis/docs/capabilities/CAP-014.md)), posted to the detail view, rather than an
+26. **An edit is an `update` after the detail view's map** ([CAP-014: properties as markdown](../../mbse-basis/docs/capabilities/CAP-014.md)), posted to the detail view, rather than an
     endpoint of its own: its response is the detail the inspector shows next, and the view endpoints already accept
     and journal writes (11).
-27. **A proposal is an `upsert` posted to the detail view** ([CAP-018](../../mbse-basis/docs/capabilities/CAP-018.md)), its symbols `x` and `n`, as an edit is an
+27. **A proposal is an `upsert` posted to the detail view** ([CAP-018: adjacency inspector](../../mbse-basis/docs/capabilities/CAP-018.md)), its symbols `x` and `n`, as an edit is an
     `update` there (26): the response is the inbound object's detail with the new entry.
-28. **The service stamps writes on what it receives** ([CAP-015](../../mbse-basis/docs/capabilities/CAP-015.md)), the expression's plain form, so that the journal holds
+28. **The service stamps writes on what it receives** ([CAP-015: transaction provenance](../../mbse-basis/docs/capabilities/CAP-015.md)), the expression's plain form, so that the journal holds
     the stamped transaction; the session's id comes from a header while there is no token (TODO.md, 4).

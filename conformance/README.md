@@ -6,4 +6,4 @@ each case; the `ui-*` cases, generated for every view mbse-react asks of the see
 request is made of. `<case>.request.json` is its body, and `<case>.response.json` or `.ndjson` what the server answers.
 
 Generated, never edited by hand: from `python3/`, `uv run python -m mbse.Services.Rest.Conformance`. The server's tests
-fail while it is out of date; the client's tests read it ([`typescript5/tests/client.test.ts`](../typescript5/tests/client.test.ts)).
+fail while it is out of date; the client's tests read it (`typescript5/tests/client.test.ts`).

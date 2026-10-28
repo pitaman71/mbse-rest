@@ -1,4 +1,4 @@
-"""The cases every persistence plugin must pass (CAP-013), for any implementation's tests to run with its own plugin.
+"""The cases every persistence plugin must pass ([CAP-013: an in-memory store journaled to DynamoDB](../../../../../mbse-basis/docs/capabilities/CAP-013.md)), for any implementation's tests to run with its own plugin.
 
 Each case takes a function making a fresh, empty plugin, and checks what the service does with it through the
 protocol alone (`Persistence.Plugin`: `load`, `journal`, `snapshot`), never a plugin's own attributes:

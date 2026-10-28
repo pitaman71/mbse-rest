@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "The client side of mbse-rest: mutation queries to REST calls, and frame streams back (mbse-basis FEA-006: persistence)",
+  "description": "The client side of mbse-rest: mutation queries to REST calls, and frame streams back (mbse-basis [FEA-006: persistence](../../mbse-basis/docs/features/FEA-006.md))",
   "exports": {
     "./Services/Rest/Client": "./mbse/Services/Rest/Client.ts",
     "./Services/Rest/Views": "./mbse/Services/Rest/Views.ts"

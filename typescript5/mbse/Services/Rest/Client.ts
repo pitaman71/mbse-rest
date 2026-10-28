@@ -1,5 +1,5 @@
 /** The client side of mbse-rest: translates a mutation query into well-formed REST calls, and reads the frame stream
- * back for the UI (mbse-basis FEA-006, CAP-013: an in-memory store journaled to DynamoDB). The calls are `docs/CONTRACT.md`'s; its "The client" section
+ * back for the UI (mbse-basis [FEA-006: persistence](../../../../../mbse-basis/docs/features/FEA-006.md), [CAP-013: an in-memory store journaled to DynamoDB](../../../../../mbse-basis/docs/capabilities/CAP-013.md)). The calls are `docs/CONTRACT.md`'s; its "The client" section
  * documents this module's API. */
 
 import { Builders, JSON as J, Plain } from "@mbse/schemas/Framework";
@@ -15,7 +15,7 @@ export function newStore(): any {
   return new Builders.Store();
 }
 
-/** CAP-002: every named schema `store` holds, by name, in its order: the framework's, and the app's once
+/** [CAP-002: named schema list](../../../../../mbse-basis/docs/capabilities/CAP-002.md): every named schema `store` holds, by name, in its order: the framework's, and the app's once
  * `Client.loadSchemas` has read them. */
 export function schemaNames(store: any): string[] {
   return [...store.names()];
@@ -59,7 +59,7 @@ export class ServiceError extends RestError {
 export class TransactionRefused extends ServiceError {}
 /** 404: no such path, view kind or schema. */
 export class NotFound extends ServiceError {}
-/** 501: not served yet; `GET /schemas/{name}` (CAP-003) until mbse-schemas writes one schema object. */
+/** 501: not served yet; `GET /schemas/{name}` ([CAP-003: schema inspector](../../../../../mbse-basis/docs/capabilities/CAP-003.md)) until mbse-schemas writes one schema object. */
 export class Unimplemented extends ServiceError {}
 /** 503: the service's persistence failed; a transaction that wrote is undone, and may be sent again. */
 export class Unavailable extends ServiceError {}
@@ -71,7 +71,7 @@ export class TransportError extends RestError {}
  * contract gives): `cause` is what reading it raised. */
 export class ResponseError extends RestError {}
 
-/** The request header that names the client's session (CAP-015): the service stamps it on each write. */
+/** The request header that names the client's session ([CAP-015: transaction provenance](../../../../../mbse-basis/docs/capabilities/CAP-015.md)): the service stamps it on each write. */
 export const SESSION_HEADER = "x-mbse-session";
 
 export type Fetch = (input: string, init?: RequestInit) => Promise<Response>;
@@ -81,7 +81,7 @@ export interface ClientOptions {
   readonly fetch?: Fetch;
   /** Headers sent with every call, besides `accept` and `content-type`. */
   readonly headers?: Readonly<Record<string, string>>;
-  /** The interactive session the calls are made in (CAP-015): its `id`, sent as the `x-mbse-session` header for the
+  /** The interactive session the calls are made in ([CAP-015: transaction provenance](../../../../../mbse-basis/docs/capabilities/CAP-015.md)): its `id`, sent as the `x-mbse-session` header for the
    * service to stamp on each write, and its `locale` and `device`, written into each edit and proposal. */
   readonly session?: Views.Session & { readonly id: string };
 }
@@ -92,7 +92,7 @@ export interface CallOptions {
 }
 
 export interface ViewOptions extends CallOptions {
-  /** An `adjacency` view's adjacency of `x`, whose entries link `y` (CAP-004, CAP-008). */
+  /** An `adjacency` view's adjacency of `x`, whose entries link `y` ([CAP-004: logical view templates](../../../../../mbse-basis/docs/capabilities/CAP-004.md), [CAP-008: adjacency as a list of chips](../../../../../mbse-basis/docs/capabilities/CAP-008.md)). */
   readonly adjacency?: string;
 }
 
@@ -146,13 +146,13 @@ export class Client {
     }
   }
 
-  /** CAP-003: one schema in full. Refused (`Unimplemented`, 501) until mbse-schemas writes one schema object as a
+  /** [CAP-003: schema inspector](../../../../../mbse-basis/docs/capabilities/CAP-003.md): one schema in full. Refused (`Unimplemented`, 501) until mbse-schemas writes one schema object as a
    * document; `NotFound` (404) for a name the service's store lacks. */
   async schema(name: string, options: CallOptions = {}): Promise<Plain.PlainData> {
     return this.json(`/schemas/${encodeURIComponent(name)}`, options);
   }
 
-  /** CAP-002, while CAP-003 is blocked: reads the service's schema snapshot into `store`, which then holds every
+  /** [CAP-002: named schema list](../../../../../mbse-basis/docs/capabilities/CAP-002.md), while [CAP-003: schema inspector](../../../../../mbse-basis/docs/capabilities/CAP-003.md) is blocked: reads the service's schema snapshot into `store`, which then holds every
    * named schema, so that it can give a template's symbol a schema and read any value a frame assigns. Gives the names
    * of every named schema it holds (`schemaNames`). */
   async loadSchemas(store: any, options: CallOptions = {}): Promise<string[]> {
@@ -165,14 +165,14 @@ export class Client {
     return schemaNames(store);
   }
 
-  /** CAP-004: each kind's template, a transaction's expression, by kind. */
+  /** [CAP-004: logical view templates](../../../../../mbse-basis/docs/capabilities/CAP-004.md): each kind's template, a transaction's expression, by kind. */
   async templates(options: CallOptions = {}): Promise<Map<string, Plain.PlainData>> {
     const templates = await this.json("/views", options);
     if (!(templates instanceof Map)) throw new ResponseError("GET /views: not a mapping of each kind's template");
     return templates as Map<string, Plain.PlainData>;
   }
 
-  /** CAP-012: the frames `transaction` gives, filled as `kind` defines, each read back as it arrives. Breaking out of
+  /** [CAP-012: logical view endpoints](../../../../../mbse-basis/docs/capabilities/CAP-012.md): the frames `transaction` gives, filled as `kind` defines, each read back as it arrives. Breaking out of
    * the loop, or aborting `options.signal`, cancels the response. */
   async *stream(store: any, kind: Views.Kind, transaction: Plain.PlainData, options: CallOptions = {}):
       AsyncGenerator<Views.Frame> {
@@ -222,7 +222,7 @@ export class Client {
     }
   }
 
-  /** CAP-012: every frame `transaction` gives, filled as `kind` defines. */
+  /** [CAP-012: logical view endpoints](../../../../../mbse-basis/docs/capabilities/CAP-012.md): every frame `transaction` gives, filled as `kind` defines. */
   async view(store: any, kind: Views.Kind, transaction: Plain.PlainData, options: CallOptions = {}):
       Promise<Views.Frame[]> {
     const frames: Views.Frame[] = [];
@@ -230,43 +230,43 @@ export class Client {
     return frames;
   }
 
-  /** CAP-012 over CAP-004's template: the `kind` view of what `given` gives each symbol, a schema or a
+  /** [CAP-012: logical view endpoints](../../../../../mbse-basis/docs/capabilities/CAP-012.md) over [CAP-004: logical view templates](../../../../../mbse-basis/docs/capabilities/CAP-004.md)'s template: the `kind` view of what `given` gives each symbol, a schema or a
    * `References.OfObject` (`Views.request`); an `adjacency` view names its adjacency in `options`. */
   async viewOf(store: any, kind: Views.Kind, given: Readonly<Record<string, unknown>>, options: ViewOptions = {}):
       Promise<Views.Frame[]> {
     return this.view(store, kind, Views.request(store, kind, given, options.adjacency), options);
   }
 
-  /** CAP-005: the label view of `x`, a schema (every object of it) or a `References.OfObject`. */
+  /** [CAP-005: label and summary view](../../../../../mbse-basis/docs/capabilities/CAP-005.md): the label view of `x`, a schema (every object of it) or a `References.OfObject`. */
   label(store: any, x: unknown, options: CallOptions = {}): Promise<Views.Frame[]> {
     return this.viewOf(store, "label", { x }, options);
   }
 
-  /** CAP-006: the chip view of `x`, as `label`. */
+  /** [CAP-006: chip view](../../../../../mbse-basis/docs/capabilities/CAP-006.md): the chip view of `x`, as `label`. */
   chip(store: any, x: unknown, options: CallOptions = {}): Promise<Views.Frame[]> {
     return this.viewOf(store, "chip", { x }, options);
   }
 
-  /** CAP-007: the detail view of `x`, usually a `References.OfObject`. */
+  /** [CAP-007: detail view](../../../../../mbse-basis/docs/capabilities/CAP-007.md): the detail view of `x`, usually a `References.OfObject`. */
   detail(store: any, x: unknown, options: CallOptions = {}): Promise<Views.Frame[]> {
     return this.viewOf(store, "detail", { x }, options);
   }
 
-  /** CAP-008: the `y`, a schema, that `x`, a `References.OfObject`, links through its adjacency `adjacency`. */
+  /** [CAP-008: adjacency as a list of chips](../../../../../mbse-basis/docs/capabilities/CAP-008.md): the `y`, a schema, that `x`, a `References.OfObject`, links through its adjacency `adjacency`. */
   adjacency(store: any, x: unknown, adjacency: string, y: unknown, options: CallOptions = {}): Promise<Views.Frame[]> {
     return this.viewOf(store, "adjacency", { x, y }, { ...options, adjacency });
   }
 
-  /** CAP-014: writes `values` to the properties of the object `x`, a `References.OfObject`, each a value of its
-   * property's schema or `null` to clear it (`Views.edit`), and gives its detail view (CAP-007) once the service has
+  /** [CAP-014: properties as markdown](../../../../../mbse-basis/docs/capabilities/CAP-014.md): writes `values` to the properties of the object `x`, a `References.OfObject`, each a value of its
+   * property's schema or `null` to clear it (`Views.edit`), and gives its detail view ([CAP-007: detail view](../../../../../mbse-basis/docs/capabilities/CAP-007.md)) once the service has
    * committed the edit; a refused edit raises, as any view's refusal does. */
   edit(store: any, x: unknown, values: Readonly<Record<string, unknown>>, options: CallOptions = {}):
       Promise<Views.Frame[]> {
     return this.view(store, "detail", Views.edit(store, x, values, this.session), options);
   }
 
-  /** CAP-018: proposes a new object of `schema` through `x`'s `adjacency`, its other link `link` (`Views.propose`), and
-   * gives `x`'s detail view (CAP-007) once the service has committed it. */
+  /** [CAP-018: adjacency inspector](../../../../../mbse-basis/docs/capabilities/CAP-018.md): proposes a new object of `schema` through `x`'s `adjacency`, its other link `link` (`Views.propose`), and
+   * gives `x`'s detail view ([CAP-007: detail view](../../../../../mbse-basis/docs/capabilities/CAP-007.md)) once the service has committed it. */
   propose(store: any, x: unknown, adjacency: string, link: string, schema: unknown,
       values: Readonly<Record<string, unknown>>, entry: Readonly<Record<string, unknown>> = {},
       options: CallOptions = {}): Promise<Views.Frame[]> {
