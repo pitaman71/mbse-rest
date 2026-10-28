@@ -1,4 +1,4 @@
-"""The REST service over an mbse-schemas store (mbse-basis CAP-002 to CAP-004, CAP-012 and CAP-013).
+"""The REST service over an mbse-schemas store (mbse-basis [CAP-002: named schema list](../../../../../mbse-basis/docs/capabilities/CAP-002.md) to [CAP-004: logical view templates](../../../../../mbse-basis/docs/capabilities/CAP-004.md), [CAP-012: logical view endpoints](../../../../../mbse-basis/docs/capabilities/CAP-012.md) and [CAP-013: an in-memory store journaled to DynamoDB](../../../../../mbse-basis/docs/capabilities/CAP-013.md)).
 
 `app(installs, plugin)` gives a FastAPI application over any MBSE app: one store held in memory, which at startup
 replays what the persistence plugin holds, or, where it holds nothing, runs each install (the app's `Schemas.install`,
@@ -8,10 +8,10 @@ app's installs by that convention; `from_environment()` builds the application f
 
 | Method and path | Capability | Response |
 |---|---|---|
-| `GET /schemas` | CAP-002 | the store's schema snapshot, the first transaction of its snapshot, while CAP-003 is blocked |
-| `GET /schemas/{name}` | CAP-003 | 501 until mbse-schemas writes one schema object as a document (CONTRACT.md) |
-| `GET /views` | CAP-004 | `{kind: template, ...}`, each a transaction's expression |
-| `POST /views/{kind}` | CAP-012 | the frames, `References.OfFrame`, one JSON document a line (NDJSON) |
+| `GET /schemas` | [CAP-002: named schema list](../../../../../mbse-basis/docs/capabilities/CAP-002.md) | the store's schema snapshot, the first transaction of its snapshot, while [CAP-003: schema inspector](../../../../../mbse-basis/docs/capabilities/CAP-003.md) is blocked |
+| `GET /schemas/{name}` | [CAP-003: schema inspector](../../../../../mbse-basis/docs/capabilities/CAP-003.md) | 501 until mbse-schemas writes one schema object as a document (CONTRACT.md) |
+| `GET /views` | [CAP-004: logical view templates](../../../../../mbse-basis/docs/capabilities/CAP-004.md) | `{kind: template, ...}`, each a transaction's expression |
+| `POST /views/{kind}` | [CAP-012: logical view endpoints](../../../../../mbse-basis/docs/capabilities/CAP-012.md) | the frames, `References.OfFrame`, one JSON document a line (NDJSON) |
 
 A view's request is a transaction's expression (`Plain.ToPlain(store).Transaction`). The service reads it
 (`JSON.loads`, `Plain.FromPlain(store).Transaction`), executes it, journals it if it writes, and fills each frame's
@@ -88,7 +88,7 @@ class Unavailable(Refused):
 
 
 SESSION_HEADER = "x-mbse-session"
-"""The request header that names the client's session (CAP-015): the demo's stand-in for a validated token's
+"""The request header that names the client's session ([CAP-015: transaction provenance](../../../../../mbse-basis/docs/capabilities/CAP-015.md)): the demo's stand-in for a validated token's
 session, which the service trusts (tech debt, TODO.md)."""
 
 
@@ -110,7 +110,7 @@ def _iso(moment: datetime.datetime) -> str:
 
 
 def stamp(plain: PlainData, session: str | None, who: str, clock: Clock = _now, uids: Uids = _uuid) -> PlainData:
-    """CAP-015: a transaction that writes, as the service journals and executes it: given a `uid` where it has none,
+    """[CAP-015: transaction provenance](../../../../../mbse-basis/docs/capabilities/CAP-015.md): a transaction that writes, as the service journals and executes it: given a `uid` where it has none,
     so that a replay finds the same record, and its `when`, and its session's `id` and `who`, the service's; the
     client's `locale`, `device` and `where` are kept. Where the client names no session, the identity's own,
     `<who>:default`. A transaction that only reads is given back as it is."""
@@ -129,7 +129,7 @@ class Service:
 
     def __init__(self, installs: Iterable[Install] = (), plugin: Plugin | None = None,
                  snapshot_every: int = 100, *, user: str = "demo", clock: Clock = _now, uids: Uids = _uuid) -> None:
-        self.user = user  # the demo's identity, standing in for a validated token's (CAP-015; tech debt, TODO.md)
+        self.user = user  # the demo's identity, standing in for a validated token's ([CAP-015: transaction provenance](../../../../../mbse-basis/docs/capabilities/CAP-015.md); tech debt, TODO.md)
         self.clock, self.uids = clock, uids  # a write's `when` and, where it has none, its `uid` (`stamp`)
         self.installs = list(installs)
         self.plugin = plugin if plugin is not None else Memory()
@@ -144,7 +144,7 @@ class Service:
         of what they wrote (db initialization by schema)."""
         store = Builders.Store()
         if not replay(store, self.plugin):
-            for install in self.installs:  # each given `when` by the service's clock, as a write is (CAP-015)
+            for install in self.installs:  # each given `when` by the service's clock, as a write is ([CAP-015: transaction provenance](../../../../../mbse-basis/docs/capabilities/CAP-015.md))
                 store.transaction(lambda t, i=install, w=_iso(self.clock()): i(t).when(w))
             self.plugin.snapshot(Plain.ToPlain(store).Snapshot())
         return store
@@ -202,21 +202,21 @@ class Service:
             return list(self.store.names())
 
     def schemas(self) -> PlainData:
-        """CAP-002, while CAP-003 is blocked: the store's schemas, the first transaction of its snapshot, from which a
+        """[CAP-002: named schema list](../../../../../mbse-basis/docs/capabilities/CAP-002.md), while [CAP-003: schema inspector](../../../../../mbse-basis/docs/capabilities/CAP-003.md) is blocked: the store's schemas, the first transaction of its snapshot, from which a
         client's store takes every schema."""
         with self._lock:
             self._available()
             return Plain.ToPlain(self.store).Snapshot()[0]
 
     def templates(self) -> dict[str, PlainData]:
-        """CAP-004: each kind's template."""
+        """[CAP-004: logical view templates](../../../../../mbse-basis/docs/capabilities/CAP-004.md): each kind's template."""
         with self._lock:
             self._available()
             return {kind: Plain.ToPlain(self.store).Transaction(tx) for kind, tx in Views.templates(self.store).items()}
 
     def view(self, kind: str, plain: PlainData, session: str | None = None) -> list[str]:
-        """CAP-012: the frames a transaction gives, each a `References.OfFrame` filled as `kind` defines, as JSON. A
-        transaction that writes is stamped first (CAP-015, `stamp`), in `session`."""
+        """[CAP-012: logical view endpoints](../../../../../mbse-basis/docs/capabilities/CAP-012.md): the frames a transaction gives, each a `References.OfFrame` filled as `kind` defines, as JSON. A
+        transaction that writes is stamped first ([CAP-015: transaction provenance](../../../../../mbse-basis/docs/capabilities/CAP-015.md), `stamp`), in `session`."""
         with self._lock:
             self._available()
             out = []

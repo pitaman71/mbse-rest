@@ -1,25 +1,25 @@
-"""The logical view kinds (mbse-basis FEA-003): what each includes, and its template (CAP-004).
+"""The logical view kinds (mbse-basis [FEA-003: no-code logical views](../../../../../mbse-basis/docs/features/FEA-003.md)): what each includes, and its template ([CAP-004: logical view templates](../../../../../mbse-basis/docs/capabilities/CAP-004.md)).
 
-One definition, shared by the server, which fills each frame's `assigns` and `entries` (CAP-012), and the client
+One definition, shared by the server, which fills each frame's `assigns` and `entries` ([CAP-012: logical view endpoints](../../../../../mbse-basis/docs/capabilities/CAP-012.md)), and the client
 (`typescript5/mbse/Services/Rest/Views.ts`), which reads them. `docs/CONTRACT.md` is the prose; the golden corpus in
 `conformance/` checks that both agree.
 
 | Kind | Symbols | Includes, for each frame |
 |---|---|---|
-| `label` (CAP-005) | `x` | the label and summary properties `x` holds |
-| `chip` (CAP-006) | `x` | `label`'s, then the first three other scalar properties `x`'s schema declares that it holds |
-| `detail` (CAP-007) | `x` | every property `x` holds; every entry of its named adjacencies; each linked object's `label`; `x`'s provenance |
-| `adjacency` (CAP-008) | `x`, `y` | every entry of `x`'s named adjacencies that links `y`; `y`'s `chip`; `y`'s provenance |
+| `label` ([CAP-005: label and summary view](../../../../../mbse-basis/docs/capabilities/CAP-005.md)) | `x` | the label and summary properties `x` holds |
+| `chip` ([CAP-006: chip view](../../../../../mbse-basis/docs/capabilities/CAP-006.md)) | `x` | `label`'s, then the first three other scalar properties `x`'s schema declares that it holds |
+| `detail` ([CAP-007: detail view](../../../../../mbse-basis/docs/capabilities/CAP-007.md)) | `x` | every property `x` holds; every entry of its named adjacencies; each linked object's `label`; `x`'s provenance |
+| `adjacency` ([CAP-008: adjacency as a list of chips](../../../../../mbse-basis/docs/capabilities/CAP-008.md)) | `x`, `y` | every entry of `x`'s named adjacencies that links `y`; `y`'s `chip`; `y`'s provenance |
 
-An object's provenance (CAP-015), where its schema has a history: the records of the transactions that created it and
+An object's provenance ([CAP-015: transaction provenance](../../../../../mbse-basis/docs/capabilities/CAP-015.md)), where its schema has a history: the records of the transactions that created it and
 last wrote it (`when`, `where`), each one's session (`started`, `locale`, `device`) and the session's identity, and the
 entries linking them (`CreatedBy`, `ModifiedBy`, `InSession`, `Who`).
 
 A template is a transaction of one map whose pattern declares the kind's symbols, each given neither a schema nor a
-reference: the client gives each one exactly one (CAP-004). The `adjacency` template's spec is added by the client,
+reference: the client gives each one exactly one ([CAP-004: logical view templates](../../../../../mbse-basis/docs/capabilities/CAP-004.md)). The `adjacency` template's spec is added by the client,
 `_.x.<adjacency>([_.y])`, once `x` is given, since an adjacency is a member of `x`'s schema.
 
-Counted objects have no reference, so a frame that binds one, and an entry that links one, are left out (FEA-003).
+Counted objects have no reference, so a frame that binds one, and an entry that links one, are left out ([FEA-003: no-code logical views](../../../../../mbse-basis/docs/features/FEA-003.md)).
 """
 
 from __future__ import annotations
@@ -36,9 +36,9 @@ __all__ = ["KINDS", "SYMBOLS", "LABELS", "SUMMARIES", "CHIP_SCALARS", "template"
 
 KINDS = ("label", "chip", "detail", "adjacency")
 SYMBOLS = {"label": ("x",), "chip": ("x",), "detail": ("x",), "adjacency": ("x", "y")}
-LABELS = ("label", "name", "title")  # CAP-005: the label is the first of these
-SUMMARIES = ("summary", "description")  # CAP-005: the summary is the first of these
-CHIP_SCALARS = 3  # CAP-006: the other scalar properties a chip includes
+LABELS = ("label", "name", "title")  # [CAP-005: label and summary view](../../../../../mbse-basis/docs/capabilities/CAP-005.md): the label is the first of these
+SUMMARIES = ("summary", "description")  # [CAP-005: label and summary view](../../../../../mbse-basis/docs/capabilities/CAP-005.md): the summary is the first of these
+CHIP_SCALARS = 3  # [CAP-006: chip view](../../../../../mbse-basis/docs/capabilities/CAP-006.md): the other scalar properties a chip includes
 
 
 def template(store: Any, kind: str) -> Any:
@@ -68,7 +68,7 @@ def summary_property(obj: Any) -> str | None:
 
 
 def chip_properties(obj: Any) -> list[str]:
-    """A chip's properties (CAP-006): the label's and the summary's, then the first `CHIP_SCALARS` other scalar
+    """A chip's properties ([CAP-006: chip view](../../../../../mbse-basis/docs/capabilities/CAP-006.md)): the label's and the summary's, then the first `CHIP_SCALARS` other scalar
     properties the schema declares that `obj` holds, in the schema's order."""
     first = [name for name in (label_property(obj), summary_property(obj)) if name is not None]
     others = [name for name, prop in obj.as_schema().properties.items()
@@ -126,7 +126,7 @@ class _Witness:
 
 
 def _history(store: Any, reference: Any) -> list[tuple[str, Mapping[str, Any]]]:
-    """The provenance of the object `reference` designates (CAP-015): for `created` and `modified`, each frame binding
+    """The provenance of the object `reference` designates ([CAP-015: transaction provenance](../../../../../mbse-basis/docs/capabilities/CAP-015.md)): for `created` and `modified`, each frame binding
     `t`, the transaction record that created (or last wrote) it, `s`, its session, and `i`, the session's identity.
     Read from the records' side, since an object's adjacencies to them are anonymous; none where the store has no
     `Provenance`, or the object's schema no history."""
@@ -145,7 +145,7 @@ def _history(store: Any, reference: Any) -> list[tuple[str, Mapping[str, Any]]]:
 
 
 def _witness_history(seen: "_Witness", obj: Any) -> None:
-    """Witnesses `obj`'s provenance (CAP-015): each record, its session and identity, with what they hold, and the
+    """Witnesses `obj`'s provenance ([CAP-015: transaction provenance](../../../../../mbse-basis/docs/capabilities/CAP-015.md)): each record, its session and identity, with what they hold, and the
     entries linking them: `CreatedBy` and `ModifiedBy` (from the record), `InSession`, `Who`."""
     reference = _reference(seen.store, obj)
     if reference is None:

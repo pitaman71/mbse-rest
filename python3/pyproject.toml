@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "mbse-rest"
 version = "0.1.0"
-description = "REST endpoints over an mbse-schemas store (mbse-basis FEA-003)."
+description = "REST endpoints over an mbse-schemas store (mbse-basis [FEA-003: no-code logical views](../../mbse-basis/docs/features/FEA-003.md))."
 requires-python = ">=3.11"
 dependencies = [
     "mbse-schemas>=0.26.2,<0.27",
