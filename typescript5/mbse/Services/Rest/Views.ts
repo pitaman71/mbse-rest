@@ -1,4 +1,4 @@
-/** The logical view kinds (VISUALIZATION.md, FEA-003), the client's side: each kind's template filled, and what a
+/** The logical view kinds (mbse-basis FEA-003), the client's side: each kind's template filled, and what a
  * frame of each kind carries read back (CAP-005 to CAP-008). The server's side is `python3/mbse/Services/Rest/Views.py`;
  * `docs/CONTRACT.md` is the prose, and the golden corpus in `conformance/` checks that both agree. */
 
