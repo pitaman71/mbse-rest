@@ -1,4 +1,4 @@
-"""The endpoints hardened (docs/CONTRACT.md): error bodies and statuses, writes undone where the plugin has not journaled
+"""The endpoints hardened (mbse-basis CAP-012: logical view endpoints, and CAP-013, as built): error bodies and statuses, writes undone where the plugin has not journaled
 them, plugin failures, and one transaction at a time."""
 
 from __future__ import annotations

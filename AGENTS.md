@@ -11,8 +11,13 @@ The named schema list, schema inspector, logical view templates and one endpoint
   ([`mbse-basis/docs/features/`](../mbse-basis/docs/features), [`mbse-basis/docs/capabilities/`](../mbse-basis/docs/capabilities)), by ID; cite those IDs, each introduced
   by bridge language (mbse-basis [`docs/README.md`](../mbse-basis/docs/README.md), Rules for writing items, "Bridge, don't duplicate").
 - **Tests run with pytest** from `python3/`: `uv sync && uv run pytest`. Use uv, never pip.
-- **Type-check and test the client** from `typescript5/`: `npm install && npm run typecheck && npm test`.
-- **The contract is [`docs/CONTRACT.md`](docs/CONTRACT.md)**, with `Views.py` and `Views.ts` its two halves. A change to what the server
+- **Type-check and test the client** from `typescript5/`: `npm install && npm run typecheck && npm test`, Node's test
+  runner through `tsx`, since `@mbse/schemas` is TypeScript source. Its tests import mbse-schemas' TypeScript source,
+  whose own dependency (`yaml`) must be installed in the sibling's checkout: `(cd ../mbse-schemas/typescript5 && npm ci
+  --omit=dev)`. The server's tests use `httpx2` for FastAPI's test client, which deprecates `httpx`; no server runs in
+  them: the entry point is tested by what it hands uvicorn, every endpoint through FastAPI's test client.
+- **The contract is what mbse-basis' [FEA-003: no-code logical views](../mbse-basis/docs/features/FEA-003.md) and its capabilities say, as built**
+  (each detail file's As built section), with `Views.py` and `Views.ts` its two halves. A change to what the server
   answers regenerates the golden corpus (`uv run python -m mbse.Services.Rest.Conformance`), committed with it, and is
   reviewed as a change to the contract: mbse-react and mbse-dynamodb build against it.
 
@@ -22,12 +27,15 @@ The named schema list, schema inspector, logical view templates and one endpoint
   tests pass (`git push -u origin <branch>`, or `python3 ../mbse-basis/scripts/polyrepo.py push` where it supports
   every sibling). Never commit to `main`. When done, open one pull request per repository with `gh pr create`,
   listing the decisions for review.
-- Where the capabilities are silent, take the simplest default consistent with them and with mbse-schemas, record it in
-  mbse-rest's [`docs/CONTRACT.md`](docs/CONTRACT.md) under "Decided by the agent, for review", and keep going.
+- Where the capabilities are silent, take the simplest default consistent with them and with mbse-schemas, record it
+  in the detail file of the capability it serves, in mbse-basis' [`docs/capabilities/`](../mbse-basis/docs/capabilities), under "Decided by
+  an agent, for review", labeled with this repository's name and the next number, and keep going.
 - Stop and report (do not work around) for: a gap or bug in mbse-schemas; an outward-facing action beyond pushing
   branches and opening pull requests in these repositories; anything destructive (force-push, deleting branches or
   files outside your work, rewriting history); a contradiction in a capability that changes what gets built.
-- Never edit a sibling from another repository's work; never edit mbse-schemas or mbse-basis from here.
+- Never edit a sibling from another repository's work; never edit mbse-schemas; in mbse-basis,
+  edit only a capability's or feature's As built, Blocked and Decided sections, in a pull request beside this
+  repository's.
 - Never write to `~/.claude/projects/*/memory/` or any hidden memory: what is worth keeping goes in the repository.
 - Conventions: Python with uv (`uv sync`, `uv run pytest`), never pip; package capitalization as mbse-schemas has it
   (`mbse.Services.Rest`); "property", never "field", and "schema", never "type", for schema-governed things. Models

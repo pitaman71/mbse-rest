@@ -9,7 +9,7 @@ It consolidates and verifies the entire interface in one repository: the server 
 (`typescript5/mbse/Services/Rest/Client.ts`, `@mbse/rest`). What it serves is specified in mbse-basis'
 capabilities: [CAP-002: named schema list](../mbse-basis/docs/capabilities/CAP-002.md) to [CAP-004: logical view templates](../mbse-basis/docs/capabilities/CAP-004.md) and [CAP-012: logical view endpoints](../mbse-basis/docs/capabilities/CAP-012.md), over the stack under [FEA-006: persistence](../mbse-basis/docs/features/FEA-006.md).
 
-The contract, its endpoints, view kinds and persistence plugin, is [docs/CONTRACT.md](docs/CONTRACT.md); the
+The contract, its endpoints, view kinds and persistence plugin, is what mbse-basis' [FEA-003: no-code logical views](../mbse-basis/docs/features/FEA-003.md) and its capabilities say, as built; the
 [golden corpus](conformance/README.md) holds real requests and responses for clients to develop against.
 
 It depends on [mbse-schemas](https://github.com/pitaman71/mbse-schemas) as a checkout beside this repository, and on
@@ -27,7 +27,7 @@ MBSE_REST_ORIGINS=http://localhost:5173 MBSE_REST_PORT=8080 uv run python -m mbs
 It serves any MBSE app: `MBSE_REST_APP` names the app's package (its `Schemas.install`, then its `Seed.seed`),
 `MBSE_REST_PLUGIN` its persistence plugin (`memory`, or `module:attribute`), `MBSE_REST_ORIGINS` the UI's origins for
 CORS. Every variable, and `Service.app` for serving an app from code, is in
-[docs/CONTRACT.md](docs/CONTRACT.md#the-service-for-any-mbse-app-m1).
+[CAP-001: no-code index view](../mbse-basis/docs/capabilities/CAP-001.md#the-service-for-any-mbse-app).
 
 ## Using the client
 
@@ -40,7 +40,7 @@ await client.loadSchemas(store);
 for (const frame of await client.label(store, store.registered("work.Task"))) console.log(Views.label(store, frame));
 ```
 
-Its calls, options, typed errors and aborts are in [docs/CONTRACT.md](docs/CONTRACT.md#the-client-m1).
+Its calls, options, typed errors and aborts are in [FEA-003: no-code logical views](../mbse-basis/docs/features/FEA-003.md#the-client), the client.
 
 ## Testing
 

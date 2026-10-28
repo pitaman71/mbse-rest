@@ -10,7 +10,7 @@ import { Client, newStore, schemaNames, ServiceError, Views } from "../mbse/Serv
 const ROOT = new URL("../../conformance/", import.meta.url);
 const read = (name: string): string => readFileSync(new URL(name, ROOT), "utf8");
 
-/** What a request is made of, on the cases the corpus generates for the UI's views (CONTRACT.md, The golden corpus). */
+/** What a request is made of, on the cases the corpus generates for the UI's views (mbse-basis FEA-003: no-code logical views, the golden corpus). */
 interface View {
   kind: Views.Kind;
   given: Record<string, { schema: string } | { reference: unknown }>;
