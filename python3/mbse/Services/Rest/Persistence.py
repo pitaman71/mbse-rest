@@ -1,4 +1,4 @@
-"""The persistence plugin interface (VISUALIZATION.md, CAP-013), and its in-memory reference implementation.
+"""The persistence plugin interface (mbse-basis CAP-013), and its in-memory reference implementation.
 
 The service holds its store in memory and executes transactions over it. A plugin makes that store outlive the
 process: `load` fills a fresh store at startup from the latest snapshot and the journal after it, `journal` records a

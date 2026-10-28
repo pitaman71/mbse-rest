@@ -1,1 +1,1 @@
-"""REST endpoints over an mbse-schemas store (VISUALIZATION.md, FEA-003)."""
+"""REST endpoints over an mbse-schemas store (mbse-basis FEA-003)."""

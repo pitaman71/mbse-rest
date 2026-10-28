@@ -1,8 +1,8 @@
 # The REST contract (M0)
 
-What mbse-rest serves, and what its client, mbse-react and mbse-dynamodb build against: VISUALIZATION.md's CAP-002,
+What mbse-rest serves, and what its client, mbse-react and mbse-dynamodb build against: mbse-basis CAP-002,
 CAP-003, CAP-004 and CAP-012, the view kinds of CAP-005 to CAP-008, and the persistence plugin of CAP-013. This page
-fixes what VISUALIZATION.md leaves open; it cites the capabilities rather than restating them.
+fixes what the capabilities leave open; it cites the capabilities rather than restating them.
 
 The code is the contract's other half, and the golden corpus (`conformance/`) checks that both sides keep it:
 
@@ -336,7 +336,7 @@ Reported, not worked around (AGENTS.md):
 
 ## Decided by the agent, for review
 
-Where VISUALIZATION.md is silent, the simplest default consistent with it and with mbse-schemas:
+Where mbse-basis' capabilities are silent, the simplest default consistent with them and with mbse-schemas:
 
 1. **Paths and methods** as in Endpoints; `POST` for a view, since its body is a transaction's expression.
 2. **CAP-002's names** are every named schema the client's store holds once it has read the snapshot, the
