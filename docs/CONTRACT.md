@@ -2,7 +2,8 @@
 
 What mbse-rest serves, and what its client, mbse-react and mbse-dynamodb build against: mbse-basis CAP-002,
 CAP-003, CAP-004 and CAP-012, the view kinds of CAP-005 to CAP-008, and the persistence plugin of CAP-013. This page
-fixes what the capabilities leave open; it cites the capabilities rather than restating them.
+fixes what the capabilities leave open; it cites the capabilities, each with a
+bridge, rather than restating them in full.
 
 The code is the contract's other half, and the golden corpus (`conformance/`) checks that both sides keep it:
 
