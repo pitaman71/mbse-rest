@@ -1,7 +1,7 @@
 """The logical view kinds (mbse-basis [FEA-003: no-code logical views](../../../../../mbse-basis/docs/features/FEA-003.md)): what each includes, and its template ([CAP-004: logical view templates](../../../../../mbse-basis/docs/capabilities/CAP-004.md)).
 
 One definition, shared by the server, which fills each frame's `assigns` and `entries` ([CAP-012: logical view endpoints](../../../../../mbse-basis/docs/capabilities/CAP-012.md)), and the client
-(`typescript5/mbse/Services/Rest/Views.ts`), which reads them. `docs/CONTRACT.md` is the prose; the golden corpus in
+(`typescript5/mbse/Services/Rest/Views.ts`), which reads them. [FEA-003: no-code logical views](../../../../../mbse-basis/docs/features/FEA-003.md#view-kinds) is the prose; the golden corpus in
 `conformance/` checks that both agree.
 
 | Kind | Symbols | Includes, for each frame |

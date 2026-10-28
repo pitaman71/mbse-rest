@@ -4,12 +4,12 @@
 replays what the persistence plugin holds, or, where it holds nothing, runs each install (the app's `Schemas.install`,
 then, optionally, its `Seed.seed`) and gives the plugin a snapshot of what they wrote. `installs_of(module)` finds an
 app's installs by that convention; `from_environment()` builds the application from `MBSE_REST_*` variables, as
-`python -m mbse.Services.Rest` serves it. The endpoints are `docs/CONTRACT.md`'s:
+`python -m mbse.Services.Rest` serves it. The endpoints are [CAP-012: logical view endpoints](../../../../../mbse-basis/docs/capabilities/CAP-012.md)'s, as built:
 
 | Method and path | Capability | Response |
 |---|---|---|
 | `GET /schemas` | [CAP-002: named schema list](../../../../../mbse-basis/docs/capabilities/CAP-002.md) | the store's schema snapshot, the first transaction of its snapshot, while [CAP-003: schema inspector](../../../../../mbse-basis/docs/capabilities/CAP-003.md) is blocked |
-| `GET /schemas/{name}` | [CAP-003: schema inspector](../../../../../mbse-basis/docs/capabilities/CAP-003.md) | 501 until mbse-schemas writes one schema object as a document (CONTRACT.md) |
+| `GET /schemas/{name}` | [CAP-003: schema inspector](../../../../../mbse-basis/docs/capabilities/CAP-003.md) | 501 until mbse-schemas writes one schema object as a document (CAP-003, Blocked) |
 | `GET /views` | [CAP-004: logical view templates](../../../../../mbse-basis/docs/capabilities/CAP-004.md) | `{kind: template, ...}`, each a transaction's expression |
 | `POST /views/{kind}` | [CAP-012: logical view endpoints](../../../../../mbse-basis/docs/capabilities/CAP-012.md) | the frames, `References.OfFrame`, one JSON document a line (NDJSON) |
 
@@ -17,7 +17,7 @@ A view's request is a transaction's expression (`Plain.ToPlain(store).Transactio
 (`JSON.loads`, `Plain.FromPlain(store).Transaction`), executes it, journals it if it writes, and fills each frame's
 `assigns` and `entries` as the kind defines (`Views.witness`). One transaction runs at a time. What the plugin has not
 journaled is undone: where a transaction that writes is refused after it commits, or its journal fails, the store is
-read back from the plugin (`Service.restore`). Every refusal is `{"error": message}` (CONTRACT.md, Wire format).
+read back from the plugin (`Service.restore`). Every refusal is `{"error": message}` ([CAP-012: logical view endpoints](../../../../../mbse-basis/docs/capabilities/CAP-012.md), the wire format).
 """
 
 from __future__ import annotations
@@ -49,7 +49,7 @@ __all__ = ["NDJSON", "Install", "Refused", "Unavailable", "Service", "app", "ins
 
 NDJSON = "application/x-ndjson"
 UNWRITTEN = ("mbse-schemas writes no schema object as a document of its own: Plain.ToPlain(store).OfObject refuses "
-             "one, owned through an anonymous adjacency (docs/CONTRACT.md, CAP-003)")
+             "one, owned through an anonymous adjacency (mbse-basis CAP-003: schema inspector, Blocked)")
 WORK_TRACKER = "mbse.Demos.Apps.WorkTracker"
 
 Install = Callable[[Any], Any]
@@ -256,7 +256,7 @@ def app(installs: Iterable[Install] = (), plugin: Plugin | None = None, snapshot
     (`Persistence.Memory` where None). It holds the service as `app.state.service`. `origins` are those a browser may
     call it from (CORS), the UI's: none by default."""
     service = Service(installs, plugin, snapshot_every, user=user, clock=clock, uids=uids)
-    api = FastAPI(title="mbse-rest", description="Logical views over an mbse-schemas store (docs/CONTRACT.md)")
+    api = FastAPI(title="mbse-rest", description="Logical views over an mbse-schemas store (mbse-basis FEA-003: no-code logical views)")
     api.state.service = service
     allowed = list(origins)
     if allowed:

@@ -1,4 +1,4 @@
-"""The service: its endpoints (docs/CONTRACT.md), its views (Views) and its persistence (CAP-013)."""
+"""The service: its endpoints (mbse-basis CAP-012: logical view endpoints), its views (Views) and its persistence (CAP-013)."""
 
 from __future__ import annotations
 

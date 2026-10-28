@@ -1,6 +1,6 @@
 /** The logical view kinds (mbse-basis [FEA-003: no-code logical views](../../../../../mbse-basis/docs/features/FEA-003.md)), the client's side: each kind's template filled, and what a
  * frame of each kind carries read back ([CAP-005: label and summary view](../../../../../mbse-basis/docs/capabilities/CAP-005.md) to [CAP-008: adjacency as a list of chips](../../../../../mbse-basis/docs/capabilities/CAP-008.md)). The server's side is `python3/mbse/Services/Rest/Views.py`;
- * `docs/CONTRACT.md` is the prose, and the golden corpus in `conformance/` checks that both agree. */
+ * [FEA-003: no-code logical views](../../../../../mbse-basis/docs/features/FEA-003.md#view-kinds) is the prose, and the golden corpus in `conformance/` checks that both agree. */
 
 import { JSON as J, Plain } from "@mbse/schemas/Framework";
 

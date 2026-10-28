@@ -1,3 +1,3 @@
 {
- "error": "mbse-schemas writes no schema object as a document of its own: Plain.ToPlain(store).OfObject refuses one, owned through an anonymous adjacency (docs/CONTRACT.md, CAP-003)"
+ "error": "mbse-schemas writes no schema object as a document of its own: Plain.ToPlain(store).OfObject refuses one, owned through an anonymous adjacency (mbse-basis CAP-003: schema inspector, Blocked)"
 }

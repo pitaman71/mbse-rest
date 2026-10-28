@@ -1,5 +1,5 @@
 /** The client side of mbse-rest: translates a mutation query into well-formed REST calls, and reads the frame stream
- * back for the UI (mbse-basis [FEA-006: persistence](../../../../../mbse-basis/docs/features/FEA-006.md), [CAP-013: an in-memory store journaled to DynamoDB](../../../../../mbse-basis/docs/capabilities/CAP-013.md)). The calls are `docs/CONTRACT.md`'s; its "The client" section
+ * back for the UI (mbse-basis [FEA-006: persistence](../../../../../mbse-basis/docs/features/FEA-006.md), [CAP-013: an in-memory store journaled to DynamoDB](../../../../../mbse-basis/docs/capabilities/CAP-013.md)). The calls are FEA-003's, as built; its "The client" section
  * documents this module's API. */
 
 import { Builders, JSON as J, Plain } from "@mbse/schemas/Framework";
@@ -29,7 +29,7 @@ export class RestError extends Error {
   }
 }
 
-/** A response the service refused: its status, its body, and the body's `error` (CONTRACT.md, Wire format). Each
+/** A response the service refused: its status, its body, and the body's `error` ([CAP-012: logical view endpoints](../../../../../mbse-basis/docs/capabilities/CAP-012.md), the wire format). Each
  * status the contract names has a class of its own; `ServiceError.of` chooses it. */
 export class ServiceError extends RestError {
   /** The refusal's message: the body's `error`, else the body as it is. */
