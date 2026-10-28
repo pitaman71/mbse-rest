@@ -6,8 +6,8 @@ service code.
 
 It consolidates and verifies the entire interface in one repository: the server side in Python
 (`python3/mbse/Services/Rest`, `mbse.Services.Rest`) and the client side in TypeScript
-(`typescript5/mbse/Services/Rest/Client.ts`, `@mbse/rest`). What it serves is specified in mbse-basis'
-capabilities: CAP-002 to CAP-004 and CAP-012, over the stack under FEA-006.
+([`typescript5/mbse/Services/Rest/Client.ts`](typescript5/mbse/Services/Rest/Client.ts), `@mbse/rest`). What it serves is specified in mbse-basis'
+capabilities: [CAP-002: named schema list](../mbse-basis/docs/capabilities/CAP-002.md) to [CAP-004: logical view templates](../mbse-basis/docs/capabilities/CAP-004.md) and [CAP-012: logical view endpoints](../mbse-basis/docs/capabilities/CAP-012.md), over the stack under [FEA-006: persistence](../mbse-basis/docs/features/FEA-006.md).
 
 The contract, its endpoints, view kinds and persistence plugin, is [docs/CONTRACT.md](docs/CONTRACT.md); the
 [golden corpus](conformance/README.md) holds real requests and responses for clients to develop against.

@@ -1,4 +1,4 @@
-"""The logical view kinds (mbse-basis FEA-003): what each includes, and its template (CAP-004).
+"""The logical view kinds (mbse-basis FEA-003: no-code logical views): what each includes, and its template (CAP-004).
 
 One definition, shared by the server, which fills each frame's `assigns` and `entries` (CAP-012), and the client
 (`typescript5/mbse/Services/Rest/Views.ts`), which reads them. `docs/CONTRACT.md` is the prose; the golden corpus in

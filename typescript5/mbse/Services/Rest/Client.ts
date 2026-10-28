@@ -1,5 +1,5 @@
 /** The client side of mbse-rest: translates a mutation query into well-formed REST calls, and reads the frame stream
- * back for the UI (mbse-basis FEA-006, CAP-013). The calls are `docs/CONTRACT.md`'s; its "The client" section
+ * back for the UI (mbse-basis FEA-006, CAP-013: an in-memory store journaled to DynamoDB). The calls are `docs/CONTRACT.md`'s; its "The client" section
  * documents this module's API. */
 
 import { Builders, JSON as J, Plain } from "@mbse/schemas/Framework";

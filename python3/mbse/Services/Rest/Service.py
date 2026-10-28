@@ -1,4 +1,4 @@
-"""The REST service over an mbse-schemas store (mbse-basis CAP-002 to CAP-004, CAP-012 and CAP-013).
+"""The REST service over an mbse-schemas store (mbse-basis CAP-002: named schema list to CAP-004: logical view templates, CAP-012: logical view endpoints and CAP-013: an in-memory store journaled to DynamoDB).
 
 `app(installs, plugin)` gives a FastAPI application over any MBSE app: one store held in memory, which at startup
 replays what the persistence plugin holds, or, where it holds nothing, runs each install (the app's `Schemas.install`,
