@@ -89,7 +89,7 @@ class Unavailable(Refused):
 
 SESSION_HEADER = "x-mbse-session"
 """The request header that names the client's session ([CAP-015: transaction provenance](../../../../../mbse-basis/docs/capabilities/CAP-015.md)): the demo's stand-in for a validated token's
-session, which the service trusts (tech debt, TODO.md)."""
+session, which the service trusts until [CAP-177: sessions and identities from a validated token](../../../../../mbse-basis/docs/capabilities/CAP-177.md)."""
 
 
 Clock = Callable[[], datetime.datetime]
@@ -129,7 +129,7 @@ class Service:
 
     def __init__(self, installs: Iterable[Install] = (), plugin: Plugin | None = None,
                  snapshot_every: int = 100, *, user: str = "demo", clock: Clock = _now, uids: Uids = _uuid) -> None:
-        self.user = user  # the demo's identity, standing in for a validated token's ([CAP-015: transaction provenance](../../../../../mbse-basis/docs/capabilities/CAP-015.md); tech debt, TODO.md)
+        self.user = user  # the demo's identity, standing in for a validated token's ([CAP-015: transaction provenance](../../../../../mbse-basis/docs/capabilities/CAP-015.md); [CAP-177: sessions and identities from a validated token](../../../../../mbse-basis/docs/capabilities/CAP-177.md))
         self.clock, self.uids = clock, uids  # a write's `when` and, where it has none, its `uid` (`stamp`)
         self.installs = list(installs)
         self.plugin = plugin if plugin is not None else Memory()
@@ -151,7 +151,8 @@ class Service:
 
     def restore(self) -> None:
         """Undoes what the plugin has not journaled: the store is read back from the plugin. Where that fails, the
-        service answers 503 to every request from then on."""
+        service answers 503 to every request from then on. Costly for a large store: [CAP-176: a transaction's changes held in builders and mutation frames until journaled](../../../../../mbse-basis/docs/capabilities/CAP-176.md)
+        holds a transaction's changes until it is journaled, so that nothing need be read back."""
         try:
             self.store = self._open()
             self._journaled = 0
@@ -180,7 +181,7 @@ class Service:
         if missing:
             self.restore()  # committed in memory, never journaled: undone
             raise Refused(400, f"{missing}; what it wrote is undone")
-        try:
+        try:  # committed before journaled, since transactions on one store do not nest ([CAP-176: a transaction's changes held in builders and mutation frames until journaled](../../../../../mbse-basis/docs/capabilities/CAP-176.md))
             self.plugin.journal(plain)
         except Exception as error:  # the plugin's own, whatever it raises
             log.exception("a committed transaction could not be journaled")

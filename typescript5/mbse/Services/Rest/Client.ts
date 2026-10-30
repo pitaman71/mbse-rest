@@ -71,7 +71,8 @@ export class TransportError extends RestError {}
  * contract gives): `cause` is what reading it raised. */
 export class ResponseError extends RestError {}
 
-/** The request header that names the client's session ([CAP-015: transaction provenance](../../../../../mbse-basis/docs/capabilities/CAP-015.md)): the service stamps it on each write. */
+/** The request header that names the client's session ([CAP-015: transaction provenance](../../../../../mbse-basis/docs/capabilities/CAP-015.md)): the service stamps it on each write, trusting it until
+ * [CAP-177: sessions and identities from a validated token](../../../../../mbse-basis/docs/capabilities/CAP-177.md). */
 export const SESSION_HEADER = "x-mbse-session";
 
 export type Fetch = (input: string, init?: RequestInit) => Promise<Response>;
