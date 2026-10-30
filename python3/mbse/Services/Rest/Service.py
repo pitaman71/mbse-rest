@@ -151,7 +151,7 @@ class Service:
 
     def restore(self) -> None:
         """Undoes what the plugin has not journaled: the store is read back from the plugin. Where that fails, the
-        service answers 503 to every request from then on. Costly for a large store: [CAP-176: a transaction's changes held in builders and mutation frames until journaled](../../../../../mbse-basis/docs/capabilities/CAP-176.md)
+        service answers 503 to every request from then on. Costly for a large store: [CAP-176: a transaction's changes held in builders and mutation frames until committed](../../../../../mbse-basis/docs/capabilities/CAP-176.md)
         holds a transaction's changes until it is journaled, so that nothing need be read back."""
         try:
             self.store = self._open()
@@ -181,7 +181,7 @@ class Service:
         if missing:
             self.restore()  # committed in memory, never journaled: undone
             raise Refused(400, f"{missing}; what it wrote is undone")
-        try:  # committed before journaled, since transactions on one store do not nest ([CAP-176: a transaction's changes held in builders and mutation frames until journaled](../../../../../mbse-basis/docs/capabilities/CAP-176.md))
+        try:  # committed before journaled, since transactions on one store do not nest ([CAP-176: a transaction's changes held in builders and mutation frames until committed](../../../../../mbse-basis/docs/capabilities/CAP-176.md))
             self.plugin.journal(plain)
         except Exception as error:  # the plugin's own, whatever it raises
             log.exception("a committed transaction could not be journaled")
