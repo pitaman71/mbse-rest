@@ -128,7 +128,8 @@ class _Witness:
 def _history(store: Any, reference: Any) -> list[tuple[str, Mapping[str, Any]]]:
     """The provenance of the object `reference` designates ([CAP-015: transaction provenance](../../../../../mbse-basis/docs/capabilities/CAP-015.md)): for `created` and `modified`, each frame binding
     `t`, the transaction record that created (or last wrote) it, `s`, its session, and `i`, the session's identity.
-    Read from the records' side, since an object's adjacencies to them are anonymous; none where the store has no
+    Read from the records' side, since an object's adjacencies to them are anonymous, by a map over every record:
+    slow for a long history until [CAP-178: an object's provenance read through its own named adjacencies](../../../../../mbse-basis/docs/capabilities/CAP-178.md). None where the store has no
     `Provenance`, or the object's schema no history."""
     try:
         records, sessions, identities = (store.registered(name) for name in (
