@@ -4,12 +4,20 @@ The named schema list, schema inspector, logical view templates and one endpoint
 
 ## Invariants
 
-- **Use mbse-schemas as it stands.** A gap found is reported to the user, not worked around here.
-- **Siblings are checkouts beside this repository**, pinned by commit in `siblings.json`. Other agents may be working
-  in them: never edit a sibling from here.
-- **What this repository builds is specified in mbse-basis' features and capabilities**
-  ([`mbse-basis/docs/features/`](../mbse-basis/docs/features), [`mbse-basis/docs/capabilities/`](../mbse-basis/docs/capabilities)), by ID, cited as mbse-basis'
-  [`docs/README.md`](../mbse-basis/docs/README.md) says.
+The conventions every mbse repository shares are stated once in mbse-basis; this file cites them and keeps
+only what differs here.
+
+- **Vocabulary**: [VOC-007: property](../mbse-basis/docs/VOCABULARY.md#VOC-007) and [VOC-026: schema](../mbse-basis/docs/VOCABULARY.md#VOC-026) for schema-governed things, qualified with whose it is where
+  it meets a language's own term ([the vocabulary](../mbse-basis/docs/VOCABULARY.md), its introduction).
+- **Models as data** are written in the builders' fluent syntax ([PRI-019: fluent builder syntax](../mbse-basis/docs/PRINCIPLES.md#PRI-019)); packages are laid out and
+  capitalized alike ([PRI-030: one package layout](../mbse-basis/docs/PRINCIPLES.md#PRI-030)).
+- **Documents**: navigation lines, the README opening with why, and what this file holds ([Rules for every document](../mbse-basis/docs/README.md#rules-for-every-document)).
+- **Work**: [PRI-029: parallel work in polyrepo workspaces](../mbse-basis/docs/PRINCIPLES.md#PRI-029), so a sibling is changed only through a workspace that edits it, never from this
+  checkout; [PRI-031: the version is the contract](../mbse-basis/docs/PRINCIPLES.md#PRI-031); [PRI-032: a sibling's gap is reported, not worked around](../mbse-basis/docs/PRINCIPLES.md#PRI-032) (mbse-schemas used as it stands); and [PRI-033: work lands by branch and pull request](../mbse-basis/docs/PRINCIPLES.md#PRI-033).
+- **What this repository builds is specified in mbse-basis' features and capabilities**, cited by ID; where one is
+  silent, decide and record it as the basis says ([Detail files](../mbse-basis/docs/README.md#detail-files)).
+- **Siblings are checkouts beside this repository**, pinned by version and commit in `siblings.json`
+  (`python3 ../mbse-basis/scripts/polyrepo.py pin`).
 - **Tests run with pytest** from `python3/`: `uv sync && uv run pytest`. Use uv, never pip.
 - **Type-check and test the client** from `typescript5/`: `npm install && npm run typecheck && npm test`, Node's test
   runner through `tsx`, since `@mbse/schemas` is TypeScript source. Its tests import mbse-schemas' TypeScript source,
@@ -20,22 +28,4 @@ The named schema list, schema inspector, logical view templates and one endpoint
   (each detail file's As built section), with `Views.py` and `Views.ts` its two halves. A change to what the server
   answers regenerates the golden corpus (`uv run python -m mbse.Services.Rest.Conformance`), committed with it, and is
   reviewed as a change to the contract: mbse-react and mbse-dynamodb build against it.
-
-## Working agreement (M0, for every agent on mbse-rest, mbse-dynamodb, mbse-react and mbse-demo-apps)
-
-- Work on a branch in each repository you change (M0's is `m0-contract`). Commit and push after every step whose
-  tests pass (`git push -u origin <branch>`, or `python3 ../mbse-basis/scripts/polyrepo.py push` where it supports
-  every sibling). Never commit to `main`. When done, open one pull request per repository with `gh pr create`,
-  listing the decisions for review.
-- Where a capability is silent, decide and record it as mbse-basis' [`docs/README.md`](../mbse-basis/docs/README.md#detail-files) says (Detail files), and keep going.
-- Stop and report (do not work around) for: a gap or bug in mbse-schemas; an outward-facing action beyond pushing
-  branches and opening pull requests in these repositories; anything destructive (force-push, deleting branches or
-  files outside your work, rewriting history); a contradiction in a capability that changes what gets built.
-- Never edit a sibling from another repository's work; never edit mbse-schemas, nor mbse-basis
-  beyond what its [`docs/README.md`](../mbse-basis/docs/README.md#detail-files) allows (Detail files).
 - Never write to `~/.claude/projects/*/memory/` or any hidden memory: what is worth keeping goes in the repository.
-- Conventions: Python with uv (`uv sync`, `uv run pytest`), never pip; package capitalization as mbse-schemas has it
-  (`mbse.Services.Rest`); "property", never "field", and "schema", never "type", for schema-governed things. Models
-  as data are written in the builders' fluent syntax, never wire format, never helpers that wrap builder syntax.
-- End every commit message with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`, and every pull request's
-  description with `🤖 Generated with [Claude Code](https://claude.com/claude-code)`.
