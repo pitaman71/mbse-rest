@@ -1,3 +1,6 @@
+<!-- nav -->
+[← mbse-rest](../README.md)
+
 # The golden corpus
 
 Real requests and responses of mbse-rest's stub server over the WorkTracker seed (mbse-demo-apps), the contract
@@ -7,3 +10,8 @@ request is made of. `<case>.request.json` is its body, and `<case>.response.json
 
 Generated, never edited by hand: from `python3/`, `uv run python -m mbse.Services.Rest.Conformance`. The server's tests
 fail while it is out of date; the client's tests read it (`typescript5/tests/client.test.ts`).
+
+---
+
+<!-- nav -->
+[← mbse-rest](../README.md)

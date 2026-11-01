@@ -1,3 +1,6 @@
+<!-- nav -->
+[The golden corpus →](conformance/README.md)
+
 # mbse-rest
 
 REST endpoints for any mbse-schemas store: a transactional API whose queries and responses are mutation expressions and
@@ -49,3 +52,8 @@ cd python3 && uv sync --all-extras && uv run pytest
 (cd ../mbse-schemas/typescript5 && npm ci --omit=dev)   # once: mbse-schemas' own dependency, which the client imports
 cd typescript5 && npm install && npm run typecheck && npm test
 ```
+
+---
+
+<!-- nav -->
+[The golden corpus →](conformance/README.md)
