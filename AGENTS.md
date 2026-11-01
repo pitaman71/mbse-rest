@@ -2,22 +2,25 @@
 
 The named schema list, schema inspector, logical view templates and one endpoint per logical view kind (mbse-basis [CAP-002: named schema list](../mbse-basis/docs/capabilities/CAP-002.md) to [CAP-004: logical view templates](../mbse-basis/docs/capabilities/CAP-004.md) and [CAP-012: logical view endpoints](../mbse-basis/docs/capabilities/CAP-012.md)). The whole interface, verified in one repository: the server in Python, `python3/mbse/Services/Rest` (`mbse.Services.Rest`), and the client in TypeScript, `typescript5/mbse/Services/Rest/Client.ts` (`@mbse/rest`).
 
-## Invariants
+## Read before any work
 
-The conventions every mbse repository shares are stated once in mbse-basis; this file cites them and keeps
-only what differs here.
+Agents must read these mbse-basis documents before doing any work:
 
-- **Vocabulary**: [VOC-007: property](../mbse-basis/docs/VOCABULARY.md#VOC-007) and [VOC-026: schema](../mbse-basis/docs/VOCABULARY.md#VOC-026), each qualified with whose it is where
-  it meets a language's own term ([the vocabulary](../mbse-basis/docs/VOCABULARY.md), its introduction).
-- **Models and packages**: [PRI-019: fluent builder syntax](../mbse-basis/docs/PRINCIPLES.md#PRI-019) and [PRI-030: one package layout](../mbse-basis/docs/PRINCIPLES.md#PRI-030).
-- **Documents**: navigation lines, the README opening with why, and what this file holds ([Rules for every document](../mbse-basis/docs/README.md#rules-for-every-document)).
-- **Work**: [PRI-029: parallel work in polyrepo workspaces](../mbse-basis/docs/PRINCIPLES.md#PRI-029), [PRI-031: the version is the contract](../mbse-basis/docs/PRINCIPLES.md#PRI-031), [PRI-032: a sibling's gap is reported, not worked around](../mbse-basis/docs/PRINCIPLES.md#PRI-032) and [PRI-033: work lands by branch and pull request](../mbse-basis/docs/PRINCIPLES.md#PRI-033).
-- **What this repository builds is specified in mbse-basis' features and capabilities**, cited by ID ([Detail files](../mbse-basis/docs/README.md#detail-files)).
-- **The contract is what mbse-basis' [FEA-003: no-code logical views](../mbse-basis/docs/features/FEA-003.md) and its capabilities say, as built**
-  (each detail file's As built section), with `Views.py` and `Views.ts` its two halves. A change to what the server
-  answers regenerates [the golden corpus](conformance/README.md), and is reviewed as a change to the contract: mbse-react
-  and mbse-dynamodb build against it.
-- Never write to `~/.claude/projects/*/memory/` or any hidden memory: what is worth keeping goes in the repository.
+- [The mbse basis](../mbse-basis/docs/README.md)
+- [Principles](../mbse-basis/docs/PRINCIPLES.md)
+- [Features](../mbse-basis/docs/features/README.md)
+- [Capabilities](../mbse-basis/docs/capabilities/README.md)
+
+These may be read selectively, on demand: [Vocabulary](../mbse-basis/docs/VOCABULARY.md) and
+[Qualities](../mbse-basis/docs/QUALITIES.md).
+
+Never write to `~/.claude/projects/*/memory/` or any hidden memory: what is worth keeping goes in the repository.
+
+## This repository
+
+- `Views.py` and `Views.ts` are the contract's two halves. A change to what the server answers regenerates
+  [the golden corpus](conformance/README.md), committed with it, and is reviewed as a change to the contract:
+  mbse-react and mbse-dynamodb build against it.
 
 ## Commands
 
