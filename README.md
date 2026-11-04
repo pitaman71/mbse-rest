@@ -17,7 +17,7 @@ The contract, its endpoints, view kinds and persistence plugin, is what mbse-bas
 
 It depends on [mbse-schemas](https://github.com/pitaman71/mbse-schemas) as a checkout beside this repository, and on
 [mbse-demo-apps](https://github.com/pitaman71/mbse-demo-apps)' WorkTracker for its tests and corpus, pinned in
-[siblings.json](siblings.json).
+`siblings.json`.
 
 ## Running the service
 
