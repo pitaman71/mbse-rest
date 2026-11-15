@@ -47,10 +47,10 @@ export class ServiceError extends RestError {
     this.error = error;
   }
 
-  /** The error for a refusal of `status`: `TransactionRefused`, `NotFound`, `Unimplemented`, `Unavailable`, or
+  /** The error for a refusal of `status`: `TransactionRefused`, `NotFound`, `Gone`, `Unimplemented`, `Unavailable`, or
    * `ServiceError` itself. */
   static of(status: number, body: string): ServiceError {
-    const Class = { 400: TransactionRefused, 404: NotFound, 501: Unimplemented, 503: Unavailable }[status];
+    const Class = { 400: TransactionRefused, 404: NotFound, 410: Gone, 501: Unimplemented, 503: Unavailable }[status];
     return new (Class ?? ServiceError)(status, body);
   }
 }
@@ -59,6 +59,9 @@ export class ServiceError extends RestError {
 export class TransactionRefused extends ServiceError {}
 /** 404: no such path, view kind or schema. */
 export class NotFound extends ServiceError {}
+/** 410: the service's change feed holds no longer what a store last read, or is another's, as after the service
+ * restarted: what the store holds may have changed unreported, and a store is made again (`Store.ts`). */
+export class Gone extends ServiceError {}
 /** 501: not served yet; `GET /schemas/{name}` ([CAP-003: schema inspector](mbse:mbse-basis/docs/capabilities/CAP-003.md)) until mbse-schemas writes one schema object. */
 export class Unimplemented extends ServiceError {}
 /** 503: the service's store failed, its store below for one; nothing was written, and it may be sent again. */
