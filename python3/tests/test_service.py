@@ -170,11 +170,8 @@ def by_path(store, path):
     return Plain.FromPlain(store)(store.References.OfObject.as_schema(), {"path": path})
 
 
-@pytest.mark.xfail(strict=True, raises=AssertionError, reason=(
-    "mbse-schemas defect: Provenance._record, in a store given a store below, reads an entry's link to a session the "
-    "store below holds but it has not loaded (an _Unresolved), and fails; a service over a store below that already "
-    "holds the session cannot commit a write of an app with a history"))
 def test_a_write_after_a_restart_of_an_app_with_a_history():
+    """A service over a store below that already holds the write's session, as after a restart, commits it."""
     client = TestClient(Service.work_tracker())
     body = Conformance._edit(store_of(client), lambda s: by_path(s, TSK_1), {"title": "Once"})
     frames(client.post("/views/detail", json=body))  # its session, `demo:default`, now held below

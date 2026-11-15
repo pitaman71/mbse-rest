@@ -18,9 +18,9 @@ memory:
   committed them, from the service's change feed (`GET /changes`): its own among them, each given once, and others',
   read before each of its transactions, after each, and on `poll()`. Each is applied to the objects it holds first.
 
-Each transaction carries its record's `uid`, `when`, `session` and `where` to the store below, where its expression
-gives them (`Stacked`), so that a store below with `Provenance` installed finds the record the store above made rather
-than making another.
+The service records each transaction (mbse-schemas' `Provenance`), in its lowest store: the client, a store over it,
+records none, and sends it, as any store sends the store below, the `uid`, `when`, `session` and `where` its
+transaction's expression gives.
 """
 
 from __future__ import annotations
@@ -33,18 +33,15 @@ import urllib.request
 from collections.abc import Callable, Iterator, Mapping
 from typing import Any
 
-from mbse.Schemas.Framework import JSON, Builders, Plain
+from mbse.Schemas.Framework import JSON, Builders, Changes, Plain
 
-__all__ = ["Transport", "Http", "Stacked", "Store", "ServiceError", "Gone", "Unavailable", "PROVENANCE", "REFUSALS"]
+__all__ = ["Transport", "Http", "Store", "ServiceError", "Gone", "Unavailable", "REFUSALS"]
 
 PlainData = Any
 
 Transport = Callable[[str, str, bytes | None], tuple[int, bytes]]
 """How a store reaches the service: `transport(method, path, body)` gives the response's status and body. `path`
 starts with `/` and holds its query; `body` is JSON, or None."""
-
-PROVENANCE = ("uid", "when", "session", "where")
-"""The members of a transaction's expression its record is made from (mbse-schemas' `Provenance`), carried below."""
 
 REFUSALS = {"ValueError": ValueError, "TypeError": TypeError, "LookupError": LookupError}
 """Each kind of refusal the service reports, by the name its error message begins with, and the error raised for it."""
@@ -85,24 +82,11 @@ def Http(base: str, headers: Mapping[str, str] | None = None, timeout: float = 6
     return send
 
 
-class Stacked(Builders.Store):
-    """A `Builders.Store` given a store below, which carries to it, with each transaction's changes, the `uid`, `when`,
-    `session` and `where` its expression gives, so that a store below with `Provenance` installed records the same
-    transaction, found by its `uid`, rather than one of its own."""
-
-    def _carried(self, plain: PlainData) -> PlainData:
-        expression = None if self._proposals is None else self._proposals.expression
-        if expression is None:  # an imperative scope: no expression, nothing to carry
-            return plain
-        whole = Plain.ToPlain(self).Transaction(expression)
-        return {**{name: whole[name] for name in PROVENANCE if name in whole}, **plain}
-
-    def _send(self, plain: PlainData) -> None:
-        super()._send(self._carried(plain))
-
-
 class _Service:
-    """The service, as the store below the client's own objects: it gives an object's document."""
+    """The service, as the store below the client's own objects: it gives an object's document, and records each
+    transaction, so that the client records none (`Builders.Store.records`)."""
+
+    records = True
 
     def __init__(self, store: Store) -> None:
         self.store = store
@@ -111,7 +95,7 @@ class _Service:
         return self.store._call("POST", "/documents", path)
 
 
-class Store(Stacked):
+class Store(Builders.Store):
     """A store over the service that `transport` reaches, or the service at the URL `transport`."""
 
     def __init__(self, transport: Transport | str) -> None:
@@ -124,7 +108,7 @@ class Store(Stacked):
         self._installing += 1
         try:
             for plain in self._call("GET", "/schemas"):
-                Stacked.transaction(self, Plain.FromPlain(self).Transaction(plain))  # Builders.Store's, not its own
+                Builders.Store.transaction(self, Plain.FromPlain(self).Transaction(plain))  # Builders.Store's, not its own
         finally:
             self._installing -= 1
 
@@ -207,6 +191,11 @@ class Store(Stacked):
         super()._settled(proposals)
         self._changes = None
 
-    def _send(self, plain: PlainData) -> None:
-        """A transaction's changes, sent to the service, which commits them first (CAP-285)."""
-        self._call("POST", "/transactions", self._carried(plain))
+    def _send(self, plain: PlainData, expression: Any) -> None:
+        """A transaction's changes, sent to the service, which commits them first (CAP-285), with the `uid`, `when`,
+        `session` and `where` its expression gives, as `Builders.Store._send` sends them to a store below."""
+        if expression is not None:
+            with Changes._as_committed(self):
+                given = Plain.ToPlain(self).Transaction(expression)
+            plain = {**{k: v for k, v in given.items() if k != "mutations"}, **plain}
+        self._call("POST", "/transactions", plain)

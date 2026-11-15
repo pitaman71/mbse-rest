@@ -1,8 +1,8 @@
 """The REST service over an mbse-schemas store (mbse-basis [CAP-002: named schema list](mbse:mbse-basis/docs/capabilities/CAP-002.md) to [CAP-004: logical view templates](mbse:mbse-basis/docs/capabilities/CAP-004.md), [CAP-012: logical view endpoints](mbse:mbse-basis/docs/capabilities/CAP-012.md) and [CAP-290: a service's store stacked, with no snapshot](mbse:mbse-basis/docs/capabilities/README.md#CAP-290)).
 
 `app(installs, below)` gives a FastAPI application that serves a store given a store below it, a database's in
-production (mbse-dynamodb's `Store`), one in memory by default: the service's store, a `Builders.Store` over `below`
-(`Store.Stacked`), which loads what it is asked for from it and writes each transaction through to it, so that it
+production (mbse-dynamodb's `Store`), one in memory by default: the service's store, a `Builders.Store` over `below`,
+which loads what it is asked for from it and writes each transaction through to it, so that it
 persists by the journal of the store below alone, and no snapshot is taken or read. Each install (an app's
 `Schemas.install`, or each of its `Schemas.INSTALLS`) runs in the store below and in the service's store, and is served
 to clients as the install transaction that made the schemas; the seed, where given, runs after, as any transaction.
@@ -60,7 +60,6 @@ from starlette.exceptions import HTTPException
 from mbse.Schemas.Framework import JSON, Builders, Changes, Plain, References
 
 from . import Views
-from .Store import Stacked
 
 __all__ = ["NDJSON", "Install", "Refused", "Unavailable", "Service", "app", "installs_of", "seed_of", "store_of", "fresh",
            "from_environment", "work_tracker", "writes", "stamp", "WINDOW", "WAIT"]
@@ -167,7 +166,7 @@ class Service:
         self.user = user  # the demo's identity, standing in for a validated token's ([CAP-015: transaction provenance](mbse:mbse-basis/docs/capabilities/CAP-015.md); [CAP-177: sessions and identities from a validated token](mbse:mbse-basis/docs/capabilities/CAP-177.md))
         self.clock, self.uids = clock, uids  # a write's `when` and, where it has none, its `uid` (`stamp`)
         self.below = below if below is not None else Builders.Store()
-        self.store = Stacked(self.below)
+        self.store = Builders.Store(self.below)
         self.installs: list[PlainData] = []  # the install transactions that made its schemas, in order
         self._lock = threading.RLock()  # one transaction at a time: transactions on one store do not nest
         self._committed = threading.Condition(self._lock)  # notified as each transaction is fed

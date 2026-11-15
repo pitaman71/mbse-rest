@@ -20,12 +20,16 @@
  *   others', read before each of its transactions, after each, and on `poll()`. Each is applied to the objects it
  *   holds first.
  *
+ * The service records each transaction (mbse-schemas' `Provenance`), in its lowest store: the client, a store over it,
+ * records none, and sends it, as any store sends the store below, the `uid`, `when`, `session` and `where` its
+ * transaction's expression gives.
+ *
  * mbse-schemas' store interface is synchronous: a store above reads an object's document, and sends a transaction's
  * changes, within a call that returns them. So is a transport: in Node, it waits on a worker thread that fetches
  * (`Atomics.wait`); in a browser, it is a synchronous `XMLHttpRequest`, which blocks the page while the service
  * answers, and is better made from a worker. */
 
-import { Builders, JSON as J, Plain } from "@mbse/schemas/Framework";
+import { Builders, Changes, JSON as J, Plain } from "@mbse/schemas/Framework";
 import { LookupError, ValueError } from "@mbse/schemas/Framework/Errors";
 import { ServiceError, TransportError } from "./Client.js";
 
@@ -45,9 +49,6 @@ export interface TransportOptions {
   /** How long a request may take, in milliseconds: 60 seconds by default. */
   readonly timeout?: number;
 }
-
-/** The members of a transaction's expression its record is made from (mbse-schemas' `Provenance`), carried below. */
-export const PROVENANCE = ["uid", "when", "session", "where"] as const;
 
 /** Each kind of refusal the service reports, by the name its error message begins with, and the error thrown for it. */
 export const REFUSALS: Readonly<Record<string, new (message: string) => Error>> = { ValueError, TypeError, LookupError };
@@ -124,27 +125,8 @@ export function transportFor(base: string, options: TransportOptions = {}): Tran
     : nodeTransport(base, options);
 }
 
-/** A `Builders.Store` given a store below, which carries to it, with each transaction's changes, the `uid`, `when`,
- * `session` and `where` its expression gives, so that a store below with `Provenance` installed records the same
- * transaction, found by its `uid`, rather than one of its own. */
-export class Stacked extends Builders.Store {
-  _carried(plain: unknown): unknown {
-    const expression = this._proposals?.expression ?? null;
-    if (expression === null) return plain; // an imperative scope: no expression, nothing to carry
-    const whole = Plain.ToPlain(this as any).Transaction(expression) as Map<string, unknown>;
-    const carried = new Map<string, unknown>();
-    for (const name of PROVENANCE) if (whole.has(name)) carried.set(name, whole.get(name));
-    for (const [name, value] of plain as Map<string, unknown>) carried.set(name, value);
-    return carried;
-  }
-
-  override _send(plain: unknown): void {
-    super._send(this._carried(plain));
-  }
-}
-
 /** A store over the service that `transport` reaches, or the service at the URL `transport` (`transportFor`). */
-export class Store extends Stacked {
+export class Store extends Builders.Store {
   readonly _transport: Transport;
   /** How deep in executing the service's installs: those are not sent back. */
   _installing = 0;
@@ -155,8 +137,11 @@ export class Store extends Stacked {
   constructor(transport: Transport | string) {
     super();
     this._transport = typeof transport === "string" ? transportFor(transport) : transport;
-    this._below = { document: (path: unknown) => this._call("POST", "/documents", path) }; // its own objects load from
-    const head = this._call("GET", "/changes") as Map<string, unknown>; //                    the service, on demand
+    this._below = { // its own objects load from the service, on demand; the service records each transaction, so that
+      document: (path: unknown) => this._call("POST", "/documents", path), // the client records none
+      records: true,
+    };
+    const head = this._call("GET", "/changes") as Map<string, unknown>;
     this._feed = head.get("feed") as string;
     this._seq = Number(head.get("head"));
     this._installing += 1;
@@ -238,8 +223,13 @@ export class Store extends Stacked {
     this._changes = null;
   }
 
-  /** A transaction's changes, sent to the service, which commits them first (CAP-285). */
-  override _send(plain: unknown): void {
-    this._call("POST", "/transactions", this._carried(plain));
+  /** A transaction's changes, sent to the service, which commits them first (CAP-285), with the `uid`, `when`,
+   * `session` and `where` its expression gives, as `Builders.Store._send` sends them to a store below. */
+  override _send(plain: unknown, expression: unknown): void {
+    if (expression !== null) {
+      const given = Changes._as_committed(this, () => Plain.ToPlain(this as any).Transaction(expression)) as Map<string, unknown>;
+      plain = new Map([...[...given].filter(([k]) => k !== "mutations"), ...plain as Map<string, unknown>]);
+    }
+    this._call("POST", "/transactions", plain);
   }
 }

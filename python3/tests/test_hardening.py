@@ -79,7 +79,7 @@ def test_a_write_whose_frames_bind_no_symbol_is_refused_before_it_is_written():
     body = write_task(store_of(client), "TSK-009", "Unwritten")
     assert "binds no y" in refusal(client.post("/views/adjacency", json=body), 400)  # it binds no y
     assert "Unwritten" not in titles(client) and "Unwritten" not in held_below(client)
-    assert client.get("/changes").json()["head"] == 1  # the seed's alone
+    assert client.get("/changes").json()["head"] == 2  # the seed's alone, then its record, from the store below
 
 
 def test_unknown_paths_and_methods_answer_the_error_body(client):
@@ -149,7 +149,7 @@ def test_a_transaction_the_store_refuses_names_the_kind_of_error():
         "singleton": "work.Tasks", "next": {"target": {}}}}}}, "spec": [{"x": [{"as_property": {
             "name": "nope", "mutations": [{"set": {"value": "Z"}}]}}]}]}]}}]}
     assert refusal(client.post("/transactions", json=directory), 400).endswith("has no property 'nope'")
-    assert client.get("/changes").json()["head"] == 1  # the seed's alone
+    assert client.get("/changes").json()["head"] == 2  # the seed's alone, then its record, from the store below
 
 
 def test_a_fault_of_the_services_own_is_a_500_with_the_error_body(client, monkeypatch):
@@ -197,4 +197,5 @@ def test_one_transaction_at_a_time():
     assert statuses == [200] * len(bodies) and not below.overlapped
     assert held_below(client) == titles(client)  # the store below's order is the commit order
     changes = client.get("/changes?after=0").json()["changes"]
-    assert [c["position"] for c in changes] == list(range(1, len(bodies) + 2))  # the seed, then each, once
+    assert [c["position"] for c in changes] == list(range(1, 2 * len(bodies) + 3))  # the seed, then each, once, each
+    # followed by its record, which the store below made (mbse-schemas' Provenance, recorded in the lowest store)
