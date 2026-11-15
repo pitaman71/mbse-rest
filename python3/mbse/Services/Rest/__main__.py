@@ -3,8 +3,8 @@
     uv run python -m mbse.Services.Rest
 
 - `MBSE_REST_HOST` and `MBSE_REST_PORT`: where it listens (`127.0.0.1`, `8000`);
-- `MBSE_REST_APP`, `MBSE_REST_SEED`, `MBSE_REST_PLUGIN`, `MBSE_REST_SNAPSHOT_EVERY` and `MBSE_REST_ORIGINS`: what it
-  serves, as `Service.from_environment` reads them.
+- `MBSE_REST_APP`, `MBSE_REST_SEED`, `MBSE_REST_STORE`, `MBSE_REST_WINDOW`, `MBSE_REST_ORIGINS` and `MBSE_REST_USER`:
+  what it serves, as `Service.from_environment` reads them.
 """
 
 from __future__ import annotations

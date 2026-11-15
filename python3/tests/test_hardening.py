@@ -1,5 +1,5 @@
-"""The endpoints hardened (mbse-basis CAP-012: logical view endpoints, and CAP-013, as built): error bodies and statuses, writes undone where the plugin has not journaled
-them, plugin failures, and one transaction at a time."""
+"""The endpoints hardened (mbse-basis CAP-012: logical view endpoints, and CAP-290): error bodies and statuses, nothing
+written where the store below refuses or fails, and one transaction at a time."""
 
 from __future__ import annotations
 
@@ -9,32 +9,22 @@ import time
 
 import pytest
 from fastapi.testclient import TestClient
-from mbse.Schemas.Framework import Plain
+from mbse.Schemas.Framework import Builders, Plain
 
-from mbse.Services.Rest import Persistence, Service
+from mbse.Services.Rest import Service
 
 
-class Failing(Persistence.Memory):
-    """The reference plugin, whose calls fail on demand."""
+class Failing(Builders.Store):
+    """A store below in memory, whose transactions fail on demand, as a database's that cannot be reached."""
 
     def __init__(self) -> None:
         super().__init__()
-        self.fail: set[str] = set()
+        self.failing = False
 
-    def load(self):
-        if "load" in self.fail:
-            raise ConnectionError("load: the database is unreachable")
-        return super().load()
-
-    def journal(self, transaction):
-        if "journal" in self.fail:
-            raise ConnectionError("journal: the database is unreachable")
-        super().journal(transaction)
-
-    def snapshot(self, snapshot):
-        if "snapshot" in self.fail:
-            raise ConnectionError("snapshot: the database is unreachable")
-        super().snapshot(snapshot)
+    def transaction(self, spec=None):
+        if self.failing:
+            raise ConnectionError("the database is unreachable")
+        return super().transaction(spec)
 
 
 def store_of(client):
@@ -50,6 +40,11 @@ def write_task(store, id_, title):
 
 def titles(client):
     return [str(e.task.title) for e in store_of(client).singleton("work.Tasks").tasks]
+
+
+def held_below(client):
+    """The titles of the tasks the store below holds."""
+    return [str(e.task.title) for e in client.app.state.service.below.singleton("work.Tasks").tasks]
 
 
 def refusal(response, status):
@@ -79,12 +74,13 @@ def test_a_transaction_whose_frames_bind_no_symbol_is_a_400(client):
     assert "binds no y" in refusal(client.post("/views/adjacency", json=only_x), 400)
 
 
-def test_a_write_refused_after_it_commits_is_undone():
-    plugin = Persistence.Memory()
-    client = TestClient(Service.work_tracker(plugin))
-    body = write_task(store_of(client), "TSK-009", "Undone")
-    assert "undone" in refusal(client.post("/views/adjacency", json=body), 400)  # it binds no y
-    assert plugin.entries == [] and "Undone" not in titles(client)
+def test_a_write_whose_frames_bind_no_symbol_is_refused_before_it_is_written():
+    client = TestClient(Service.work_tracker())
+    body = write_task(store_of(client), "TSK-009", "Unwritten")
+    assert "binds no y" in refusal(client.post("/views/adjacency", json=body), 400)  # it binds no y
+    assert "Unwritten" not in titles(client) and "Unwritten" not in held_below(client)
+    assert client.get("/changes").json()["head"] == 1  # the seed's alone, its record among it, as the store below
+    # committed it: one transaction per write
 
 
 def test_unknown_paths_and_methods_answer_the_error_body(client):
@@ -112,49 +108,50 @@ def test_a_stream_is_one_frame_a_line(client):
     assert len(lines) == 1 and json.loads(lines[0])["binds"]["x"]
 
 
-def test_a_journal_that_fails_undoes_the_write_and_answers_503():
-    plugin = Failing()
-    client = TestClient(Service.work_tracker(plugin))
-    plugin.fail = {"journal"}
-    assert "undone" in refusal(client.post("/views/label", json=write_task(store_of(client), "TSK-009", "Lost")), 503)
-    assert plugin.entries == [] and "Lost" not in titles(client)
-    plugin.fail = set()  # the database is back: the service goes on
+def test_a_store_below_that_fails_writes_nothing_and_answers_503():
+    below = Failing()
+    client = TestClient(Service.work_tracker(below))
+    below.failing = True
+    assert "nothing is written" in refusal(
+        client.post("/views/label", json=write_task(store_of(client), "TSK-009", "Lost")), 503)
+    assert "nothing is written" in refusal(
+        client.post("/transactions", json=write_task(store_of(client), "TSK-009", "Lost")), 503)
+    assert "Lost" not in titles(client) and "Lost" not in held_below(client)
+    below.failing = False  # the database is back: the service goes on
     assert client.post("/views/label", json=write_task(store_of(client), "TSK-009", "Kept")).status_code == 200
-    assert len(plugin.entries) == 1 and titles(client)[-1] == "Kept"
+    assert titles(client)[-1] == "Kept" and held_below(client)[-1] == "Kept"
 
 
-def test_a_plugin_that_cannot_be_read_back_makes_the_service_unavailable():
-    plugin = Failing()
-    client = TestClient(Service.work_tracker(plugin))
-    plugin.fail = {"journal", "load"}
-    refusal(client.post("/views/label", json=write_task(store_of(client), "TSK-009", "Lost")), 503)
-    plugin.fail = set()
-    for response in (client.get("/schemas"), client.get("/views"), client.get("/schemas/work.Task"),
-                     client.post("/views/label", json={})):
-        assert "read back" in refusal(response, 503)
-
-
-def test_a_snapshot_that_fails_is_tried_again_and_loses_nothing():
-    plugin = Failing()
-    client = TestClient(Service.app(Service.installs_of("mbse.Demos.Apps.WorkTracker"), plugin, snapshot_every=1))
-    plugin.fail = {"snapshot"}
-    assert client.post("/views/label", json=write_task(store_of(client), "TSK-009", "First")).status_code == 200
-    assert len(plugin.snapshots) == 1 and len(plugin.entries) == 1  # journaled; no snapshot taken
-    plugin.fail = set()
-    assert client.post("/views/label", json=write_task(store_of(client), "TSK-010", "Second")).status_code == 200
-    assert len(plugin.snapshots) == 2 and plugin.load()[1] == []  # taken after the next one
-    again = TestClient(Service.app([], plugin))
-    assert titles(again)[-2:] == ["First", "Second"]
-
-
-def test_a_plugin_that_fails_at_startup_fails_the_start():
-    plugin = Failing()
-    plugin.fail = {"load"}
+def test_a_store_below_that_fails_at_startup_fails_the_start():
+    below = Failing()
+    below.failing = True
     with pytest.raises(ConnectionError):
-        Service.work_tracker(plugin)
-    plugin.fail = {"snapshot"}
-    with pytest.raises(ConnectionError):
-        Service.work_tracker(plugin)
+        Service.work_tracker(below)
+
+
+def test_a_store_below_that_refuses_refuses_the_transaction():
+    """What the store below refuses, the service refuses, as the kind of error it is, and writes nothing."""
+    client = TestClient(Service.work_tracker())
+    store = store_of(client)
+    body = write_task(store, "TSK-009", "Doubled")
+    below = client.app.state.service.below
+    with below.transaction():  # another writes TSK-009 below, not yet seen above
+        below.work.Task(lambda t: t.directory(lambda a: a.insert(lambda e: e.id("TSK-009").directory(
+            below.singleton("work.Tasks")))).title("Theirs"))
+    response = client.post("/transactions", json=body)
+    assert response.status_code in (200, 400)  # an upsert finds theirs, or is refused: never two by one key
+    assert [t for t in held_below(client) if t in ("Theirs", "Doubled")] in (["Theirs"], ["Doubled"])
+
+
+def test_a_transaction_the_store_refuses_names_the_kind_of_error():
+    client = TestClient(Service.work_tracker())
+    assert refusal(client.post("/transactions", json={"mutations": "no"}), 400).startswith("ValueError: ")
+    directory = {"mutations": [{"upsert": {"exists": [{"symbols": {"x": {"reference": {"path": {
+        "singleton": "work.Tasks", "next": {"target": {}}}}}}, "spec": [{"x": [{"as_property": {
+            "name": "nope", "mutations": [{"set": {"value": "Z"}}]}}]}]}]}}]}
+    assert refusal(client.post("/transactions", json=directory), 400).endswith("has no property 'nope'")
+    assert client.get("/changes").json()["head"] == 1  # the seed's alone, its record among it, as the store below
+    # committed it: one transaction per write
 
 
 def test_a_fault_of_the_services_own_is_a_500_with_the_error_body(client, monkeypatch):
@@ -167,25 +164,27 @@ def test_a_fault_of_the_services_own_is_a_500_with_the_error_body(client, monkey
     assert "a bug" in refusal(client.post("/views/label", json=tasks), 500)
 
 
-class Overlapping(Persistence.Memory):
-    """A slow journal that notes whether two transactions were ever journaled at once."""
+class Overlapping(Builders.Store):
+    """A slow store below that notes whether two transactions were ever sent to it at once."""
 
     def __init__(self) -> None:
         super().__init__()
         self.inside = 0
         self.overlapped = False
 
-    def journal(self, transaction):
+    def transaction(self, spec=None):
         self.inside += 1
         self.overlapped |= self.inside > 1
         time.sleep(0.01)
-        super().journal(transaction)
-        self.inside -= 1
+        try:
+            return super().transaction(spec)
+        finally:
+            self.inside -= 1
 
 
 def test_one_transaction_at_a_time():
-    plugin = Overlapping()
-    client = TestClient(Service.work_tracker(plugin))
+    below = Overlapping()
+    client = TestClient(Service.work_tracker(below))
     bodies = [write_task(store_of(client), f"TSK-{n:03}", f"Task {n}") for n in range(10, 22)]
     statuses = []
 
@@ -197,6 +196,9 @@ def test_one_transaction_at_a_time():
         thread.start()
     for thread in threads:
         thread.join(timeout=30)
-    assert statuses == [200] * len(bodies) and not plugin.overlapped
-    assert len(plugin.entries) == len(bodies)
-    assert titles(TestClient(Service.app([], plugin))) == titles(client)  # the journal's order is the commit order
+    assert statuses == [200] * len(bodies) and not below.overlapped
+    assert held_below(client) == titles(client)  # the store below's order is the commit order
+    changes = client.get("/changes?after=0").json()["changes"]
+    assert [c["position"] for c in changes] == list(range(1, len(bodies) + 2))  # the seed, then each, once, each one
+    # transaction, its record among it, which the store below made (mbse-schemas' Provenance, recorded in the lowest
+    # store) and the service's store took into it before it committed

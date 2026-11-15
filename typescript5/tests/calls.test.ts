@@ -116,7 +116,8 @@ describe("typed errors", () => {
   test("a response that is not what the contract gives: ResponseError", async () => {
     await assert.rejects(new Client("http://s", answering(200, "{nope")).templates(), ResponseError);
     await assert.rejects(new Client("http://s", answering(200, "[]")).templates(), ResponseError);
-    await assert.rejects(new Client("http://s", answering(200, "[]")).loadSchemas(newStore()), ResponseError);
+    await assert.rejects(new Client("http://s", answering(200, "{}")).loadSchemas(newStore()), ResponseError);
+    await assert.rejects(new Client("http://s", answering(200, "[{\"mutations\": \"no\"}]")).loadSchemas(newStore()), ResponseError);
     await assert.rejects(new Client("http://s", answering(200, "{}")).view(newStore(), "label", LABEL), ResponseError);
     const store = await schemas();
     await assert.rejects(new Client("http://s", answering(200, "{\"bogus\": 1}\n", NDJSON)).view(store, "label", LABEL),

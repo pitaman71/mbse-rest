@@ -4,3 +4,4 @@ __pycache__/
 .pytest_cache/
 build/
 node_modules/
+typescript5/tests/.build/

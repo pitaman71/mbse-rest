@@ -1,6 +1,6 @@
 /** The client side of mbse-rest: translates a mutation query into well-formed REST calls, and reads the frame stream
- * back for the UI (mbse-basis [FEA-006: persistence](mbse:mbse-basis/docs/features/FEA-006.md), [CAP-013: an in-memory store journaled to DynamoDB](mbse:mbse-basis/docs/capabilities/CAP-013.md)). The calls are FEA-003's, as built; its "The client" section
- * documents this module's API. */
+ * back for the UI (mbse-basis [FEA-006: persistence](mbse:mbse-basis/docs/features/FEA-006.md)). The calls are FEA-003's, as built; its "The client" section documents this
+ * module's API. A store served over REST, which a store stacks on, is `Store.ts`'s. */
 
 import { Builders, JSON as J, Plain } from "@mbse/schemas/Framework";
 import * as Views from "./Views.js";
@@ -47,10 +47,10 @@ export class ServiceError extends RestError {
     this.error = error;
   }
 
-  /** The error for a refusal of `status`: `TransactionRefused`, `NotFound`, `Unimplemented`, `Unavailable`, or
+  /** The error for a refusal of `status`: `TransactionRefused`, `NotFound`, `Gone`, `Unimplemented`, `Unavailable`, or
    * `ServiceError` itself. */
   static of(status: number, body: string): ServiceError {
-    const Class = { 400: TransactionRefused, 404: NotFound, 501: Unimplemented, 503: Unavailable }[status];
+    const Class = { 400: TransactionRefused, 404: NotFound, 410: Gone, 501: Unimplemented, 503: Unavailable }[status];
     return new (Class ?? ServiceError)(status, body);
   }
 }
@@ -59,9 +59,12 @@ export class ServiceError extends RestError {
 export class TransactionRefused extends ServiceError {}
 /** 404: no such path, view kind or schema. */
 export class NotFound extends ServiceError {}
+/** 410: the service's change feed holds no longer what a store last read, or is another's, as after the service
+ * restarted: what the store holds may have changed unreported, and a store is made again (`Store.ts`). */
+export class Gone extends ServiceError {}
 /** 501: not served yet; `GET /schemas/{name}` ([CAP-003: schema inspector](mbse:mbse-basis/docs/capabilities/CAP-003.md)) until mbse-schemas writes one schema object. */
 export class Unimplemented extends ServiceError {}
-/** 503: the service's persistence failed; a transaction that wrote is undone, and may be sent again. */
+/** 503: the service's store failed, its store below for one; nothing was written, and it may be sent again. */
 export class Unavailable extends ServiceError {}
 
 /** The service could not be reached, or its response not received in full: `cause` is what the platform raised. */
@@ -153,13 +156,15 @@ export class Client {
     return this.json(`/schemas/${encodeURIComponent(name)}`, options);
   }
 
-  /** [CAP-002: named schema list](mbse:mbse-basis/docs/capabilities/CAP-002.md), while [CAP-003: schema inspector](mbse:mbse-basis/docs/capabilities/CAP-003.md) is blocked: reads the service's schema snapshot into `store`, which then holds every
-   * named schema, so that it can give a template's symbol a schema and read any value a frame assigns. Gives the names
-   * of every named schema it holds (`schemaNames`). */
+  /** [CAP-002: named schema list](mbse:mbse-basis/docs/capabilities/CAP-002.md), while [CAP-003: schema inspector](mbse:mbse-basis/docs/capabilities/CAP-003.md) is blocked: executes in `store` each install transaction that made the
+   * service's schemas, in order ([CAP-290: a service's store stacked, with no snapshot](mbse:mbse-basis/docs/capabilities/README.md#CAP-290)), so that it holds every named schema, and can give a
+   * template's symbol a schema and read any value a frame assigns. Gives the names of every named schema it holds
+   * (`schemaNames`). */
   async loadSchemas(store: any, options: CallOptions = {}): Promise<string[]> {
-    const schemas = await this.json("/schemas", options);
+    const installs = await this.json("/schemas", options);
+    if (!Array.isArray(installs)) throw new ResponseError("GET /schemas: not a list of install transactions");
     try {
-      Plain.FromPlain(store).Snapshot([schemas]);
+      for (const install of installs) store.transaction(Plain.FromPlain(store).Transaction(install));
     } catch (error) {
       throw new ResponseError(`GET /schemas: ${describe(error)}`, { cause: error });
     }

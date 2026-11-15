@@ -243,7 +243,7 @@ def write(root: Path = ROOT) -> None:
     """Writes the corpus to `root`, removing any case file it no longer has."""
     files = generate()
     root.mkdir(parents=True, exist_ok=True)
-    for old in root.glob("*.json*"):
+    for old in [*root.glob("*.json"), *root.glob("*.ndjson")]:  # a stream's file too, `.ndjson`
         if old.name not in files:
             old.unlink()
     for name, text in files.items():

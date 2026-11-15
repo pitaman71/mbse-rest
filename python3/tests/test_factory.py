@@ -1,5 +1,5 @@
-"""The service for any MBSE app (`Service.app`), its installs by convention (`installs_of`), its configuration
-(`from_environment`, `plugin_of`) and its entry point (`python -m mbse.Services.Rest`)."""
+"""The service for any MBSE app (`Service.app`), its installs and seed by convention (`installs_of`, `seed_of`), its
+configuration (`from_environment`, `store_of`) and its entry point (`python -m mbse.Services.Rest`)."""
 
 from __future__ import annotations
 
@@ -12,48 +12,14 @@ from fastapi.testclient import TestClient
 from mbse.Schemas.Framework import Builders, Plain, References
 
 from mbse.Demos.Apps.WorkTracker import Schemas, Seed
-from mbse.Services.Rest import Persistence, Service
+from mbse.Services.Rest import Service
 
-
-def install(txn):
-    """A library: a shelf, a singleton, owning its books by `id`; a book cites books."""
-    S = txn.Schemas
-    return txn.uid("lib/1").mutations([lambda mu: mu.upsert(lambda u: u.exists([lambda p: p
-        .symbols({"Shelf": S.OfObject, "Book": S.OfObject, "OnShelf": S.OfRelation, "Cites": S.OfRelation})
-        .spec([
-            lambda _: _.OnShelf.name("lib.OnShelf").links([lambda t: t.name("shelf"), lambda t: t.name("book")])
-            .properties({"id": S.OfStr}).uniques([["shelf", "id"], ["book"]]),
-            lambda _: _.Cites.name("lib.Cites").links([lambda t: t.name("citing"), lambda t: t.name("cited")])
-            .properties({"page": S.OfInt}),
-            lambda _: _.Shelf.name("lib.Shelf").ref(True).singleton("lib.TheShelf").adjacencies({
-                "books": lambda a: a.relation([_.OnShelf]).me("shelf")}),
-            lambda _: _.Book.name("lib.Book").ref(True)
-            .properties({"name": S.OfStr, "summary": S.OfStr, "pages": S.OfInt, "year": S.OfInt, "isbn": S.OfStr,
-                         "language": S.OfStr})
-            .adjacencies([
-                lambda t: t.name("shelf").relation([_.OnShelf]).me("book").owner(True),
-                lambda t: t.name("cites").relation([_.Cites]).me("citing"),
-                lambda t: t.relation([_.Cites]).me("cited"),
-            ]),
-        ])]))])
-
-
-def seed(txn):
-    """Two books on the shelf, the first citing the second."""
-    L = txn.lib
-    return txn.uid("lib.seed/1").mutations([lambda mu: mu.upsert(lambda u: u.exists([lambda p: p
-        .symbols({"shelf": L.Shelf, "sicp": L.Book, "lisp": L.Book})
-        .spec([
-            lambda _: _.shelf.books({"BK-1": lambda e: e.book(_.sicp), "BK-2": lambda e: e.book(_.lisp)}),
-            lambda _: _.sicp.name("SICP").summary("Programs as processes.").pages(657).year(1985).isbn("0262010771")
-            .language("en").cites([lambda e: e.cited(_.lisp).page(12)]),
-            lambda _: _.lisp.name("LISP 1.5").pages(106),
-        ])]))])
+from library import install, seed
 
 
 @pytest.fixture
 def library():
-    return TestClient(Service.app([install, seed]))
+    return TestClient(Service.app([install], seed=seed))
 
 
 def frames(response):
@@ -70,7 +36,8 @@ def assigned(frame, symbol="x"):
 
 def test_another_app_serves_its_schemas(library):
     store = Builders.Store()
-    Plain.FromPlain(store).Snapshot([library.get("/schemas").json()])
+    for plain in library.get("/schemas").json():  # the install transactions that made them
+        store.transaction(Plain.FromPlain(store).Transaction(plain))
     assert {"lib.Shelf", "lib.Book", "lib.OnShelf", "lib.Cites"} <= set(store.names())
     assert library.get("/schemas/lib.Book").status_code == 501
     assert library.get("/schemas/work.Task").status_code == 404
@@ -107,20 +74,25 @@ def test_another_app_detail_and_adjacency(library):
 
 
 def test_another_app_writes_and_restarts():
-    plugin = Persistence.Memory()
-    library = TestClient(Service.app([install, seed], plugin))
+    """What the service writes, its store below holds; a service started again over that store below holds it, loading
+    what it is asked for from it, and its seed, run again, writes nothing."""
+    library = TestClient(Service.app([install], seed=seed))
     store = library.app.state.service.store
     add = Plain.ToPlain(store).Transaction(store.Mutations.OfTransaction(lambda t: t.mutations([lambda mu: mu.upsert(
         lambda u: u.exists([lambda p: p.symbols({"s": store.lib.Shelf, "x": store.lib.Book}).spec([
             lambda _: _.s.books({"BK-3": lambda e: e.book(_.x)}), lambda _: _.x.name("HtDP")])]))])))
     assert [assigned(f) for f in frames(library.post("/views/label", json=add))] == [{"name": "HtDP"}]
-    again = TestClient(Service.app([], plugin))  # no installs: the plugin holds the store
+    below = library.app.state.service.below
+    assert [str(b.book.name) for b in below.singleton("lib.TheShelf").books] == ["SICP", "LISP 1.5", "HtDP"]
+    again = TestClient(Service.app([install], below, seed))
     store = again.app.state.service.store
-    assert [str(b.book.name) for b in store.singleton("lib.TheShelf").books] == ["SICP", "LISP 1.5", "HtDP"]
+    assert again.get("/changes").json()["head"] == 0  # the seed, run again, wrote nothing
+    assert sorted(str(b.book.name) for b in store.singleton("lib.TheShelf").books) == ["HtDP", "LISP 1.5", "SICP"]
 
 
 def test_an_app_without_a_seed():
     bare = TestClient(Service.app([install]))
+    assert Service.seed_of("mbse.Demos.Apps.WorkTracker") is Seed.seed
     store = bare.app.state.service.store
     books = Plain.ToPlain(store).Transaction(store.Mutations.OfTransaction(lambda t: t.mutations([lambda mu: mu.map(
         lambda m: m.symbols([lambda p: p.symbols({"x": store.lib.Book})]))])))
@@ -129,37 +101,43 @@ def test_an_app_without_a_seed():
 
 
 def test_installs_by_the_apps_layout(monkeypatch):
-    assert Service.installs_of("mbse.Demos.Apps.WorkTracker") == [*Schemas.INSTALLS, Seed.seed]
-    assert Service.installs_of("mbse.Demos.Apps.WorkTracker", seed=False) == list(Schemas.INSTALLS)
-    package, schemas = types.ModuleType("library"), types.ModuleType("library.Schemas")
+    assert Service.installs_of("mbse.Demos.Apps.WorkTracker") == list(Schemas.INSTALLS)
+    assert Service.seed_of("mbse.Demos.Apps.WorkTracker") is Seed.seed
+    package, schemas = types.ModuleType("library_app"), types.ModuleType("library_app.Schemas")
     package.__path__ = []  # a package, whose Seed is not found
     schemas.install = install
-    monkeypatch.setitem(sys.modules, "library", package)
-    monkeypatch.setitem(sys.modules, "library.Schemas", schemas)
-    assert Service.installs_of("library") == [install]
+    monkeypatch.setitem(sys.modules, "library_app", package)
+    monkeypatch.setitem(sys.modules, "library_app.Schemas", schemas)
+    assert Service.installs_of("library_app") == [install] and Service.seed_of(package) is None
 
 
-class Recorder(Persistence.Memory):
-    """A plugin made by name, `module:attribute`."""
+class Recorder(Builders.Store):
+    """A store below made by name, `module:attribute`."""
 
 
-def test_plugins_by_name(monkeypatch):
-    assert isinstance(Service.plugin_of("memory"), Persistence.Memory)
-    assert isinstance(Service.plugin_of(""), Persistence.Memory)
+def test_stores_below_by_name(monkeypatch):
+    assert type(Service.store_of("memory")) is Builders.Store
+    assert type(Service.store_of("")) is Builders.Store
     monkeypatch.setitem(sys.modules, "recorders", types.SimpleNamespace(Recorder=Recorder, Nothing=object))
-    assert isinstance(Service.plugin_of("recorders:Recorder"), Recorder)
-    with pytest.raises(TypeError, match="no persistence plugin"):
-        Service.plugin_of("recorders:Nothing")
+    assert isinstance(Service.store_of("recorders:Recorder"), Recorder)
+    with pytest.raises(TypeError, match="no mbse-schemas store"):
+        Service.store_of("recorders:Nothing")
     with pytest.raises(ValueError, match="module:attribute"):
-        Service.plugin_of("recorders")
+        Service.store_of("recorders")
+
+
+@pytest.mark.parametrize("name", ["MBSE_REST_PLUGIN", "MBSE_REST_SNAPSHOT_EVERY"])
+def test_the_retired_settings_are_refused(name):
+    with pytest.raises(ValueError, match=f"{name} is retired"):
+        Service.from_environment({name: "memory"})
 
 
 def test_from_the_environment():
-    api = Service.from_environment({"MBSE_REST_SEED": "0", "MBSE_REST_SNAPSHOT_EVERY": "7",
+    api = Service.from_environment({"MBSE_REST_SEED": "0", "MBSE_REST_WINDOW": "7", "MBSE_REST_STORE": "memory",
                                     "MBSE_REST_ORIGINS": "http://localhost:5173, http://ui.example"})
     service = api.state.service
-    assert service.installs == list(Schemas.INSTALLS) and service.snapshot_every == 7
-    assert isinstance(service.plugin, Persistence.Memory)
+    assert len(service.installs) == len(Schemas.INSTALLS) and service._changes.maxlen == 7
+    assert type(service.below) is Builders.Store
     assert list(service.store.singleton("work.Tasks").tasks) == []  # not seeded
     client = TestClient(api)
     preflight = client.options("/views/label", headers={
@@ -190,7 +168,7 @@ def test_the_entry_point_serves_from_the_environment(monkeypatch):
     monkeypatch.setenv("MBSE_REST_SEED", "0")
     entry.main()
     assert (served["host"], served["port"]) == ("0.0.0.0", 8123)
-    assert served["api"].state.service.installs == list(Schemas.INSTALLS)
+    assert len(served["api"].state.service.installs) == len(Schemas.INSTALLS)
     monkeypatch.delenv("MBSE_REST_HOST")
     monkeypatch.delenv("MBSE_REST_PORT")
     entry.main()

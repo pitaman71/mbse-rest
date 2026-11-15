@@ -153,8 +153,28 @@ requires-dist = [{ name = "mbse-schemas", editable = "../../mbse-schemas/python3
 dev = [{ name = "pytest", specifier = ">=9.1.1" }]
 
 [[package]]
+name = "mbse-journals"
+version = "0.2.0"
+source = { editable = "../../mbse-journals/python3" }
+dependencies = [
+    { name = "mbse-schemas" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "mbse-schemas", editable = "../../mbse-schemas/python3" }]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "coverage", extras = ["toml"], specifier = ">=7.10" },
+    { name = "ipykernel", specifier = ">=7.3.0" },
+    { name = "nbformat", specifier = ">=5.11.1" },
+    { name = "nbmake", specifier = ">=1.5.5" },
+    { name = "pytest", specifier = ">=9.1.1" },
+]
+
+[[package]]
 name = "mbse-rest"
-version = "0.1.0"
+version = "0.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
@@ -166,6 +186,7 @@ dependencies = [
 dev = [
     { name = "httpx2" },
     { name = "mbse-demo-apps" },
+    { name = "mbse-journals" },
     { name = "pytest" },
 ]
 
@@ -180,12 +201,13 @@ requires-dist = [
 dev = [
     { name = "httpx2", specifier = ">=2.16" },
     { name = "mbse-demo-apps", editable = "../../mbse-demo-apps/python3" },
+    { name = "mbse-journals", editable = "../../mbse-journals/python3" },
     { name = "pytest", specifier = ">=9.1.1" },
 ]
 
 [[package]]
 name = "mbse-schemas"
-version = "0.26.2"
+version = "0.26.21"
 source = { editable = "../../mbse-schemas/python3" }
 
 [package.metadata]

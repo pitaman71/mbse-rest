@@ -1,6 +1,6 @@
 # Guide for AI agents
 
-The named schema list, schema inspector, logical view templates and one endpoint per logical view kind (mbse-basis [CAP-002: named schema list](https://github.com/pitaman71/mbse-basis/blob/main/docs/capabilities/CAP-002.md) to [CAP-004: logical view templates](https://github.com/pitaman71/mbse-basis/blob/main/docs/capabilities/CAP-004.md) and [CAP-012: logical view endpoints](https://github.com/pitaman71/mbse-basis/blob/main/docs/capabilities/CAP-012.md)). The whole interface, verified in one repository: the server in Python, `python3/mbse/Services/Rest` (`mbse.Services.Rest`), and the client in TypeScript, `typescript5/mbse/Services/Rest/Client.ts` (`@mbse/rest`).
+A store served over REST, whose client is a store another stacks on (mbse-basis [CAP-290: a service's store stacked, with no snapshot](https://github.com/pitaman71/mbse-basis/blob/main/docs/capabilities/README.md#CAP-290)), and the named schema list, schema inspector, logical view templates and one endpoint per logical view kind ([CAP-002: named schema list](https://github.com/pitaman71/mbse-basis/blob/main/docs/capabilities/CAP-002.md) to [CAP-004: logical view templates](https://github.com/pitaman71/mbse-basis/blob/main/docs/capabilities/CAP-004.md) and [CAP-012: logical view endpoints](https://github.com/pitaman71/mbse-basis/blob/main/docs/capabilities/CAP-012.md)). The whole interface, verified in one repository: the server in Python, `python3/mbse/Services/Rest` (`mbse.Services.Rest`), and the client in TypeScript, `typescript5/mbse/Services/Rest/Store.ts` and `Client.ts` (`@mbse/rest`), the store client in Python too (`Store.py`).
 
 ## Read before any work
 
@@ -25,6 +25,11 @@ directory that holds `mbse/`; npm: the package's directory), where the package s
 
 ## This repository
 
+- `Service.py` is the service, `Store.py` and `Store.ts` the client, a `Builders.Store` whose store below is the
+  service, the same in both languages: a change to one is made to the other. Their deliberate differences: the
+  transport, synchronous in both since the store interface is, Python's through the standard library, TypeScript's
+  waiting on a worker thread in Node or a synchronous `XMLHttpRequest` in a browser; and the errors for a status,
+  Python's `Store.ServiceError`, `Gone` and `Unavailable`, TypeScript's `Client.ts`'s, which the view calls share.
 - `Views.py` and `Views.ts` are the contract's two halves. A change to what the server answers regenerates
   [the golden corpus](conformance/README.md), committed with it, and is reviewed as a change to the contract:
   mbse-react and mbse-dynamodb build against it.

@@ -3,21 +3,30 @@
 
 # mbse-rest
 
-REST endpoints for any mbse-schemas store: a transactional API whose queries and responses are mutation expressions and
-`References.OfFrame` streams, so that a schema-driven UI can browse and edit any MBSE app's data with no app-specific
-service code.
+A store served over REST: any mbse-schemas store exposed through an encapsulated REST interface, whose client is itself
+a store that another stacks on, as on a store in memory; and, over it, a transactional API whose queries and responses
+are mutation expressions and `References.OfFrame` streams, so that a schema-driven UI can browse and edit any MBSE
+app's data with no app-specific service code.
 
 It consolidates and verifies the entire interface in one repository: the server side in Python
 (`python3/mbse/Services/Rest`, `mbse.Services.Rest`) and the client side in TypeScript
-(`typescript5/mbse/Services/Rest/Client.ts`, `@mbse/rest`). What it serves is specified in mbse-basis'
-capabilities: [CAP-002: named schema list](https://github.com/pitaman71/mbse-basis/blob/main/docs/capabilities/CAP-002.md) to [CAP-004: logical view templates](https://github.com/pitaman71/mbse-basis/blob/main/docs/capabilities/CAP-004.md) and [CAP-012: logical view endpoints](https://github.com/pitaman71/mbse-basis/blob/main/docs/capabilities/CAP-012.md), over the stack under [FEA-006: persistence](https://github.com/pitaman71/mbse-basis/blob/main/docs/features/FEA-006.md).
+(`typescript5/mbse/Services/Rest/Store.ts` and `Client.ts`, `@mbse/rest`), the store client in Python too
+(`mbse.Services.Rest.Store`). What it serves is specified in mbse-basis'
+capabilities: [CAP-002: named schema list](https://github.com/pitaman71/mbse-basis/blob/main/docs/capabilities/CAP-002.md) to [CAP-004: logical view templates](https://github.com/pitaman71/mbse-basis/blob/main/docs/capabilities/CAP-004.md) and [CAP-012: logical view endpoints](https://github.com/pitaman71/mbse-basis/blob/main/docs/capabilities/CAP-012.md), over the stack under [FEA-006: persistence](https://github.com/pitaman71/mbse-basis/blob/main/docs/features/FEA-006.md), as
+[CAP-290: a service's store stacked, with no snapshot](https://github.com/pitaman71/mbse-basis/blob/main/docs/capabilities/README.md#CAP-290) and [the stacked stores proposal](https://github.com/pitaman71/mbse-basis/blob/main/proposals/STACKED-STORES.md) state.
 
-The contract, its endpoints, view kinds and persistence plugin, is what mbse-basis' [FEA-003: no-code logical views](https://github.com/pitaman71/mbse-basis/blob/main/docs/features/FEA-003.md) and its capabilities say, as built; the
-[golden corpus](conformance/README.md) holds real requests and responses for clients to develop against.
+The service's store is a `Builders.Store` over a store below it, a database's in production (mbse-dynamodb's), one in
+memory by default: it loads what it is asked for, writes each transaction through, and persists by the store below's
+journal alone, so that no snapshot is taken or read. Its endpoints, each in `Service.py`'s module docstring, are those a
+client needs to be a store below: an object's document by path (`POST /documents`), a transaction committed or refused
+(`POST /transactions`), the change feed read by position (`GET /changes`), and the schemas as the install transactions
+that made them (`GET /schemas`, `POST /schemas`); and the logical views ([FEA-003: no-code logical views](https://github.com/pitaman71/mbse-basis/blob/main/docs/features/FEA-003.md)). The contract
+is what mbse-basis' features and capabilities say, as built; the [golden corpus](conformance/README.md) holds real
+requests and responses for clients to develop against.
 
 It depends on [mbse-schemas](https://github.com/pitaman71/mbse-schemas) as a checkout beside this repository, and on
-[mbse-demo-apps](https://github.com/pitaman71/mbse-demo-apps)' WorkTracker for its tests and corpus, pinned in
-`siblings.json`.
+[mbse-demo-apps](https://github.com/pitaman71/mbse-demo-apps)' WorkTracker and
+[mbse-journals](https://github.com/pitaman71/mbse-journals)' suite JRN for its tests, pinned in `siblings.json`.
 
 ## Running the service
 
@@ -27,12 +36,35 @@ uv run python -m mbse.Services.Rest      # the WorkTracker demo at http://127.0.
 MBSE_REST_ORIGINS=http://localhost:5173 MBSE_REST_PORT=8080 uv run python -m mbse.Services.Rest
 ```
 
-It serves any MBSE app: `MBSE_REST_APP` names the app's package (its `Schemas.install`, then its `Seed.seed`),
-`MBSE_REST_PLUGIN` its persistence plugin (`memory`, or `module:attribute`), `MBSE_REST_ORIGINS` the UI's origins for
-CORS. Every variable, and `Service.app` for serving an app from code, is in
-[CAP-001: no-code index view](https://github.com/pitaman71/mbse-basis/blob/main/docs/capabilities/CAP-001.md#the-service-for-any-mbse-app).
+It serves any MBSE app: `MBSE_REST_APP` names the app's package (its `Schemas.install`, or `Schemas.INSTALLS`, then
+its `Seed.seed`, run where the store below is new), `MBSE_REST_STORE` the store below (`memory`, or `module:attribute`,
+`mbse.Persistence.DynamoDB.Store:Store` for mbse-dynamodb's, configured by its own `MBSE_DYNAMODB_*`),
+`MBSE_REST_ORIGINS` the UI's origins for CORS. Every variable is in `Service.from_environment`; `Service.app(installs,
+below, seed)` serves an app from code. `MBSE_REST_PLUGIN` and `MBSE_REST_SNAPSHOT_EVERY` are retired, and refused.
 
 ## Using the client
+
+A store over the service, which an app's store stacks on:
+
+```typescript
+import { Builders } from "@mbse/schemas/Framework";
+import { Store } from "@mbse/rest/Services/Rest/Store";
+
+const below = new Store("http://localhost:8000");   // the service's schemas, from the installs that made them
+const store = new Builders.Store(below);            // loads on demand, writes through
+store.transaction(install);                         // its own schemas, as any store is given them
+below.poll();                                        // what others committed since, given to the store above
+```
+
+```python
+from mbse.Schemas.Framework import Builders
+from mbse.Services.Rest.Store import Store
+
+store = Builders.Store(Store("http://localhost:8000"))
+```
+
+mbse-schemas' store interface is synchronous, and so is the client: in Node, each request waits on a worker thread
+that fetches; in a browser, it is a synchronous `XMLHttpRequest`, best made from a worker. The logical views:
 
 ```typescript
 import { Client, newStore, Views } from "@mbse/rest/Services/Rest/Client";
@@ -52,6 +84,10 @@ cd python3 && uv sync --all-extras && uv run pytest
 (cd ../mbse-schemas/typescript5 && npm ci --omit=dev)   # once: mbse-schemas' own dependency, which the client imports
 cd typescript5 && npm install && npm run typecheck && npm test
 ```
+
+Both run mbse-schemas' suite BLW and mbse-journals' suite JRN from the sibling checkouts, unchanged but for the store
+below, which is the client of a service over a store in memory: Python's in this process, TypeScript's against the
+Python service, which its tests start (`python3/tests/serve.py`). mbse-dynamodb's tests run the service over its store.
 
 ---
 
