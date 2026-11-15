@@ -15,7 +15,7 @@ application from `MBSE_REST_*` variables, as `python -m mbse.Services.Rest` serv
 | `POST /schemas` | [CAP-290: a service's store stacked, with no snapshot](mbse:mbse-basis/docs/capabilities/README.md#CAP-290) | an install transaction, run in the store below and the service's store, then served with the others; the installs |
 | `GET /schemas/{name}` | [CAP-003: schema inspector](mbse:mbse-basis/docs/capabilities/CAP-003.md) | 501 until mbse-schemas writes one schema object as a document (CAP-003, Blocked) |
 | `POST /documents` | [CAP-290: a service's store stacked, with no snapshot](mbse:mbse-basis/docs/capabilities/README.md#CAP-290) | the document of the object at the path given, a one-transaction document, or null |
-| `POST /transactions` | [CAP-290: a service's store stacked, with no snapshot](mbse:mbse-basis/docs/capabilities/README.md#CAP-290) | a transaction's expression, committed: `{"position": n}`, the change feed's position once it has |
+| `POST /transactions` | [CAP-290: a service's store stacked, with no snapshot](mbse:mbse-basis/docs/capabilities/README.md#CAP-290) | a transaction's expression, committed: `{"position": n, "effect": e}`, the change feed's position once it has, and the transaction as the store committed it, its record among it (null where it changed nothing) |
 | `GET /changes?after=n&feed=id&wait=s` | [CAP-290: a service's store stacked, with no snapshot](mbse:mbse-basis/docs/capabilities/README.md#CAP-290) | `{"feed", "head", "changes"}`: each transaction the store committed after position `n`, in order, as `{"position", "effect"}` |
 | `GET /views` | [CAP-004: logical view templates](mbse:mbse-basis/docs/capabilities/CAP-004.md) | `{kind: template, ...}`, each a transaction's expression |
 | `POST /views/{kind}` | [CAP-012: logical view endpoints](mbse:mbse-basis/docs/capabilities/CAP-012.md) | the frames, `References.OfFrame`, one JSON document a line (NDJSON) |
@@ -172,6 +172,7 @@ class Service:
         self._committed = threading.Condition(self._lock)  # notified as each transaction is fed
         self.feed = _uuid()  # this feed's own name: a position is this feed's alone
         self.head = 0  # the position of the last transaction fed
+        self._before = 0  # the position fed before the transaction executing
         self._changes: collections.deque[tuple[int, PlainData]] = collections.deque(maxlen=window)
         # a store kept in a database, followed by polling: what other processes committed (a method of its class, since
         # a store's own attributes are its schemas' paths)
@@ -241,6 +242,7 @@ class Service:
         self._polled()
         try:
             self._load(plain)
+            self._before = self.head  # the transaction, where it changes anything, is fed next
             return self.store.transaction(Plain.FromPlain(self.store).Transaction(plain))
         except REFUSALS as error:
             raise Refused(400, _describe(error)) from error
@@ -256,12 +258,16 @@ class Service:
         for path in _referenced(plain):
             References.resolve(self.store, Plain.FromPlain(self.store)(self._reference, {"path": path}))
 
-    def transaction(self, plain: PlainData, session: str | None = None) -> int:
-        """Commits a transaction's expression, stamped where it writes ([CAP-015: transaction provenance](mbse:mbse-basis/docs/capabilities/CAP-015.md), `stamp`), in `session`; the change
-        feed's position once it has, its own where it changed anything."""
+    def transaction(self, plain: PlainData, session: str | None = None) -> dict[str, Any]:
+        """Commits a transaction's expression, stamped where it writes ([CAP-015: transaction provenance](mbse:mbse-basis/docs/capabilities/CAP-015.md), `stamp`), in `session`:
+        `{"position", "effect"}`, the change feed's position once it has, its own where it changed anything, and the
+        transaction as the store committed it, as plain data, its record (`Provenance`) among it, as the change feed
+        gives it; None where it changed nothing. A client takes it into its transaction, as a store above takes what
+        the store below reports it committed while it sends it (CAP-285)."""
         with self._lock:
             self._execute(stamp(plain, session, self.user, self.clock, self.uids))
-            return self.head
+            fed = [e for n, e in self._changes if n == self._before + 1] if self.head > self._before else []
+            return {"position": self.head, "effect": fed[0] if fed else None}
 
     def changes(self, after: int | None = None, feed: str | None = None, wait: float = 0.0) -> dict[str, Any]:
         """The change feed after position `after`, at most `PAGE` of them: the current head alone where `after` is
@@ -449,7 +455,7 @@ def app(installs: Iterable[Install | PlainData] = (), below: Any = None, seed: I
             plain = await body_of(request, "a transaction's expression")
         except Refused as error:
             return _error(error.status, str(error))
-        return await threaded(lambda: {"position": service.transaction(plain, request.headers.get(SESSION_HEADER))})
+        return await threaded(lambda: service.transaction(plain, request.headers.get(SESSION_HEADER)))
 
     @api.get("/changes")
     async def changes(after: int | None = None, feed: str | None = None, wait: float = 0.0) -> Any:

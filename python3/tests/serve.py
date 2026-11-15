@@ -1,6 +1,7 @@
 """Serves, for the TypeScript client's tests (`typescript5/tests/store.test.ts`), a service per path prefix,
 `/stores/<name>/...`, each over a store in memory of its own, made empty when first asked for, as `Service.app()` makes
-one; or, at `/library/...`, one serving the tests' library (`library.py`), seeded. It prints the port it listens on,
+one; or, at `/library/...`, one serving the tests' library (`library.py`), seeded; or, at `/work/...`, the WorkTracker,
+seeded, which records each transaction (`Provenance`). It prints the port it listens on,
 then serves until it is stopped.
 
     uv run python tests/serve.py
@@ -31,7 +32,8 @@ class Stores:
     def service(self, prefix: str, name: str) -> Any:
         key = f"{prefix}/{name}"
         if key not in self.services:
-            self.services[key] = Service.app([install], seed=seed) if prefix == "library" else Service.app()
+            self.services[key] = (Service.app([install], seed=seed) if prefix == "library" else
+                                  Service.work_tracker() if prefix == "work" else Service.app())
         return self.services[key]
 
     async def __call__(self, scope: Any, receive: Any, send: Any) -> None:

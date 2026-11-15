@@ -68,15 +68,37 @@ def test_a_store_above_stacks_over_it_as_over_a_store_in_memory(api):
 
 
 def test_its_followers_are_given_each_transaction_once_in_the_services_order(api):
+    """Its own at its commit, as the service committed it, its record among it; others' read from the change feed,
+    what they changed of the objects it holds; its own, read from the change feed again, changes nothing, and its
+    followers are told nothing more."""
     here, there = Store.Store(transport(api)), Store.Store(transport(api))
+    assert names(here) == ["LISP 1.5", "SICP"]  # each book held
     seen = []
     Changes.observe(here, lambda effect: seen.append(JSON.dumps(Plain.ToPlain(here).Transaction(effect))))
-    rename(there, "BK-1", "A")  # another's, before its own
-    rename(here, "BK-2", "B")  # its own: read from the feed after the other's, not at its own commit
+    rename(there, "BK-1", "A")  # another's, before its own: read from the feed as its own begins
+    rename(here, "BK-2", "B")  # its own: at its commit; read from the feed after it, it changes nothing
     rename(there, "BK-1", "C")
     here.poll()
     assert [('"A"' in s, '"B"' in s, '"C"' in s) for s in seen] == [
         (True, False, False), (False, True, False), (False, False, True)]
+
+
+def test_its_own_transaction_is_committed_as_the_service_committed_it():
+    """A write is one transaction in the client, as in the service: what the service answers with, its record
+    (`Provenance`) among it, is taken into the client's transaction, and is what its followers are given."""
+    api = Service.work_tracker(uids=lambda: "tx-1")
+    client, service = Store.Store(transport(api)), api.state.service
+    head = service.head
+    seen = []
+    Changes.observe(client, seen.append)
+    comment = client.singleton("work.Comments").comments({"id": "CMT-001"})
+    with client.transaction():
+        client.work.Comment(comment, lambda c: c.text("Edited."))
+    client.poll()
+    assert service.head == head + 1 and len(seen) == 1  # one transaction, given once
+    effect = JSON.dumps(Plain.ToPlain(client).Transaction(seen[0]))
+    assert '"tx-1"' in effect and "Provenance" in effect  # the service's record of it among it
+    assert JSON.dumps(service._changes[-1][1]) == JSON.dumps(Plain.ToPlain(client).Transaction(seen[0]))
 
 
 def test_a_refusal_below_refuses_the_transaction_as_the_error_it_is(api):

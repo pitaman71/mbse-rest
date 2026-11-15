@@ -111,11 +111,11 @@ class Stacked extends Builders.Store {
 }
 
 describe("mbse-schemas' BLW, over REST", () => {
-  test("BLW-01..15: the client as the store below, each case as mbse-schemas wrote it", async () => {
+  test("BLW-01..16: the client as the store below, each case as mbse-schemas wrote it", async () => {
     (globalThis as any).__servedOverRest = () => new Store(nodeTransport(fresh()));
     await run(generated("mbse-schemas", "36_Below.ipynb", "BLW.ts",
       [["const below: any = new B.Store();", "const below: any = (globalThis as any).__servedOverRest();", 1]]));
-    assert.equal((globalThis as any).__case, "BLW-15");
+    assert.equal((globalThis as any).__case, "BLW-16");
   });
 });
 
@@ -180,17 +180,38 @@ describe("the client", () => {
   });
 
   test("its followers are given each transaction once, in the service's order", () => {
+    // its own at its commit, as the service committed it; others' read from the change feed, what they changed of the
+    // objects it holds; its own, read from the change feed again, changes nothing, and its followers are told nothing
     const url = fresh("library");
     const here: any = new Store(url);
     const there: any = new Store(url);
+    assert.deepEqual(names(here), ["LISP 1.5", "SICP"]); // each book held
     const seen: string[] = [];
     Changes.observe(here, (effect) => seen.push(J.dumps(Plain.ToPlain(here).Transaction(effect))));
-    rename(there, "BK-1", "A");
-    rename(here, "BK-2", "B");
+    rename(there, "BK-1", "A"); // another's, before its own: read from the feed as its own begins
+    rename(here, "BK-2", "B"); // its own: at its commit; read from the feed after it, it changes nothing
     rename(there, "BK-1", "C");
     here.poll();
     assert.deepEqual(seen.map((s) => ["\"A\"", "\"B\"", "\"C\""].map((n) => s.includes(n))),
       [[true, false, false], [false, true, false], [false, false, true]]);
+  });
+
+  test("its own transaction is committed as the service committed it, its record among it", () => {
+    const url = fresh("work");
+    const client: any = new Store(url);
+    const transport = nodeTransport(url);
+    const head = Number((J.loads(transport("GET", "/changes").body) as Map<string, unknown>).get("head"));
+    const seen: string[] = [];
+    Changes.observe(client, (effect) => seen.push(J.dumps(Plain.ToPlain(client).Transaction(effect))));
+    const comment = client.singleton("work.Comments").comments({ id: "CMT-001" });
+    client.transaction(() => client.work.Comment(comment, (c: any) => c.text("Edited.")));
+    client.poll();
+    assert.equal(seen.length, 1); // one transaction, given once
+    const read = J.loads(transport("GET", `/changes?after=${head}`).body) as Map<string, any>;
+    const changes = read.get("changes") as Map<string, unknown>[];
+    assert.equal(changes.length, 1);
+    assert.ok(seen[0]!.includes("Provenance")); // the service's record of it among it
+    assert.equal(seen[0], J.dumps(changes[0]!.get("effect") as Plain.PlainData));
   });
 
   test("a refusal of the service's is thrown as the error its store raised, and writes nothing", () => {

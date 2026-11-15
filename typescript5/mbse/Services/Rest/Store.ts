@@ -13,12 +13,18 @@
  * - `transaction(...)` interprets a transaction with mbse-schemas' own interpreter, and sends its changes, as plain
  *   data, to the service before it commits (`POST /transactions`): the service commits them first, and its refusal
  *   refuses the transaction, thrown as the error the service's store raised (`ValueError`, `TypeError` or
- *   `LookupError`). An install, a transaction that writes schemas, is sent to the service first as it was given
- *   (`POST /schemas`), so that the service's store, and the store below it, hold the schemas too.
- * - `Changes.observe(store, observer)` gives `observer` each transaction the service's store committed, in the order
- *   it committed them, from the service's change feed (`GET /changes`): its own among them, each given once, and
- *   others', read before each of its transactions, after each, and on `poll()`. Each is applied to the objects it
- *   holds first.
+ *   `LookupError`). The transaction as the service's store committed it, its record among it, is taken into the
+ *   transaction before it commits, as any store takes what the store below reports it committed while it sends it,
+ *   so that the client commits a write as one transaction, as the service did. An install, a transaction that writes
+ *   schemas, is sent to the service first as it was given (`POST /schemas`), so that the service's store, and the
+ *   store below it, hold the schemas too.
+ * - `Changes.observe(store, observer)` gives `observer` the effect of each transaction of its own at its commit, as
+ *   the service's store committed it, its record among it; and what each transaction the service's store committed
+ *   changed of the objects it holds, as any store above is told what the store below committed, read from the
+ *   service's change feed (`GET /changes`) before each of its transactions, after each, and on `poll()`, in the order
+ *   the service committed them. Its own come back from the change feed too, and are applied again, as any store
+ *   applies its own the store below reports, changing nothing unless another's came between, and its followers are
+ *   told nothing more.
  *
  * The service records each transaction (mbse-schemas' `Provenance`), in its lowest store: the client, a store over it,
  * records none, and sends it, as any store sends the store below, the `uid`, `when`, `session` and `where` its
@@ -179,31 +185,15 @@ export class Store extends Builders.Store {
       for (const change of read.get("changes") as Map<string, unknown>[]) {
         this._seq = Number(change.get("position"));
         count += 1;
-        this._deliver(change.get("effect"));
+        this._apply(change.get("effect")); // as a store above applies the store below's (CAP-285)
       }
       if (this._seq >= Number(read.get("head"))) return count;
     }
   }
 
-  /** A transaction the service's store committed: applied to the objects present, as a store above applies the store
-   * below's (CAP-285), and its followers given the whole of it, as committed. */
-  _deliver(plain: unknown): void {
-    const observers = this._observers;
-    this._observers = [];
-    try {
-      this._apply(plain);
-    } finally {
-      this._observers = observers;
-    }
-    if (observers.length > 0) {
-      const effect = Plain.FromPlain(this as any).Transaction(plain as Plain.PlainData);
-      for (const observer of [...observers]) observer(effect);
-    }
-  }
-
   /** A transaction (`Builders.Store.transaction`), interpreted once the store has read the service's changes, and
-   * committed by the service first; its followers are given it from the service's change feed, in order, read once it
-   * ends. */
+   * committed by the service first, its followers given it at its commit as the service committed it; the change feed
+   * read again once it ends. */
   override transaction(spec?: unknown): any {
     if (this._loading > 0 || this._applying > 0 || this._proposals !== null) return super.transaction(spec);
     this.poll();
@@ -212,24 +202,30 @@ export class Store extends Builders.Store {
     return done;
   }
 
-  /** Sends a transaction's schemas, where it writes any, then its changes, to the service; its followers are not given
-   * it here, but from the service's change feed, in the order the service committed it. */
+  /** Sends a transaction's schemas, where it writes any, then its changes, to the service. */
   override _settled(proposals: any): void {
     const writesSchemas = this._held > proposals.existing || proposals.deferred.size > 0;
     if (writesSchemas && this._installing === 0 && this._applying === 0 && proposals.expression !== null) {
       this._call("POST", "/schemas", Plain.ToPlain(this as any).Transaction(proposals.expression));
     }
     super._settled(proposals);
-    this._changes = null;
   }
 
   /** A transaction's changes, sent to the service, which commits them first (CAP-285), with the `uid`, `when`,
-   * `session` and `where` its expression gives, as `Builders.Store._send` sends them to a store below. */
+   * `session` and `where` its expression gives, as `Builders.Store._send` sends them to a store below. The transaction
+   * as the service's store committed it, its record among it, which the service answers with, is taken into the
+   * transaction, as `Builders.Store._arrive` takes what the store below reports while it sends it: its followers are
+   * given it at its commit. Read again from the change feed once it ends, it is applied as any report of the store
+   * below's is, and changes nothing unless another's came between. */
   override _send(plain: unknown, expression: unknown): void {
     if (expression !== null) {
       const given = Changes._as_committed(this, () => Plain.ToPlain(this as any).Transaction(expression)) as Map<string, unknown>;
       plain = new Map([...[...given].filter(([k]) => k !== "mutations"), ...plain as Map<string, unknown>]);
     }
-    this._call("POST", "/transactions", plain);
+    const committed = (this._call("POST", "/transactions", plain) as Map<string, unknown>).get("effect") ?? null;
+    if (committed !== null) {
+      this._committed_below = committed;
+      this._apply(committed, true);
+    }
   }
 }
