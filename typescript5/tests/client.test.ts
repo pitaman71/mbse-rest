@@ -49,7 +49,7 @@ function reference(store: any, caseName: string, symbol = "x"): unknown {
 }
 
 describe("the calls", () => {
-  test("CAP-002: every named schema, read from the schema snapshot", async () => {
+  test("CAP-002: every named schema, from the install transactions that made them", async () => {
     const store = newStore();
     const names = await client.loadSchemas(store);
     assert.ok(names.includes("work.Project") && names.includes("References.OfFrame"));
@@ -230,8 +230,8 @@ describe("responses: the client reads each stream the corpus holds", () => {
     const [store, [goal]] = await frames("detail-goal");
     assert.deepEqual([...Views.properties(store, goal!)].map(([n]) => n), ["title", "description"]);
     assert.deepEqual(goal!.entries.map((e) => Views.entryLabel(store, goal!, e)), [
-      "work.InGoals: Demoable index site, work.Goals",
-      "work.HasGoal: Demoable index site, MVP",
+      "work.InGoals: work.Goals, Demoable index site",
+      "work.HasGoal: MVP, Demoable index site",
       "work.Plans: Demoable index site, No-code index view",
       "work.Plans: Demoable index site, Logical view as chip",
     ]);
