@@ -1,12 +1,8 @@
 """mbse-journals' suite JRN (`tests/03_Journals.ipynb`, the journal conformance every backend passes unchanged,
 mbse-basis CAP-288), run unchanged with each journal kept over REST (CAP-290): every store the suite makes,
 `Builders.Store()`, is made over mbse-rest's client of a service of its own, over a store in memory,
-`Builders.Store(Store(...))`, as an app stacks one.
-
-A store above does not send its schema installs below, since a transaction that writes only schemas reports no changes
-(`Changes.observe`): a store below is given its schemas apart, as an app gives its stores theirs. So that the suite runs
-unchanged, the store made in its place installs into the store below it each install it is given, before itself: the
-client, given an install, sends it to its service.
+`Builders.Store(Store.Remote(...))`, as an app holds one. An install the suite runs in it is run by the service first,
+as any store below runs the installs of the store over it (`Stores.Below.install`, CAP-306).
 """
 
 from __future__ import annotations
@@ -25,19 +21,14 @@ SERVICES: list[Service.Service] = []
 
 
 class Stacked(InMemory):
-    """`Builders.Store()`, made over mbse-rest's client of a service of its own."""
+    """`Builders.Store()`, made over mbse-rest's client of a service of its own: a test's stand-in, which adds nothing."""
 
     def __init__(self, below=None):
         if below is None:
             api = Service.app(below=InMemory())
             SERVICES.append(api.state.service)
-            below = Store.Store(transport(api))
+            below = Store.Remote(transport(api))
         super().__init__(below)
-
-    def transaction(self, spec=None):
-        if Builders._is_function(spec):  # an install: the store below's schemas first
-            self._below.transaction(spec)
-        return super().transaction(spec)
 
 
 @pytest.fixture(scope="module")
