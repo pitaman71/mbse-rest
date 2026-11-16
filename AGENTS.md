@@ -25,8 +25,10 @@ directory that holds `mbse/`; npm: the package's directory), where the package s
 
 ## This repository
 
-- `Service.py` is the service, `Store.py` and `Store.ts` the client, a `Builders.Store` whose store below is the
-  service, the same in both languages: a change to one is made to the other. Their deliberate differences: the
+- `Service.py` is the service, `Store.py` and `Store.ts` the client, `Remote`, the service as a store below
+  (mbse-schemas' `Stores.Below`), and `Store`, a plain `Builders.Store` over it, the same in both languages: a change
+  to one is made to the other. Both use mbse-schemas' public interface alone: no private name of it, nor a subclass
+  overriding one (mbse-basis [CAP-306: a public store-below interface](https://github.com/pitaman71/mbse-basis/blob/main/docs/capabilities/README.md#CAP-306)). Their deliberate differences: the
   transport, synchronous in both since the store interface is, Python's through the standard library, TypeScript's
   waiting on a worker thread in Node or a synchronous `XMLHttpRequest` in a browser; and the errors for a status,
   Python's `Store.ServiceError`, `Gone` and `Unavailable`, TypeScript's `Client.ts`'s, which the view calls share.
