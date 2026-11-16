@@ -108,6 +108,17 @@ def test_its_followers_are_given_each_transaction_once_in_the_services_order(api
     assert names(here) == ["C", "D"]
 
 
+def test_a_following_ended_is_given_nothing_more(api):
+    """Each following is its own, though one follower follow twice: ending one, once or again, ends it alone."""
+    remote, seen = Store.Remote(transport(api)), []
+    end = remote.follow(seen.append)
+    remote.follow(seen.append)
+    end()
+    end()
+    rename(api.state.service.store, "BK-1", "Once")
+    assert remote.poll() == 1 and len(seen) == 1
+
+
 def test_its_own_transaction_is_committed_as_the_service_committed_it():
     """A write is one transaction in the client, as in the service: what the service answers with, its record
     (`Provenance`) among it, is taken into the client's transaction, and is what its followers are given."""

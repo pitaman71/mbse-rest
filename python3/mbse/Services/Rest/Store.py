@@ -94,7 +94,7 @@ class Remote:
 
     def __init__(self, transport: Transport | str) -> None:
         self._transport = Http(transport) if isinstance(transport, str) else transport
-        self._followers: list[Callable[[PlainData], None]] = []
+        self._followers: dict[object, Callable[[PlainData], None]] = {}
         head = self._call("GET", "/changes")
         self._feed, self._seq = head["feed"], head["head"]  # the change feed, and the last change its followers were given
         self.installs: list[PlainData] = self._call("GET", "/schemas")  # those that made the service's schemas, in order
@@ -143,11 +143,11 @@ class Remote:
     def follow(self, follower: Callable[[PlainData], None]) -> Callable[[], None]:
         """Gives `follower` each transaction the service's store commits from now, once each, in its order, as the change
         feed gives them; gives back a function that ends it."""
-        self._followers.append(follower)
+        token = object()  # this following, though the same follower follow twice
+        self._followers[token] = follower
 
         def end() -> None:
-            if follower in self._followers:
-                self._followers.remove(follower)
+            self._followers.pop(token, None)
 
         return end
 
@@ -163,7 +163,7 @@ class Remote:
             for change in read["changes"]:
                 self._seq = change["position"]
                 count += 1
-                for follower in list(self._followers):
+                for follower in list(self._followers.values()):
                     follower(change["effect"])
             if self._seq >= read["head"]:
                 return count
