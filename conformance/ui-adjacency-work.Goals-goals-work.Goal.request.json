@@ -18,7 +18,8 @@
        "y": {
         "schema": [
          {
-          "$ref": {
+          "$schema": "References.OfObject",
+          "path": {
            "singleton": ".",
            "next": {
             "entry": {
@@ -64,7 +65,7 @@
                    "mutations": [
                     {
                      "set": {
-                      "ref": {
+                      "reference": {
                        "symbol": "y"
                       }
                      }

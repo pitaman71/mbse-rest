@@ -11,7 +11,8 @@
         "Project": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -41,7 +42,8 @@
         "Feature": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -71,7 +73,8 @@
         "Capability": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -101,7 +104,8 @@
         "Result": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -131,7 +135,8 @@
         "Task": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -161,7 +166,8 @@
         "Comment": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -191,7 +197,8 @@
         "Schedule": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -221,7 +228,8 @@
         "Goal": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -251,7 +259,8 @@
         "ProjectDirectory": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -281,7 +290,8 @@
         "FeatureDirectory": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -311,7 +321,8 @@
         "CapabilityDirectory": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -341,7 +352,8 @@
         "ResultDirectory": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -371,7 +383,8 @@
         "TaskDirectory": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -401,7 +414,8 @@
         "CommentDirectory": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -431,7 +445,8 @@
         "ScheduleDirectory": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -461,7 +476,8 @@
         "GoalDirectory": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -491,7 +507,8 @@
         "InProjects": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -521,7 +538,8 @@
         "InFeatures": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -551,7 +569,8 @@
         "InCapabilities": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -581,7 +600,8 @@
         "InResults": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -611,7 +631,8 @@
         "InTasks": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -641,7 +662,8 @@
         "InComments": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -671,7 +693,8 @@
         "InSchedules": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -701,7 +724,8 @@
         "InGoals": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -731,7 +755,8 @@
         "HasFeature": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -761,7 +786,8 @@
         "HasCapability": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -791,7 +817,8 @@
         "HasResult": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -821,7 +848,8 @@
         "HasTask": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -851,7 +879,8 @@
         "HasGoal": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -881,7 +910,8 @@
         "About": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -911,7 +941,8 @@
         "RepliesTo": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -941,7 +972,8 @@
         "Plans": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -1092,7 +1124,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -1314,7 +1346,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -1536,7 +1568,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -1758,7 +1790,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -1980,7 +2012,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -2202,7 +2234,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -2424,7 +2456,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -2646,7 +2678,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -2817,7 +2849,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "InProjects"
                                       }
                                      }
@@ -2945,7 +2977,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "InFeatures"
                                       }
                                      }
@@ -3073,7 +3105,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "InCapabilities"
                                       }
                                      }
@@ -3201,7 +3233,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "InResults"
                                       }
                                      }
@@ -3329,7 +3361,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "InTasks"
                                       }
                                      }
@@ -3457,7 +3489,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "InComments"
                                       }
                                      }
@@ -3585,7 +3617,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "InSchedules"
                                       }
                                      }
@@ -3713,7 +3745,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "InGoals"
                                       }
                                      }
@@ -4639,7 +4671,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -4725,7 +4757,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -4811,7 +4843,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -4897,7 +4929,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -5055,7 +5087,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -5141,7 +5173,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -5240,7 +5272,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "InProjects"
                                       }
                                      }
@@ -5327,7 +5359,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "HasFeature"
                                       }
                                      }
@@ -5402,7 +5434,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "About"
                                       }
                                      }
@@ -5530,7 +5562,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -5616,7 +5648,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -5715,7 +5747,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "InFeatures"
                                       }
                                      }
@@ -5802,7 +5834,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "HasFeature"
                                       }
                                      }
@@ -5877,7 +5909,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "HasCapability"
                                       }
                                      }
@@ -5952,7 +5984,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "About"
                                       }
                                      }
@@ -6080,7 +6112,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -6166,7 +6198,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -6265,7 +6297,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "InCapabilities"
                                       }
                                      }
@@ -6352,7 +6384,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "HasCapability"
                                       }
                                      }
@@ -6427,7 +6459,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "HasResult"
                                       }
                                      }
@@ -6502,7 +6534,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "Plans"
                                       }
                                      }
@@ -6577,7 +6609,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "About"
                                       }
                                      }
@@ -6705,7 +6737,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -6791,7 +6823,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -6890,7 +6922,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "InResults"
                                       }
                                      }
@@ -6977,7 +7009,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "HasResult"
                                       }
                                      }
@@ -7052,7 +7084,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "HasTask"
                                       }
                                      }
@@ -7127,7 +7159,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "About"
                                       }
                                      }
@@ -7255,7 +7287,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -7341,7 +7373,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -7440,7 +7472,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "InTasks"
                                       }
                                      }
@@ -7527,7 +7559,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "HasTask"
                                       }
                                      }
@@ -7602,7 +7634,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "About"
                                       }
                                      }
@@ -7730,7 +7762,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -7816,7 +7848,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -7915,7 +7947,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "InComments"
                                       }
                                      }
@@ -8002,7 +8034,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "About"
                                       }
                                      }
@@ -8077,7 +8109,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "RepliesTo"
                                       }
                                      }
@@ -8152,7 +8184,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "RepliesTo"
                                       }
                                      }
@@ -8280,7 +8312,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -8366,7 +8398,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -8465,7 +8497,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "InSchedules"
                                       }
                                      }
@@ -8552,7 +8584,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "HasGoal"
                                       }
                                      }
@@ -8680,7 +8712,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -8766,7 +8798,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -8865,7 +8897,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "InGoals"
                                       }
                                      }
@@ -8952,7 +8984,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "HasGoal"
                                       }
                                      }
@@ -9027,7 +9059,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "Plans"
                                       }
                                      }
@@ -9103,7 +9135,8 @@
         "OfWhere": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -9133,7 +9166,8 @@
         "InSessions": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -9163,7 +9197,8 @@
         "Sessions": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -9193,7 +9228,8 @@
         "OfSession": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -9223,7 +9259,8 @@
         "InSession": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -9253,7 +9290,8 @@
         "InTransactions": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -9283,7 +9321,8 @@
         "Transactions": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -9313,7 +9352,8 @@
         "OfTransaction": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -9343,7 +9383,8 @@
         "InIdentities": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -9373,7 +9414,8 @@
         "Identities": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -9403,7 +9445,8 @@
         "OfIdentity": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -9433,7 +9476,8 @@
         "Who": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -9463,7 +9507,8 @@
         "CreatedBy": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -9493,7 +9538,8 @@
         "ModifiedBy": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -9569,7 +9615,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -9655,7 +9701,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -9845,7 +9891,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -10004,7 +10050,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "InSessions"
                                       }
                                      }
@@ -10120,7 +10166,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -10206,7 +10252,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -10292,7 +10338,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -10391,7 +10437,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "InSessions"
                                       }
                                      }
@@ -10478,7 +10524,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "InSession"
                                       }
                                      }
@@ -10553,7 +10599,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "Who"
                                       }
                                      }
@@ -10839,7 +10885,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -10998,7 +11044,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "InTransactions"
                                       }
                                      }
@@ -11114,7 +11160,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -11200,7 +11246,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "OfWhere"
                                       }
                                      }
@@ -11276,7 +11322,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "InTransactions"
                                       }
                                      }
@@ -11363,7 +11409,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "InSession"
                                       }
                                      }
@@ -11438,7 +11484,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "CreatedBy"
                                       }
                                      }
@@ -11513,7 +11559,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "ModifiedBy"
                                       }
                                      }
@@ -11692,7 +11738,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -11851,7 +11897,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "InIdentities"
                                       }
                                      }
@@ -11967,7 +12013,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "InIdentities"
                                       }
                                      }
@@ -12054,7 +12100,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "symbol": "Who"
                                       }
                                      }
@@ -12450,7 +12496,8 @@
         "s0": {
          "schema": [
           {
-           "$ref": {
+           "$schema": "References.OfObject",
+           "path": {
             "singleton": ".",
             "next": {
              "entry": {
@@ -12526,7 +12573,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {
@@ -12612,7 +12659,7 @@
                                    "mutations": [
                                     {
                                      "set": {
-                                      "ref": {
+                                      "reference": {
                                        "path": {
                                         "singleton": ".",
                                         "next": {

@@ -108,11 +108,11 @@ class Stacked extends Builders.Store {
 }
 
 describe("mbse-schemas' BLW, over REST", () => {
-  test("BLW-01..19: the client as the store below, each case as mbse-schemas wrote it", async () => {
+  test("BLW-01..21: the client as the store below, each case as mbse-schemas wrote it", async () => {
     (globalThis as any).__servedOverRest = () => Store(nodeTransport(fresh()));
     await run(generated("mbse-schemas", "36_Below.ipynb", "BLW.ts",
       [["const below: any = new B.Store();", "const below: any = (globalThis as any).__servedOverRest();", 1]]));
-    assert.equal((globalThis as any).__case, "BLW-19");
+    assert.equal((globalThis as any).__case, "BLW-21");
   });
 });
 
