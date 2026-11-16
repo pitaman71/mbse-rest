@@ -120,7 +120,7 @@ def test_stores_below_by_name(monkeypatch):
     assert type(Service.store_of("")) is Builders.Store
     monkeypatch.setitem(sys.modules, "recorders", types.SimpleNamespace(Recorder=Recorder, Nothing=object))
     assert isinstance(Service.store_of("recorders:Recorder"), Recorder)
-    with pytest.raises(TypeError, match="no mbse-schemas store"):
+    with pytest.raises(TypeError, match="no store below"):
         Service.store_of("recorders:Nothing")
     with pytest.raises(ValueError, match="module:attribute"):
         Service.store_of("recorders")

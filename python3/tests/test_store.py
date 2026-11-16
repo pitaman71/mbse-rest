@@ -1,5 +1,6 @@
-"""mbse-rest's client, a store served over REST (`Store.Store`), and the endpoints it is made of: an object's document,
-a transaction committed or refused, the change feed, and the schemas as install transactions (mbse-basis CAP-290)."""
+"""mbse-rest's client, the service as a store below (`Store.Remote`, mbse-schemas' `Stores.Below`), a plain
+`Builders.Store` over it (`Store.Store`), and the endpoints it is made of: an object's document, a transaction committed
+or refused, the change feed, and the schemas as install transactions (mbse-basis CAP-290, CAP-306)."""
 
 from __future__ import annotations
 
@@ -10,7 +11,7 @@ import time
 import pytest
 import uvicorn
 from fastapi.testclient import TestClient
-from mbse.Schemas.Framework import JSON, Builders, Changes, Plain
+from mbse.Schemas.Framework import JSON, Builders, Changes, Plain, Stores
 
 from mbse.Services.Rest import Service, Store
 
@@ -41,17 +42,33 @@ def rename(store, id_, name):
         store.lib.Book(book(store, id_), lambda b: b.name(name))
 
 
+def counted(api):
+    """A transport to `api`'s service, and the documents read through it, by path."""
+    sent, read = transport(api), []
+
+    def send(method, path, body):
+        if path == "/documents":
+            read.append(JSON.loads(body))
+        return sent(method, path, body)
+    return send, read
+
+
 def test_made_it_holds_the_services_schemas_and_loads_nothing(api):
-    client = Store.Store(transport(api))
+    send, read = counted(api)
+    remote = Store.Remote(send)
+    client = Store.Store(remote)
+    assert isinstance(remote, Stores.Below) and type(client) is Builders.Store
     assert {"lib.Shelf", "lib.Book", "lib.OnShelf", "lib.Cites"} <= set(client.names())
-    assert len(client._loaded) == 0
-    assert names(client) == ["LISP 1.5", "SICP"] and len(client._loaded) == 3  # the shelf, then each book read
+    assert read == [] and JSON.dumps(remote.installs) == JSON.dumps(api.state.service.installs)
+    assert names(client) == ["LISP 1.5", "SICP"] and len(read) == 3  # the shelf, then each book read
+    assert len(api.state.service.installs) == 1  # its installs, run over it, not sent back
 
 
 def test_a_store_above_stacks_over_it_as_over_a_store_in_memory(api):
     """A `Builders.Store` over the client loads on demand, writes through to the service, and is given what others
     commit there, each once, in the order the service committed them."""
-    here, there = Store.Store(transport(api)), Store.Store(transport(api))
+    here, remote = Store.Store(transport(api)), Store.Remote(transport(api))
+    there = Store.Store(remote)
     above = Builders.Store(there)
     above.transaction(install)
     effects = []
@@ -60,41 +77,61 @@ def test_a_store_above_stacks_over_it_as_over_a_store_in_memory(api):
     rename(here, "BK-1", "Structure")
     rename(here, "BK-2", "Lisp")
     assert names(above) == ["LISP 1.5", "SICP"]  # not yet read from the feed
-    assert there.poll() == 2 and there.poll() == 0
+    assert remote.poll() == 2 and remote.poll() == 0
     assert names(above) == ["Lisp", "Structure"] and len(effects) == 2
     rename(above, "BK-1", "SICP")  # written through: committed by the service first
-    assert here.poll() == 1 and names(here) == ["Lisp", "SICP"]
+    assert names(here) == ["Lisp", "Structure"]  # not yet read
+    rename(here, "BK-2", "LISP")  # its own commit reads the change feed after it: the other's first
+    assert names(here) == ["LISP", "SICP"]
     assert str(api.state.service.below.singleton("lib.TheShelf").books({"id": "BK-1"}).name) == "SICP"
 
 
 def test_its_followers_are_given_each_transaction_once_in_the_services_order(api):
     """Its own at its commit, as the service committed it, its record among it; others' read from the change feed,
-    what they changed of the objects it holds; its own, read from the change feed again, changes nothing, and its
-    followers are told nothing more."""
-    here, there = Store.Store(transport(api)), Store.Store(transport(api))
+    in the service's order, what they changed of the objects it holds: polled before its own, before it, else read
+    after its own commits; its own, read from the change feed again, changes nothing, and its followers are told
+    nothing more."""
+    remote = Store.Remote(transport(api))
+    here, there = Store.Store(remote), Store.Store(transport(api))
     assert names(here) == ["LISP 1.5", "SICP"]  # each book held
     seen = []
     Changes.observe(here, lambda effect: seen.append(JSON.dumps(Plain.ToPlain(here).Transaction(effect))))
-    rename(there, "BK-1", "A")  # another's, before its own: read from the feed as its own begins
+    rename(there, "BK-1", "A")  # another's, before its own: read from the feed as it polls
+    remote.poll()
     rename(here, "BK-2", "B")  # its own: at its commit; read from the feed after it, it changes nothing
-    rename(there, "BK-1", "C")
-    here.poll()
-    assert [('"A"' in s, '"B"' in s, '"C"' in s) for s in seen] == [
-        (True, False, False), (False, True, False), (False, False, True)]
+    rename(there, "BK-1", "C")  # another's, not yet read
+    rename(here, "BK-2", "D")  # its own, then the other's, read after it
+    remote.poll()
+    assert [[f'"{n}"' in s for n in "ABCD"] for s in seen] == [
+        [True, False, False, False], [False, True, False, False], [False, False, False, True],
+        [False, False, True, False]]
+    assert names(here) == ["C", "D"]
+
+
+def test_a_following_ended_is_given_nothing_more(api):
+    """Each following is its own, though one follower follow twice: ending one, once or again, ends it alone."""
+    remote, seen = Store.Remote(transport(api)), []
+    end = remote.follow(seen.append)
+    remote.follow(seen.append)
+    end()
+    end()
+    rename(api.state.service.store, "BK-1", "Once")
+    assert remote.poll() == 1 and len(seen) == 1
 
 
 def test_its_own_transaction_is_committed_as_the_service_committed_it():
     """A write is one transaction in the client, as in the service: what the service answers with, its record
     (`Provenance`) among it, is taken into the client's transaction, and is what its followers are given."""
     api = Service.work_tracker(uids=lambda: "tx-1")
-    client, service = Store.Store(transport(api)), api.state.service
+    remote, service = Store.Remote(transport(api)), api.state.service
+    client = Store.Store(remote)
     head = service.head
     seen = []
     Changes.observe(client, seen.append)
     comment = client.singleton("work.Comments").comments({"id": "CMT-001"})
     with client.transaction():
         client.work.Comment(comment, lambda c: c.text("Edited."))
-    client.poll()
+    remote.poll()
     assert service.head == head + 1 and len(seen) == 1  # one transaction, given once
     effect = JSON.dumps(Plain.ToPlain(client).Transaction(seen[0]))
     assert '"tx-1"' in effect and "Provenance" in effect  # the service's record of it among it
@@ -104,11 +141,12 @@ def test_its_own_transaction_is_committed_as_the_service_committed_it():
 def test_a_refusal_below_refuses_the_transaction_as_the_error_it_is(api):
     """A transaction the service's store refuses is refused in the client, as the error its store raised, and writes
     nothing."""
-    client = Store.Store(transport(api))
+    remote = Store.Remote(transport(api))
+    client = Store.Store(remote)
     service = api.state.service
     head = service.head
     with pytest.raises(ValueError, match="has no property 'nope'"):
-        client._call("POST", "/transactions", {"mutations": [{"upsert": {"exists": [{"symbols": {
+        remote.commit({"mutations": [{"upsert": {"exists": [{"symbols": {
             "x": {"reference": {"path": BK_1}}}, "spec": [{"x": [{"as_property": {
                 "name": "nope", "mutations": [{"set": {"value": 1}}]}}]}]}]}}]})
     assert service.head == head and names(client) == ["LISP 1.5", "SICP"]
@@ -119,20 +157,20 @@ def test_a_refusal_kind_and_a_status_reach_the_client_as_errors():
                     (400, b'{"error": "TypeError: read-only"}'), (400, b'{"error": "LookupError: no such path"}'),
                     (400, b'{"error": "malformed"}'), (503, b'{"error": "the database is unreachable"}'),
                     (410, b'{"error": "restarted"}'), (500, b"not json")])
-    client = Store.Store(lambda method, path, body: next(replies))
+    client = Store.Remote(lambda method, path, body: next(replies))
     with pytest.raises(TypeError, match="^read-only$"):
-        client._call("POST", "/transactions", {})
+        client.commit({})
     with pytest.raises(LookupError, match="^no such path$"):
-        client._call("POST", "/transactions", {})
+        client.commit({})
     with pytest.raises(Store.ServiceError) as refused:
-        client._call("POST", "/transactions", {})
+        client.commit({})
     assert (refused.value.status, refused.value.error) == (400, "malformed")
     with pytest.raises(Store.Unavailable, match="unreachable"):
-        client._call("POST", "/transactions", {})
+        client.commit({})
     with pytest.raises(Store.Gone, match="restarted"):
         client.poll()
     with pytest.raises(Store.ServiceError, match="500: not json"):
-        client._call("GET", "/changes")
+        client.document({})
 
 
 def test_documents_by_path(api):
@@ -173,7 +211,7 @@ def test_the_change_feed_in_pages(api, monkeypatch):
     service = api.state.service
     for name in ("A", "B", "C", "D"):
         rename(service.store, "BK-1", name)
-    client = Store.Store(transport(api))
+    client = Store.Remote(transport(api))
     client._seq = 0
     assert client.poll() == 5 and client._seq == 5  # in three reads, each of two at most
 
@@ -220,10 +258,11 @@ def test_an_install_a_client_runs_is_sent_to_the_service():
     first.transaction(install)  # run again: it writes nothing, and is served once
     [served] = client.get("/schemas").json()
     assert "lib.Book" in api.state.service.below.names() and "lib.Book" in api.state.service.names()
-    second = Store.Store(transport(api))
+    remote = Store.Remote(transport(api))
+    second = Store.Store(remote)
     assert "lib.Book" in second.names()
     first.transaction(seed)
-    second.poll()
+    remote.poll()
     assert names(second) == ["LISP 1.5", "SICP"]
     assert JSON.dumps(served) == JSON.dumps(client.post("/schemas", json=served).json()[0])
     assert client.post("/schemas", json=[]).status_code == 400
@@ -249,7 +288,7 @@ def test_a_client_over_http():
         other = Store.Store(f"http://127.0.0.1:{port}")
         assert names(other) == ["LISP 1.5", "Over HTTP"]
         with pytest.raises(Store.ServiceError) as refused:
-            other._call("GET", "/nothing")
+            Store.Remote(f"http://127.0.0.1:{port}")._call("GET", "/nothing")
         assert refused.value.status == 404
     finally:
         server.should_exit = True

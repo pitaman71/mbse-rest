@@ -44,23 +44,25 @@ below, seed)` serves an app from code. `MBSE_REST_PLUGIN` and `MBSE_REST_SNAPSHO
 
 ## Using the client
 
-A store over the service, which an app's store stacks on:
+The service as a store below (`Remote`), mbse-schemas' public store-below interface (`Stores.Below`,
+[CAP-306: a public store-below interface](https://github.com/pitaman71/mbse-basis/blob/main/docs/capabilities/README.md#CAP-306)), and an app's store over it, a plain `Builders.Store` given the service's schemas
+(`Store`):
 
 ```typescript
-import { Builders } from "@mbse/schemas/Framework";
-import { Store } from "@mbse/rest/Services/Rest/Store";
+import { Remote, Store } from "@mbse/rest/Services/Rest/Store";
 
-const below = new Store("http://localhost:8000");   // the service's schemas, from the installs that made them
-const store = new Builders.Store(below);            // loads on demand, writes through
-store.transaction(install);                         // its own schemas, as any store is given them
-below.poll();                                        // what others committed since, given to the store above
+const remote = new Remote("http://localhost:8000");
+const store = Store(remote);       // a Builders.Store over it: the service's schemas, from the installs that made them
+store.transaction(install);        // its own schemas, run by the service first, as any store below runs them
+remote.poll();                     // what others committed since, given to the store
 ```
 
 ```python
-from mbse.Schemas.Framework import Builders
-from mbse.Services.Rest.Store import Store
+from mbse.Services.Rest.Store import Remote, Store
 
-store = Builders.Store(Store("http://localhost:8000"))
+remote = Remote("http://localhost:8000")
+store = Store(remote)              # Builders.Store(remote), given the service's schemas
+remote.poll()
 ```
 
 mbse-schemas' store interface is synchronous, and so is the client: in Node, each request waits on a worker thread

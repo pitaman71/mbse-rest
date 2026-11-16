@@ -1,4 +1,5 @@
-/** mbse-rest's client, a store served over REST (`Store.ts`), against the Python service (mbse-basis CAP-290): it runs
+/** mbse-rest's client, the service as a store below (`Store.ts`'s `Remote`, mbse-schemas' `Stores.Below`) and a plain
+ * `Builders.Store` over it (`Store`), against the Python service (mbse-basis CAP-290, CAP-306): it runs
  * `python3/tests/serve.py`, a service per path prefix, each over a store in memory of its own.
  *
  * mbse-schemas' suite BLW and mbse-journals' suite JRN run here from their sibling checkouts' TypeScript notebooks, each
@@ -13,10 +14,10 @@ import { dirname, resolve } from "node:path";
 import { createInterface } from "node:readline";
 import { after, before, describe, test } from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { Builders, Changes, JSON as J, Plain, Proxies } from "@mbse/schemas/Framework";
+import { Builders, Changes, JSON as J, Plain, Stores } from "@mbse/schemas/Framework";
 import { LookupError, ValueError } from "@mbse/schemas/Framework/Errors";
 import { Gone, ServiceError, TransportError, Unavailable } from "../mbse/Services/Rest/Client.js";
-import { nodeTransport, Store, transportFor, xhrTransport, type Reply, type Transport }
+import { nodeTransport, Remote, Store, transportFor, xhrTransport, type Reply, type Transport }
   from "../mbse/Services/Rest/Store.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -97,25 +98,21 @@ async function run(module: string): Promise<void> {
   }
 }
 
-/** `new Builders.Store()`, made over mbse-rest's client of a service of its own; given an install, it installs it in
- * the store below it first, as an app gives its stores theirs (a store above sends no install below). */
+/** `new Builders.Store()`, made over mbse-rest's client of a service of its own: a test's stand-in, which adds
+ * nothing. An install the suite runs in it is run by the service first, as any store below runs the installs of the
+ * store over it (`Stores.Below.install`, CAP-306). */
 class Stacked extends Builders.Store {
   constructor(below: any = null) {
-    super(below ?? new Store(nodeTransport(fresh())));
-  }
-
-  override transaction(spec: unknown): any {
-    if (Proxies._isFunction(spec) && spec.length > 0) this._below.transaction(spec); // an install
-    return super.transaction(spec);
+    super(below ?? new Remote(nodeTransport(fresh())));
   }
 }
 
 describe("mbse-schemas' BLW, over REST", () => {
-  test("BLW-01..16: the client as the store below, each case as mbse-schemas wrote it", async () => {
-    (globalThis as any).__servedOverRest = () => new Store(nodeTransport(fresh()));
+  test("BLW-01..19: the client as the store below, each case as mbse-schemas wrote it", async () => {
+    (globalThis as any).__servedOverRest = () => Store(nodeTransport(fresh()));
     await run(generated("mbse-schemas", "36_Below.ipynb", "BLW.ts",
       [["const below: any = new B.Store();", "const below: any = (globalThis as any).__servedOverRest();", 1]]));
-    assert.equal((globalThis as any).__case, "BLW-16");
+    assert.equal((globalThis as any).__case, "BLW-19");
   });
 });
 
@@ -151,17 +148,27 @@ function libraryInstall(): Plain.PlainData {
 
 describe("the client", () => {
   test("made, it holds the service's schemas, loads nothing, then loads what is read", () => {
-    const client: any = new Store(fresh("library"));
+    const url = fresh("library");
+    const sent = nodeTransport(url);
+    const read: string[] = [];
+    const remote = new Remote((method, path, body) => {
+      if (path === "/documents") read.push(body!);
+      return sent(method, path, body);
+    });
+    const client: any = Store(remote);
+    assert.ok(Stores.isBelow(remote) && client.constructor === Builders.Store);
     assert.ok(["lib.Shelf", "lib.Book", "lib.OnShelf"].every((n) => [...client.names()].includes(n)));
-    assert.equal(client._loaded.size, 0);
+    assert.equal(read.length, 0);
     assert.deepEqual(names(client), ["LISP 1.5", "SICP"]);
-    assert.equal(client._loaded.size, 3);
+    assert.equal(read.length, 3); // the shelf, then each book read
+    assert.equal((J.loads(sent("GET", "/schemas").body) as unknown[]).length, 1); // its installs, not sent back
   });
 
   test("a store above stacks over it: loads on demand, writes through, given others' writes in order, once", () => {
     const url = fresh("library");
-    const here: any = new Store(url);
-    const there: any = new Store(url);
+    const here: any = Store(url);
+    const remote = new Remote(url);
+    const there: any = Store(remote);
     const above: any = new Builders.Store(there);
     const install = libraryInstall();
     above.transaction(Plain.FromPlain(above).Transaction(install));
@@ -171,41 +178,49 @@ describe("the client", () => {
     rename(here, "BK-1", "Structure");
     rename(here, "BK-2", "Lisp");
     assert.deepEqual(names(above), ["LISP 1.5", "SICP"]); // not yet read from the feed
-    assert.equal(there.poll(), 2);
-    assert.equal(there.poll(), 0);
+    assert.equal(remote.poll(), 2);
+    assert.equal(remote.poll(), 0);
     assert.deepEqual([names(above), effects.length], [["Lisp", "Structure"], 2]);
     rename(above, "BK-1", "SICP"); // written through: committed by the service first
-    assert.equal(here.poll(), 1);
-    assert.deepEqual(names(here), ["Lisp", "SICP"]);
+    assert.deepEqual(names(here), ["Lisp", "Structure"]); // not yet read
+    rename(here, "BK-2", "LISP"); // its own commit reads the change feed after it: the other's first
+    assert.deepEqual(names(here), ["LISP", "SICP"]);
   });
 
   test("its followers are given each transaction once, in the service's order", () => {
-    // its own at its commit, as the service committed it; others' read from the change feed, what they changed of the
-    // objects it holds; its own, read from the change feed again, changes nothing, and its followers are told nothing
+    // its own at its commit, as the service committed it; others' read from the change feed, in the service's order,
+    // what they changed of the objects it holds: polled before its own, before it, else read after its own commits;
+    // its own, read from the change feed again, changes nothing, and its followers are told nothing more
     const url = fresh("library");
-    const here: any = new Store(url);
-    const there: any = new Store(url);
+    const remote = new Remote(url);
+    const here: any = Store(remote);
+    const there: any = Store(url);
     assert.deepEqual(names(here), ["LISP 1.5", "SICP"]); // each book held
     const seen: string[] = [];
     Changes.observe(here, (effect) => seen.push(J.dumps(Plain.ToPlain(here).Transaction(effect))));
-    rename(there, "BK-1", "A"); // another's, before its own: read from the feed as its own begins
+    rename(there, "BK-1", "A"); // another's, before its own: read from the feed as it polls
+    remote.poll();
     rename(here, "BK-2", "B"); // its own: at its commit; read from the feed after it, it changes nothing
-    rename(there, "BK-1", "C");
-    here.poll();
-    assert.deepEqual(seen.map((s) => ["\"A\"", "\"B\"", "\"C\""].map((n) => s.includes(n))),
-      [[true, false, false], [false, true, false], [false, false, true]]);
+    rename(there, "BK-1", "C"); // another's, not yet read
+    rename(here, "BK-2", "D"); // its own, then the other's, read after it
+    remote.poll();
+    assert.deepEqual(seen.map((s) => ["A", "B", "C", "D"].map((n) => s.includes(`"${n}"`))),
+      [[true, false, false, false], [false, true, false, false], [false, false, false, true],
+        [false, false, true, false]]);
+    assert.deepEqual(names(here), ["C", "D"]);
   });
 
   test("its own transaction is committed as the service committed it, its record among it", () => {
     const url = fresh("work");
-    const client: any = new Store(url);
+    const remote = new Remote(url);
+    const client: any = Store(remote);
     const transport = nodeTransport(url);
     const head = Number((J.loads(transport("GET", "/changes").body) as Map<string, unknown>).get("head"));
     const seen: string[] = [];
     Changes.observe(client, (effect) => seen.push(J.dumps(Plain.ToPlain(client).Transaction(effect))));
     const comment = client.singleton("work.Comments").comments({ id: "CMT-001" });
     client.transaction(() => client.work.Comment(comment, (c: any) => c.text("Edited.")));
-    client.poll();
+    remote.poll();
     assert.equal(seen.length, 1); // one transaction, given once
     const read = J.loads(transport("GET", `/changes?after=${head}`).body) as Map<string, any>;
     const changes = read.get("changes") as Map<string, unknown>[];
@@ -215,23 +230,24 @@ describe("the client", () => {
   });
 
   test("a refusal of the service's is thrown as the error its store raised, and writes nothing", () => {
-    const client: any = new Store(fresh("library"));
+    const remote = new Remote(fresh("library"));
+    const client: any = Store(remote);
     const path = { singleton: "lib.TheShelf", next: { entry: { i: "books", o: "shelf", properties: { id: "BK-1" },
       next: { target: {} } } } };
     const nope = J.loads(JSON.stringify({ mutations: [{ upsert: { exists: [{ symbols: { x: { reference: { path } } },
       spec: [{ x: [{ as_property: { name: "nope", mutations: [{ set: { value: 1 } }] } }] }] }] } }] }));
-    assert.throws(() => client._call("POST", "/transactions", nope),
+    assert.throws(() => remote.commit(nope),
       (e: Error) => e instanceof ValueError && /has no property 'nope'/.test(e.message));
     assert.deepEqual(names(client), ["LISP 1.5", "SICP"]);
   });
 
   test("an install a client runs is sent to the service, and served to the next", () => {
     const url = fresh();
-    const first: any = new Store(url);
+    const first: any = Store(url);
     const install = libraryInstall();
     first.transaction(Plain.FromPlain(first).Transaction(install));
     first.transaction(Plain.FromPlain(first).Transaction(install)); // again: it writes nothing, served once
-    const second: any = new Store(url);
+    const second: any = Store(url);
     assert.ok([...second.names()].includes("lib.Book"));
     assert.equal((J.loads(nodeTransport(url)("GET", "/schemas").body) as unknown[]).length, 1);
   });
@@ -242,13 +258,13 @@ describe("the client", () => {
       { status: 400, body: "{\"error\": \"LookupError: no such path\"}" }, { status: 400, body: "{\"error\": \"malformed\"}" },
       { status: 503, body: "{\"error\": \"the database is unreachable\"}" }, { status: 410, body: "{\"error\": \"restarted\"}" },
       { status: 500, body: "not json" }];
-    const client: any = new Store(() => replies.shift()!);
-    assert.throws(() => client._call("POST", "/transactions", null), (e: Error) => e instanceof TypeError && e.message === "read-only");
-    assert.throws(() => client._call("POST", "/transactions", null), (e: Error) => e instanceof LookupError && e.message === "no such path");
-    assert.throws(() => client._call("POST", "/transactions", null), (e: ServiceError) => e.status === 400 && e.error === "malformed");
-    assert.throws(() => client._call("POST", "/transactions", null), Unavailable);
+    const client = new Remote(() => replies.shift()!);
+    assert.throws(() => client.commit(null), (e: Error) => e instanceof TypeError && e.message === "read-only");
+    assert.throws(() => client.commit(null), (e: Error) => e instanceof LookupError && e.message === "no such path");
+    assert.throws(() => client.commit(null), (e: ServiceError) => e.status === 400 && e.error === "malformed");
+    assert.throws(() => client.commit(null), Unavailable);
     assert.throws(() => client.poll(), Gone);
-    assert.throws(() => client._call("GET", "/changes"), (e: ServiceError) => e.status === 500 && e.error === "not json");
+    assert.throws(() => client.document(null), (e: ServiceError) => e.status === 500 && e.error === "not json");
   });
 
   test("transports: an unreachable service, and a browser's synchronous XMLHttpRequest", () => {

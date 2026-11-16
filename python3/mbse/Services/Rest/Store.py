@@ -1,32 +1,30 @@
-"""mbse-rest's client: a store served over REST, which a `Builders.Store` stacks on as on any store below it
+"""mbse-rest's client: the service as a store below, which a `Builders.Store` stacks on as on any store below it
 (mbse-basis [CAP-290: a service's store stacked, with no snapshot](mbse:mbse-basis/docs/capabilities/README.md#CAP-290),
-as [the stacked stores proposal](mbse:mbse-basis/proposals/STACKED-STORES.md) states).
+as [the stacked stores proposal](mbse:mbse-basis/proposals/STACKED-STORES.md) states), written against mbse-schemas'
+public store-below interface alone, `Stores.Below`
+([CAP-306: a public store-below interface](mbse:mbse-basis/docs/capabilities/README.md#CAP-306)).
 
-`Store(transport)` is an mbse-schemas store (`Builders.Store`) whose store below is the service at the other end of
-`transport`, `Http(base)` for one at a URL. Made, it holds the service's schemas, executing the install transactions
-that made them (`GET /schemas`); a store above it is made over it, `Builders.Store(Store(...))`, as over a store in
-memory:
+`Remote(transport)` is the service at the other end of `transport`, `Http(base)` for one at a URL, as a store below
+(`Stores.Below`):
 
-- `document(path)` gives the object at `path` as a one-transaction document, None where neither it nor the service
-  holds one: an object it does not hold is loaded from the service (`POST /documents`), on demand.
-- `transaction(...)` interprets a transaction with mbse-schemas' own interpreter, and sends its changes, as plain data,
-  to the service before it commits (`POST /transactions`): the service commits them first, and its refusal refuses
-  the transaction, raised as the error the service's store raised (`ValueError`, `TypeError` or `LookupError`). The
-  transaction as the service's store committed it, its record among it, is taken into the transaction before it
-  commits, as any store takes what the store below reports it committed while it sends it, so that the client commits
-  a write as one transaction, as the service did. An install, a transaction that writes schemas, is sent to the
-  service first as it was given (`POST /schemas`), so that the service's store, and the store below it, hold the
-  schemas too.
-- `Changes.observe(store, observer)` gives `observer` the effect of each transaction of its own at its commit, as the
-  service's store committed it, its record among it; and what each transaction the service's store committed changed
-  of the objects it holds, as any store above is told what the store below committed, read from the service's change
-  feed (`GET /changes`) before each of its transactions, after each, and on `poll()`, in the order the service
-  committed them. Its own come back from the change feed too, and are applied again, as any store applies its own the
-  store below reports, changing nothing unless another's came between, and its followers are told nothing more.
+- `document(path)` gives the object at `path` as a one-transaction document, None where the service holds none
+  (`POST /documents`): what a store over it loads, on demand.
+- `commit(plain)` sends a transaction's changes, as plain data, to the service (`POST /transactions`), which commits
+  them first; its refusal is raised as the error the service's store raised (`ValueError`, `TypeError` or
+  `LookupError`). It gives back the transaction as the service's store committed it, its record (`Provenance`) among
+  it, which a store over it takes into its own transaction, as it takes what any store below gives back.
+- `install(plain)` sends an install, a transaction that writes schemas, to the service (`POST /schemas`), which runs
+  it in its store and the store below that; one of the installs the service gave it, run again over it, is not sent
+  back.
+- `follow(follower)` gives `follower` each transaction the service's store committed, as plain data, once each, in the
+  order it committed them, read from its change feed (`GET /changes`) on `poll()` and after each commit, its own among
+  them.
+- `records` is true: the service's lowest store records each transaction, so that a store over it records none.
 
-The service records each transaction (mbse-schemas' `Provenance`), in its lowest store: the client, a store over it,
-records none, and sends it, as any store sends the store below, the `uid`, `when`, `session` and `where` its
-transaction's expression gives.
+`Store(transport)`, or `Store(remote)`, is a plain `Builders.Store` over it, given the service's schemas: it runs each
+of the install transactions that made them (`GET /schemas`). An app reads and writes it as any store, and gives it its
+own installs, which reach the service. `remote.poll()` reads the change feed, so that what others committed reaches
+it; a program that reads others' writes before it writes polls first.
 """
 
 from __future__ import annotations
@@ -36,12 +34,12 @@ import json
 import urllib.error
 import urllib.parse
 import urllib.request
-from collections.abc import Callable, Iterator, Mapping
+from collections.abc import Callable, Mapping
 from typing import Any
 
-from mbse.Schemas.Framework import JSON, Builders, Changes, Plain
+from mbse.Schemas.Framework import JSON, Builders
 
-__all__ = ["Transport", "Http", "Store", "ServiceError", "Gone", "Unavailable", "REFUSALS"]
+__all__ = ["Transport", "Http", "Remote", "Store", "ServiceError", "Gone", "Unavailable", "REFUSALS"]
 
 PlainData = Any
 
@@ -88,37 +86,19 @@ def Http(base: str, headers: Mapping[str, str] | None = None, timeout: float = 6
     return send
 
 
-class _Service:
-    """The service, as the store below the client's own objects: it gives an object's document, and records each
-    transaction, so that the client records none (`Builders.Store.records`)."""
+class Remote:
+    """The service that `transport` reaches, or the service at the URL `transport`, as a store below (`Stores.Below`)."""
 
     records = True
-
-    def __init__(self, store: Store) -> None:
-        self.store = store
-
-    def document(self, path: PlainData) -> PlainData:
-        return self.store._call("POST", "/documents", path)
-
-
-class Store(Builders.Store):
-    """A store over the service that `transport` reaches, or the service at the URL `transport`."""
+    """The service records each transaction (`Provenance`), in its lowest store: a store over it records none."""
 
     def __init__(self, transport: Transport | str) -> None:
-        super().__init__()
         self._transport = Http(transport) if isinstance(transport, str) else transport
-        self._below = _Service(self)  # its own objects load from the service, on demand (CAP-284)
-        self._installing = 0  # how deep in executing the service's installs: those are not sent back
+        self._followers: dict[object, Callable[[PlainData], None]] = {}
         head = self._call("GET", "/changes")
-        self._feed, self._seq = head["feed"], head["head"]  # the change feed, and the last change it was given
-        self._installing += 1
-        try:
-            for plain in self._call("GET", "/schemas"):
-                Builders.Store.transaction(self, Plain.FromPlain(self).Transaction(plain))  # Builders.Store's, not its own
-        finally:
-            self._installing -= 1
-
-    # --- The service ---
+        self._feed, self._seq = head["feed"], head["head"]  # the change feed, and the last change its followers were given
+        self.installs: list[PlainData] = self._call("GET", "/schemas")  # those that made the service's schemas, in order
+        self._served = 0  # how deep in running the service's own installs over it (`Store`): those are not sent back
 
     def _call(self, method: str, path: str, body: PlainData = None, sent: bool = False) -> PlainData:
         """The service's answer to a request, read from JSON; a refusal raised: a transaction's as the error its store
@@ -138,11 +118,44 @@ class Store(Builders.Store):
                 raise REFUSALS[kind](message)
         raise {410: Gone, 503: Unavailable}.get(status, ServiceError)(status, str(error))
 
+    # --- Stores.Below ---
+
+    def document(self, path: PlainData) -> PlainData:
+        """The document of the object at `path`, None where the service holds none."""
+        return self._call("POST", "/documents", path)
+
+    def commit(self, plain: PlainData) -> PlainData:
+        """Commits a transaction's changes in the service, refused as its store refuses them; gives back the transaction
+        as its store committed it, its record among it, None where it changed nothing. The change feed is read after it,
+        its own among what it gives the followers; a failure to read it is left to the next `poll()`, since the
+        transaction has committed."""
+        committed = self._call("POST", "/transactions", plain)["effect"]
+        with contextlib.suppress(ServiceError, OSError):
+            self.poll()
+        return committed
+
+    def install(self, plain: PlainData) -> None:
+        """Runs an install in the service, its store and the store below that, refused as they refuse it; one of the
+        service's own installs, run over it as `Store` runs them, is not sent back."""
+        if not self._served:
+            self.installs = self._call("POST", "/schemas", plain)
+
+    def follow(self, follower: Callable[[PlainData], None]) -> Callable[[], None]:
+        """Gives `follower` each transaction the service's store commits from now, once each, in its order, as the change
+        feed gives them; gives back a function that ends it."""
+        token = object()  # this following, though the same follower follow twice
+        self._followers[token] = follower
+
+        def end() -> None:
+            self._followers.pop(token, None)
+
+        return end
+
+    # --- The change feed ---
+
     def poll(self) -> int:
-        """Gives the objects this store holds, and its followers, each transaction the service's store committed since
-        it was last given one, in the order it committed them; how many. Within a transaction of this store's, none."""
-        if self._proposals is not None or self._loading or self._applying:
-            return 0
+        """Gives the followers each transaction the service's store committed since they were last given one, in the
+        order it committed them; how many."""
         count = 0
         while True:
             query = urllib.parse.urlencode({"after": self._seq, "feed": self._feed})
@@ -150,50 +163,21 @@ class Store(Builders.Store):
             for change in read["changes"]:
                 self._seq = change["position"]
                 count += 1
-                self._apply(change["effect"])  # as a store above applies the store below's (CAP-285)
+                for follower in list(self._followers.values()):
+                    follower(change["effect"])
             if self._seq >= read["head"]:
                 return count
 
-    # --- Transactions ---
 
-    def transaction(self, spec: Any = None) -> Any:
-        """A transaction (`Builders.Store.transaction`), interpreted once the store has read the service's changes, and
-        committed by the service first, its followers given it at its commit as the service committed it; the change
-        feed read again once it ends."""
-        if self._loading or self._applying or self._proposals is not None:  # within one of its own: no other
-            return super().transaction(spec)
-        self.poll()
-        if spec is None:
-            return self._block()
-        done = super().transaction(spec)
-        self.poll()
-        return done
-
-    @contextlib.contextmanager
-    def _block(self) -> Iterator[None]:
-        with super().transaction():
-            yield
-        self.poll()
-
-    def _settled(self, proposals: Any) -> None:
-        """Sends a transaction's schemas, where it writes any, then its changes, to the service."""
-        writes_schemas = self._held > proposals.existing or bool(proposals.deferred)
-        if writes_schemas and not (self._installing or self._applying) and proposals.expression is not None:
-            self._call("POST", "/schemas", Plain.ToPlain(self).Transaction(proposals.expression))
-        super()._settled(proposals)
-
-    def _send(self, plain: PlainData, expression: Any) -> None:
-        """A transaction's changes, sent to the service, which commits them first (CAP-285), with the `uid`, `when`,
-        `session` and `where` its expression gives, as `Builders.Store._send` sends them to a store below. The
-        transaction as the service's store committed it, its record among it, which the service answers with, is taken
-        into the transaction, as `Builders.Store._arrive` takes what the store below reports while it sends it: its
-        followers are given it at its commit. Read again from the change feed once it ends, it is applied as any report
-        of the store below's is, and changes nothing unless another's came between."""
-        if expression is not None:
-            with Changes._as_committed(self):
-                given = Plain.ToPlain(self).Transaction(expression)
-            plain = {**{k: v for k, v in given.items() if k != "mutations"}, **plain}
-        committed = self._call("POST", "/transactions", plain)["effect"]
-        if committed is not None:
-            self._committed_below = committed
-            self._apply(committed, joined=True)
+def Store(transport: Transport | str | Remote) -> Builders.Store:
+    """A store over the service that `transport` reaches, the service at the URL `transport`, or `remote`: a plain
+    `Builders.Store` over it, given the service's schemas by running each install that made them."""
+    remote = transport if isinstance(transport, Remote) else Remote(transport)
+    store = Builders.Store(remote)
+    remote._served += 1
+    try:
+        for plain in remote.installs:
+            store.install(plain)
+    finally:
+        remote._served -= 1
+    return store

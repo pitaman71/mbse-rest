@@ -57,7 +57,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException
 
-from mbse.Schemas.Framework import JSON, Builders, Changes, Plain, References
+from mbse.Schemas.Framework import JSON, Builders, Changes, Plain, References, Stores
 
 from . import Views
 
@@ -150,12 +150,30 @@ def _plain(store: Any, effect: Any) -> PlainData:
     return JSON.loads(JSON.dumps(Plain.ToPlain(store).Transaction(effect)))
 
 
-def _install_plain(store: Any, install: Install | PlainData, when: str) -> PlainData:
-    """An install as the transaction expression it gives, built in `store`, which holds the schemas it names, its `when`
-    the service's."""
-    if isinstance(install, dict):
-        return install
-    return _plain(store, store.Mutations.OfTransaction(lambda t: install(Builders._Transaction(store, t)).when(when)))
+class _Below:
+    """The store below the service's store, as that store sees it (`Stores.Below`): the store below it is given, each
+    install the service's store gives it, a transaction that writes schemas, kept as plain data, in order, which the
+    service serves as the install transactions that made its schemas."""
+
+    def __init__(self, below: Any) -> None:
+        self.below = below
+        self.records = below.records
+        self.installs: list[PlainData] = []
+
+    def document(self, path: PlainData) -> PlainData:
+        return self.below.document(path)
+
+    def commit(self, plain: PlainData) -> PlainData:
+        return self.below.commit(plain)
+
+    def install(self, plain: PlainData) -> None:
+        self.below.install(plain)
+        plain = JSON.loads(JSON.dumps(plain))
+        if all(JSON.dumps(plain) != JSON.dumps(held) for held in self.installs):
+            self.installs.append(plain)
+
+    def follow(self, follower: Callable[[PlainData], None]) -> Callable[[], None]:
+        return self.below.follow(follower)
 
 
 class Service:
@@ -166,8 +184,8 @@ class Service:
         self.user = user  # the demo's identity, standing in for a validated token's ([CAP-015: transaction provenance](mbse:mbse-basis/docs/capabilities/CAP-015.md); [CAP-177: sessions and identities from a validated token](mbse:mbse-basis/docs/capabilities/CAP-177.md))
         self.clock, self.uids = clock, uids  # a write's `when` and, where it has none, its `uid` (`stamp`)
         self.below = below if below is not None else Builders.Store()
-        self.store = Builders.Store(self.below)
-        self.installs: list[PlainData] = []  # the install transactions that made its schemas, in order
+        self._recorded = _Below(self.below)  # which keeps each install the store gives the store below
+        self.store = Builders.Store(self._recorded)
         self._lock = threading.RLock()  # one transaction at a time: transactions on one store do not nest
         self._committed = threading.Condition(self._lock)  # notified as each transaction is fed
         self.feed = _uuid()  # this feed's own name: a position is this feed's alone
@@ -197,19 +215,25 @@ class Service:
         if self._poll is not None:
             self._poll()
 
+    @property
+    def installs(self) -> list[PlainData]:
+        """The install transactions that made the store's schemas, in order, each as the store gave it the store below."""
+        return list(self._recorded.installs)
+
     def install(self, install: Install | PlainData) -> list[PlainData]:
-        """Runs an install, a callback or its transaction expression, in the store below and in the service's store,
-        and serves it after the others where it is not among them already; the installs."""
+        """Runs an install, a callback or its transaction expression, in the service's store, which runs it in the
+        store below first (`Stores.Below.install`), and serves it after the others where it is not among them already;
+        the installs."""
         with self._lock:
-            plain = _install_plain(self.store, install, _iso(self.clock()))
             try:
-                for store in (self.below, self.store):
-                    store.transaction(Plain.FromPlain(store).Transaction(plain))
+                if isinstance(install, dict):
+                    self.store.install(install)
+                else:  # its `when` the service's (CAP-015)
+                    when = _iso(self.clock())
+                    self.store.transaction(lambda txn: install(txn).when(when))
             except REFUSALS as error:
                 raise Refused(400, _describe(error)) from error
-            if all(JSON.dumps(plain) != JSON.dumps(held) for held in self.installs):
-                self.installs.append(plain)
-            return list(self.installs)
+            return self.installs
 
     def names(self) -> list[str]:
         """Every named schema, by name."""
@@ -220,7 +244,7 @@ class Service:
         """[CAP-002: named schema list](mbse:mbse-basis/docs/capabilities/CAP-002.md), while [CAP-003: schema inspector](mbse:mbse-basis/docs/capabilities/CAP-003.md) is blocked: the install transactions that made the store's
         schemas, in order, from which a client's store takes every schema by executing each."""
         with self._lock:
-            return list(self.installs)
+            return self.installs
 
     def templates(self) -> dict[str, PlainData]:
         """[CAP-004: logical view templates](mbse:mbse-basis/docs/capabilities/CAP-004.md): each kind's template."""
@@ -505,16 +529,16 @@ def seed_of(module: str | ModuleType) -> Install | None:
 
 def store_of(name: str) -> Any:
     """The store below by name: `memory`, a store in memory, or `module:attribute`, a class or function that makes one
-    when called with no arguments (its own configuration is its own, from the environment for instance), an
-    mbse-schemas store: `mbse.Persistence.DynamoDB.Store:Store`, mbse-dynamodb's, for one."""
+    when called with no arguments (its own configuration is its own, from the environment for instance), a store
+    below (mbse-schemas' `Stores.Below`): `mbse.Persistence.DynamoDB.Store:Store`, mbse-dynamodb's, for one."""
     if name.strip().lower() in ("", "memory"):
         return Builders.Store()
     module, _, attribute = name.partition(":")
     if not attribute:
         raise ValueError(f"a store below is 'memory' or 'module:attribute', not {name!r}")
     made = getattr(importlib.import_module(module), attribute)()
-    if not isinstance(made, Builders.Store):
-        raise TypeError(f"{name} makes no mbse-schemas store (Builders.Store)")
+    if not isinstance(made, Stores.Below):
+        raise TypeError(f"{name} makes no store below (mbse-schemas' Stores.Below)")
     return made
 
 
