@@ -529,8 +529,8 @@ def seed_of(module: str | ModuleType) -> Install | None:
 
 def store_of(name: str) -> Any:
     """The store below by name: `memory`, a store in memory, or `module:attribute`, a class or function that makes one
-    when called with no arguments (its own configuration is its own, from the environment for instance), an
-    mbse-schemas store: `mbse.Persistence.DynamoDB.Store:Store`, mbse-dynamodb's, for one."""
+    when called with no arguments (its own configuration is its own, from the environment for instance), a store
+    below (mbse-schemas' `Stores.Below`): `mbse.Persistence.DynamoDB.Store:Store`, mbse-dynamodb's, for one."""
     if name.strip().lower() in ("", "memory"):
         return Builders.Store()
     module, _, attribute = name.partition(":")
