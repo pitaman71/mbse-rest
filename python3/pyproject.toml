@@ -19,7 +19,7 @@ include = ["mbse*"]
 namespaces = true
 
 [dependency-groups]
-dev = ["pytest>=9.1.1", "mbse-demo-apps>=0.1.1,<0.2", "httpx2>=2.16"]
+dev = ["pytest>=9.1.1", "mbse-demo-apps>=0.1.2,<0.2", "httpx2>=2.16"]
 
 [tool.uv.sources]
 mbse-schemas = { path = "../../mbse-schemas/python3", editable = true }  # the sibling checkouts: ../mbse-basis/scripts/polyrepo.py

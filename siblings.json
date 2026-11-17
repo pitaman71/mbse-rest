@@ -6,8 +6,8 @@
   },
   "mbse-demo-apps": {
     "repository": "git@github.com:pitaman71/mbse-demo-apps.git",
-    "commit": "3ee9843bc8b7caafe0ddb2537394ef6398e1afd6",
-    "version": "0.1.1"
+    "commit": "026d35f96b6fdf50f7dd5cc1fd0a316969dc82c5",
+    "version": "0.1.2"
   },
   "mbse-journals": {
     "repository": "git@github.com:pitaman71/mbse-journals.git",
