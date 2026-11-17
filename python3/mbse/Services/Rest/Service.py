@@ -57,7 +57,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException
 
-from mbse.Schemas.Framework import JSON, Builders, Changes, Plain, References, Stores
+from mbse.Schemas.Framework import JSON, Builders, Changes, Plain, Stores
 
 from . import Views
 
@@ -278,9 +278,13 @@ class Service:
     def _load(self, plain: PlainData) -> None:
         """Loads each object a transaction's expression binds to a symbol by its reference, before the expression is
         read: mbse-schemas reads a spec written on an object it has not loaded no further than to load it, within the
-        expression it builds, and refuses that (`AttributeError: _working`), where loaded first it does not."""
+        expression it builds, and refuses that (`AttributeError: _working`), where loaded first it does not. Each is
+        loaded within a transaction of its own, a map whose one symbol is given its reference, since a reference is
+        resolved only within a transaction ([CAP-315: every read within a transaction or through a follow](mbse:mbse-basis/docs/capabilities/CAP-315.md))."""
         for path in _referenced(plain):
-            References.resolve(self.store, Plain.FromPlain(self.store)(self._reference, {"path": path}))
+            reference = Plain.FromPlain(self.store)(self._reference, {"path": path})
+            self.store.transaction(lambda t, given=reference: t.mutations([lambda mu: mu.map(
+                lambda m: m.symbols([lambda p: p.symbols({"x": given})]))]))
 
     def transaction(self, plain: PlainData, session: str | None = None) -> dict[str, Any]:
         """Commits a transaction's expression, stamped where it writes ([CAP-015: transaction provenance](mbse:mbse-basis/docs/capabilities/CAP-015.md), `stamp`), in `session`:
