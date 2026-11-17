@@ -255,8 +255,8 @@ def test_the_service_polls_a_store_below_followed_by_polling():
     assert Polled.polls >= 4  # the head read, a document or more, the transaction, and the feed read after it
     head = api.state.service.head
     assert TestClient(api).get(f"/changes?after={head}&wait=1.5").json()["journal"] == []
-    assert Service.fresh(Polled()) and not Service.fresh(type("Kept", (Builders.Store,), {
-        "journal": lambda self: [{"id": "t", "symbols": {}, "changes": []}]})())
+    assert Service.fresh(Polled()) and not Service.fresh(type("Kept", (Builders.Store,), {"head": lambda self: "t"})())
+    assert Service.fresh(type("Empty", (Builders.Store,), {"head": lambda self: None})())
 
 
 def test_an_install_a_client_runs_is_sent_to_the_service():

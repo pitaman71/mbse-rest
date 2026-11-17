@@ -560,11 +560,12 @@ def store_of(name: str) -> Any:
 
 
 def fresh(below: Any) -> bool:
-    """Whether a store below has committed nothing, so that an app's seed is run in it: one that gives what it committed
-    as a journal (`journal()`, as mbse-dynamodb's does) where it gives no transaction; one that keeps none, as a store
-    in memory, made new with the service, always. A seed is not run again over what it wrote, which may have been edited since."""
-    journal = getattr(type(below), "journal", None)  # a method of its class: a store's own attributes are its paths
-    return not callable(journal) or next(iter(below.journal()), None) is None
+    """Whether a store below has committed nothing, so that an app's seed is run in it: one that gives the position of
+    the last transaction it committed, its id (`head()`, as mbse-dynamodb's does), where it gives none; one that keeps
+    none, as a store in memory, made new with the service, always. A seed is not run again over what it wrote, which may
+    have been edited since."""
+    head = getattr(type(below), "head", None)  # a method of its class: a store's own attributes are its paths
+    return not callable(head) or below.head() is None
 
 
 def _flag(value: str) -> bool:
