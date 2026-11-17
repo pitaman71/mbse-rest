@@ -31,7 +31,7 @@ ROOT = Path(__file__).resolve().parents[4] / "conformance"  # python3/mbse/Servi
 
 
 def _find(store: Any, directory: str, adjacency: str, id_: str) -> Any:
-    """A WorkTracker element by its ID, through its schema's directory."""
+    """A WorkTracker element by its ID, through its schema's directory, within the transaction open."""
     return getattr(store.singleton(directory), adjacency)({"id": id_})
 
 
@@ -80,7 +80,11 @@ class Case:
 
 
 def _ref(directory: str, adjacency: str, id_: str) -> Callable[[Any], Any]:
-    return lambda store: References.of(store, _find(store, directory, adjacency, id_))
+    """The reference of a WorkTracker element by its ID, read within a transaction of its own (CAP-315)."""
+    def reference(store: Any) -> Any:
+        with store.transaction():
+            return References.of(store, _find(store, directory, adjacency, id_))
+    return reference
 
 
 CASES = [
@@ -182,11 +186,14 @@ def _ui_cases() -> list[Case]:
             cases.append(Case(f"{prefix}-{schema}", "POST", f"/views/{kind}",
                               lambda s, v=view: _map(s, _given(s, v["given"])), view))
     for schema in _app_schemas(store):
-        for obj in store.extent(schema):
-            try:
-                plain = Plain.ToPlain(store)(reference, References.of(store, obj))
-            except LookupError:  # a counted object: no reference, left out (FEA-003)
-                continue
+        with store.transaction():  # each object's reference, read within a transaction (CAP-315)
+            plains = []
+            for obj in store.extent(schema):
+                try:
+                    plains.append(Plain.ToPlain(store)(reference, References.of(store, obj)))
+                except LookupError:  # a counted object: no reference, left out (FEA-003)
+                    continue
+        for plain in plains:
             key = _key(plain)
             view = {"kind": "detail", "given": {"x": {"reference": plain}}}
             cases.append(Case(f"ui-detail-{key}", "POST", "/views/detail",

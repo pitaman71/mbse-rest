@@ -15,8 +15,8 @@ application from `MBSE_REST_*` variables, as `python -m mbse.Services.Rest` serv
 | `POST /schemas` | [CAP-290: a service's store stacked, with no snapshot](mbse:mbse-basis/docs/capabilities/README.md#CAP-290) | an install transaction, run in the store below and the service's store, then served with the others; the installs |
 | `GET /schemas/{name}` | [CAP-003: schema inspector](mbse:mbse-basis/docs/capabilities/CAP-003.md) | 501 until mbse-schemas writes one schema object as a document (CAP-003, Blocked) |
 | `POST /documents` | [CAP-290: a service's store stacked, with no snapshot](mbse:mbse-basis/docs/capabilities/README.md#CAP-290) | the document of the object at the path given, a one-transaction document, or null |
-| `POST /transactions` | [CAP-290: a service's store stacked, with no snapshot](mbse:mbse-basis/docs/capabilities/README.md#CAP-290) | a transaction's expression, committed: `{"position": n, "effect": e}`, the change feed's position once it has, and the transaction as the store committed it, its record among it (null where it changed nothing) |
-| `GET /changes?after=n&feed=id&wait=s` | [CAP-290: a service's store stacked, with no snapshot](mbse:mbse-basis/docs/capabilities/README.md#CAP-290) | `{"feed", "head", "changes"}`: each transaction the store committed after position `n`, in order, as `{"position", "effect"}` |
+| `POST /transactions` | [CAP-290: a service's store stacked, with no snapshot](mbse:mbse-basis/docs/capabilities/README.md#CAP-290) | a transaction's expression, committed: `{"position": id, "effect": e}`, the change feed's position once it has, the id of the last transaction fed, and the transaction as the store committed it, its record among it (null where it changed nothing) |
+| `GET /changes?after=id&feed=id&wait=s` | [CAP-290: a service's store stacked, with no snapshot](mbse:mbse-basis/docs/capabilities/README.md#CAP-290) | `{"feed", "head", "journal"}`: the transactions the store committed after the one of id `after`, in order, a `Changes.Journal` as plain data; `head`, the id of the last |
 | `GET /views` | [CAP-004: logical view templates](mbse:mbse-basis/docs/capabilities/CAP-004.md) | `{kind: template, ...}`, each a transaction's expression |
 | `POST /views/{kind}` | [CAP-012: logical view endpoints](mbse:mbse-basis/docs/capabilities/CAP-012.md) | the frames, `References.OfFrame`, one JSON document a line (NDJSON) |
 
@@ -25,12 +25,16 @@ A transaction's expression is `Plain.ToPlain(store).Transaction`'s. The service 
 what it writes first, and where the store below refuses it or fails, nothing is written. One transaction runs at a
 time.
 
-The change feed is the store's committed transactions, each its effect (mbse-schemas' `Changes`), numbered from 1 in
-the order the store committed them, read by position: a client reads from where it last read, so that it is given each
-once, none missed. The service keeps the latest `window` of them: a position before those it keeps, or one it never
-gave (as after it restarted, the feed then another, named by its `feed` id), is refused (410), and the client's store is
-made again. `wait` holds a read that finds nothing new open for up to that many seconds (30 at most), until one
-commits: long polling, so that a client hears of a commit at once, through any proxy, without a stream held open.
+The change feed is the store's committed transactions, as its `follow` gives them, each a one-transaction
+`Changes.Journal` as plain data, joined into one journal in the order the store committed them (mbse-journals'
+`Journals.join`), read by position: a position is a transaction's `id`, and a client reads the transactions after the
+last it was given (`Journals.after`), so that it is given each once, none missed. A read naming its `feed` and no
+position is given the feed from its first transaction; one naming neither, the head alone. The service keeps the latest
+`window` transactions: a position it does not keep, before those it keeps or one it never gave (as after it restarted,
+the feed then another, named by its `feed` id), or a read from the first once it has let one go, is refused (410), and
+the client's store is made again. `wait` holds a read that finds nothing new open for up to that many seconds (30 at
+most), until one commits: long polling, so that a client hears of a commit at once, through any proxy, without a stream
+held open.
 
 Every refusal is `{"error": message}` ([CAP-012: logical view endpoints](mbse:mbse-basis/docs/capabilities/CAP-012.md), the wire format); a transaction's refusal (400) begins
 with the kind of error its store raised, `ValueError: `, `TypeError: ` or `LookupError: `.
@@ -38,7 +42,6 @@ with the kind of error its store raised, `ValueError: `, `TypeError: ` or `Looku
 
 from __future__ import annotations
 
-import collections
 import datetime
 import importlib
 import logging
@@ -57,7 +60,8 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException
 
-from mbse.Schemas.Framework import JSON, Builders, Changes, Plain, Stores
+from mbse.Journals.Framework import Journals
+from mbse.Schemas.Framework import JSON, Builders, Plain, Stores
 
 from . import Views
 
@@ -145,11 +149,6 @@ def stamp(plain: PlainData, session: str | None, who: str, clock: Clock = _now, 
     return stamped
 
 
-def _plain(store: Any, effect: Any) -> PlainData:
-    """A transaction expression of `store`'s as plain data, as it is sent."""
-    return JSON.loads(JSON.dumps(Plain.ToPlain(store).Transaction(effect)))
-
-
 class _Below:
     """The store below the service's store, as that store sees it (`Stores.Below`): the store below it is given, each
     install the service's store gives it, a transaction that writes schemas, kept as plain data, in order, which the
@@ -189,24 +188,28 @@ class Service:
         self._lock = threading.RLock()  # one transaction at a time: transactions on one store do not nest
         self._committed = threading.Condition(self._lock)  # notified as each transaction is fed
         self.feed = _uuid()  # this feed's own name: a position is this feed's alone
-        self.head = 0  # the position of the last transaction fed
-        self._before = 0  # the position fed before the transaction executing
-        self._changes: collections.deque[tuple[int, PlainData]] = collections.deque(maxlen=window)
+        self.head: str | None = None  # the position of the last transaction fed: its id
+        self.window = window
+        self.journal: Journals.Journal = []  # the latest `window` transactions fed, a `Changes.Journal` as plain data
+        self._dropped = False  # whether the feed has let a transaction go: then it is not read from its first
         # a store kept in a database, followed by polling: what other processes committed (a method of its class, since
         # a store's own attributes are its schemas' paths)
         self._poll = self.below.poll if callable(getattr(type(self.below), "poll", None)) else None
         self._reference = self.store.References.OfObject.as_schema()
-        Changes.observe(self.store, self._fed)
+        self.store.follow(self._fed)
         for install in installs:
             self.install(install)
         if seed is not None:  # as any transaction, its `when` the service's (CAP-015)
             self.store.transaction(lambda t: seed(t).when(_iso(self.clock())))
 
-    def _fed(self, effect: Any) -> None:
-        """A transaction the store committed, fed: numbered, kept among the latest, and those waiting told."""
+    def _fed(self, journal: Journals.Journal) -> None:
+        """A transaction the store committed, a one-transaction journal as its follow gives it, fed: joined to the
+        latest, its id the head, and those waiting told."""
         with self._lock:  # held already, but where the store commits apart from a request: at the seed
-            self.head += 1
-            self._changes.append((self.head, _plain(self.store, effect)))
+            joined = Journals.join(self.journal, journal)
+            self._dropped = self._dropped or len(joined) > self.window
+            self.journal = joined[-self.window:]
+            self.head = journal[-1]["id"]
             self._committed.notify_all()
 
     def _polled(self) -> None:
@@ -260,13 +263,14 @@ class Service:
             except REFUSALS as error:
                 raise Refused(400, _describe(error)) from error
 
-    def _execute(self, plain: PlainData) -> list[dict[str, Any]]:
-        """Executes a transaction's expression; refused (400) where its store refuses it, unavailable (503) where its
-        store fails otherwise. Either way, nothing it wrote is kept."""
+    def _execute(self, plain: PlainData, run: Callable[[PlainData], Any] | None = None) -> Any:
+        """Executes a transaction's expression, giving its frames, or what `run`, given it, gives; refused (400) where
+        its store refuses it, unavailable (503) where its store fails otherwise. Either way, nothing it wrote is kept."""
         self._polled()
         try:
             self._load(plain)
-            self._before = self.head  # the transaction, where it changes anything, is fed next
+            if run is not None:
+                return run(plain)
             return self.store.transaction(Plain.FromPlain(self.store).Transaction(plain))
         except REFUSALS as error:
             raise Refused(400, _describe(error)) from error
@@ -288,36 +292,45 @@ class Service:
 
     def transaction(self, plain: PlainData, session: str | None = None) -> dict[str, Any]:
         """Commits a transaction's expression, stamped where it writes ([CAP-015: transaction provenance](mbse:mbse-basis/docs/capabilities/CAP-015.md), `stamp`), in `session`:
-        `{"position", "effect"}`, the change feed's position once it has, its own where it changed anything, and the
-        transaction as the store committed it, as plain data, its record (`Provenance`) among it, as the change feed
-        gives it; None where it changed nothing. A client takes it into its transaction, as a store above takes what
-        the store below reports it committed while it sends it (CAP-285)."""
+        `{"position", "effect"}`, the change feed's position once it has, its own id where it changed anything, and
+        the transaction as the store committed it (`Builders.Store.commit`), as plain data, its record (`Provenance`)
+        among it; None where it changed nothing. A client takes it into its transaction, as a store above takes what
+        the store below gives back it committed while it sends it (CAP-285)."""
         with self._lock:
-            self._execute(stamp(plain, session, self.user, self.clock, self.uids))
-            fed = [e for n, e in self._changes if n == self._before + 1] if self.head > self._before else []
-            return {"position": self.head, "effect": fed[0] if fed else None}
+            effect = self._execute(stamp(plain, session, self.user, self.clock, self.uids), self.store.commit)
+            return {"position": self.head, "effect": effect}
 
-    def changes(self, after: int | None = None, feed: str | None = None, wait: float = 0.0) -> dict[str, Any]:
-        """The change feed after position `after`, at most `PAGE` of them: the current head alone where `after` is
-        None. Where none is after it, held open until one is committed, or `wait` seconds pass. Refused (410) where
-        `feed` is another's, or `after` is before the transactions it keeps, or after its head."""
+    def changes(self, after: str | None = None, feed: str | None = None, wait: float = 0.0) -> dict[str, Any]:
+        """The change feed, `{"feed", "head", "journal"}`: its transactions after the one of id `after`, or, where
+        `feed` is named and `after` is not, from its first, at most `PAGE` of them, a journal as plain data; the head
+        alone where neither is named. Where none is after it, held open until one is committed, or `wait` seconds pass.
+        Refused (410) where `feed` is another's, `after` is a transaction it does not keep, or it is read from its first
+        once it has let one go."""
         deadline = time.monotonic() + min(max(wait, 0.0), WAIT)
         with self._lock:
             self._polled()
-            if after is None:
-                return {"feed": self.feed, "head": self.head, "changes": []}
+            if after is None and feed is None:
+                return {"feed": self.feed, "head": self.head, "journal": []}
             if feed is not None and feed != self.feed:
                 raise Refused(410, f"the change feed {feed!r} is not this service's, {self.feed!r}: it restarted, and "
                                    "what a store holds may have changed unreported; make the store again")
-            first = self._changes[0][0] if self._changes else self.head + 1
-            if after > self.head or after < first - 1:
-                raise Refused(410, f"the change feed keeps positions {first - 1} to {self.head}, not {after}: make the "
-                                   "store again")
+            if after is None and self._dropped:
+                raise Refused(410, f"the change feed keeps only its latest {self.window} transactions, not its first: "
+                                   "make the store again")
+            self._after(after)
             while self.head == after and (left := deadline - time.monotonic()) > 0:
                 self._committed.wait(min(left, 1.0))  # woken by a commit here; polling the store below meanwhile
                 self._polled()
-            changes = [{"position": n, "effect": e} for n, e in self._changes if n > after][:PAGE]
-            return {"feed": self.feed, "head": self.head, "changes": changes}
+            return {"feed": self.feed, "head": self.head, "journal": self._after(after)[:PAGE]}
+
+    def _after(self, after: str | None) -> Journals.Journal:
+        """The transactions the feed keeps after the one of id `after`, from its first where None; refused (410) where
+        it keeps none of that id."""
+        try:
+            return Journals.after(self.journal, after)
+        except LookupError as error:
+            raise Refused(410, f"the change feed keeps its latest {len(self.journal)} transactions, to "
+                               f"{JSON.dumps(self.head)}, not {JSON.dumps(after)}: make the store again") from error
 
     def view(self, kind: str, plain: PlainData, session: str | None = None) -> list[str]:
         """[CAP-012: logical view endpoints](mbse:mbse-basis/docs/capabilities/CAP-012.md): the frames a transaction gives, each a `References.OfFrame` filled as `kind` defines, as JSON. A
@@ -486,7 +499,7 @@ def app(installs: Iterable[Install | PlainData] = (), below: Any = None, seed: I
         return await threaded(lambda: service.transaction(plain, request.headers.get(SESSION_HEADER)))
 
     @api.get("/changes")
-    async def changes(after: int | None = None, feed: str | None = None, wait: float = 0.0) -> Any:
+    async def changes(after: str | None = None, feed: str | None = None, wait: float = 0.0) -> Any:
         return await threaded(lambda: service.changes(after, feed, wait))
 
     @api.get("/views")
@@ -547,9 +560,9 @@ def store_of(name: str) -> Any:
 
 
 def fresh(below: Any) -> bool:
-    """Whether a store below has committed nothing, so that an app's seed is run in it: one that keeps a journal
-    (`journal()`, as mbse-dynamodb's does) where it holds no entry; one that keeps none, as a store in memory, made new
-    with the service, always. A seed is not run again over what it wrote, which may have been edited since."""
+    """Whether a store below has committed nothing, so that an app's seed is run in it: one that gives what it committed
+    as a journal (`journal()`, as mbse-dynamodb's does) where it gives no transaction; one that keeps none, as a store
+    in memory, made new with the service, always. A seed is not run again over what it wrote, which may have been edited since."""
     journal = getattr(type(below), "journal", None)  # a method of its class: a store's own attributes are its paths
     return not callable(journal) or next(iter(below.journal()), None) is None
 

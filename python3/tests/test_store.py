@@ -11,7 +11,7 @@ import time
 import pytest
 import uvicorn
 from fastapi.testclient import TestClient
-from mbse.Schemas.Framework import JSON, Builders, Changes, Plain, Stores
+from mbse.Schemas.Framework import JSON, Builders, Changes, Stores
 
 from mbse.Services.Rest import Service, Store
 
@@ -29,11 +29,13 @@ def api():
 
 
 def names(store):
-    """The books on the shelf, by name, sorted."""
-    return sorted(str(e.book.name) for e in store.singleton("lib.TheShelf").books)
+    """The books on the shelf, by name, sorted, read within a transaction."""
+    with store.transaction():
+        return sorted(str(e.book.name) for e in store.singleton("lib.TheShelf").books)
 
 
 def book(store, id_):
+    """A book on the shelf by its id, within the transaction open."""
     return next(e.book for e in store.singleton("lib.TheShelf").books if e.id.get() == id_)
 
 
@@ -83,7 +85,7 @@ def test_a_store_above_stacks_over_it_as_over_a_store_in_memory(api):
     assert names(here) == ["Lisp", "Structure"]  # not yet read
     rename(here, "BK-2", "LISP")  # its own commit reads the change feed after it: the other's first
     assert names(here) == ["LISP", "SICP"]
-    assert str(api.state.service.below.singleton("lib.TheShelf").books({"id": "BK-1"}).name) == "SICP"
+    assert names(api.state.service.below) == ["LISP", "SICP"]
 
 
 def test_its_followers_are_given_each_transaction_once_in_the_services_order(api):
@@ -95,7 +97,7 @@ def test_its_followers_are_given_each_transaction_once_in_the_services_order(api
     here, there = Store.Store(remote), Store.Store(transport(api))
     assert names(here) == ["LISP 1.5", "SICP"]  # each book held
     seen = []
-    Changes.observe(here, lambda effect: seen.append(JSON.dumps(Plain.ToPlain(here).Transaction(effect))))
+    here.follow(lambda journal: seen.append(JSON.dumps(journal)))
     rename(there, "BK-1", "A")  # another's, before its own: read from the feed as it polls
     remote.poll()
     rename(here, "BK-2", "B")  # its own: at its commit; read from the feed after it, it changes nothing
@@ -120,22 +122,24 @@ def test_a_following_ended_is_given_nothing_more(api):
 
 
 def test_its_own_transaction_is_committed_as_the_service_committed_it():
-    """A write is one transaction in the client, as in the service: what the service answers with, its record
-    (`Provenance`) among it, is taken into the client's transaction, and is what its followers are given."""
-    api = Service.work_tracker(uids=lambda: "tx-1")
+    """A write is one transaction in the client, as in the service, under the client's uid: what the service answers
+    with, its record (`Provenance`) among it, is taken into the client's transaction, and is what its followers are
+    given, a journal of that one transaction under that uid, the service's store's."""
+    api = Service.work_tracker(uids=lambda: "not-the-clients")
     remote, service = Store.Remote(transport(api)), api.state.service
     client = Store.Store(remote)
-    head = service.head
+    count = len(service.journal)
     seen = []
-    Changes.observe(client, seen.append)
-    comment = client.singleton("work.Comments").comments({"id": "CMT-001"})
+    client.follow(seen.append)
     with client.transaction():
+        comment = client.singleton("work.Comments").comments({"id": "CMT-001"})
         client.work.Comment(comment, lambda c: c.text("Edited."))
     remote.poll()
-    assert service.head == head + 1 and len(seen) == 1  # one transaction, given once
-    effect = JSON.dumps(Plain.ToPlain(client).Transaction(seen[0]))
-    assert '"tx-1"' in effect and "Provenance" in effect  # the service's record of it among it
-    assert JSON.dumps(service._changes[-1][1]) == JSON.dumps(Plain.ToPlain(client).Transaction(seen[0]))
+    assert len(service.journal) == count + 1 and len(seen) == 1  # one transaction, given once
+    ([given],) = seen
+    assert given["id"] == service.head != "not-the-clients"  # the uid the client sent with it
+    assert "Provenance" in JSON.dumps(given) and JSON.dumps(given["id"]) in JSON.dumps(given["changes"])  # its record
+    assert JSON.dumps(service.journal[-1]) == JSON.dumps(given)  # the journal the service's store gave
 
 
 def test_a_refusal_below_refuses_the_transaction_as_the_error_it_is(api):
@@ -145,6 +149,7 @@ def test_a_refusal_below_refuses_the_transaction_as_the_error_it_is(api):
     client = Store.Store(remote)
     service = api.state.service
     head = service.head
+    assert head is not None  # the seed's
     with pytest.raises(ValueError, match="has no property 'nope'"):
         remote.commit({"mutations": [{"upsert": {"exists": [{"symbols": {
             "x": {"reference": {"path": BK_1}}}, "spec": [{"x": [{"as_property": {
@@ -153,7 +158,7 @@ def test_a_refusal_below_refuses_the_transaction_as_the_error_it_is(api):
 
 
 def test_a_refusal_kind_and_a_status_reach_the_client_as_errors():
-    replies = iter([(200, b'{"feed": "f", "head": 0, "changes": []}'), (200, b"[]"),
+    replies = iter([(200, b'{"feed": "f", "head": null, "journal": []}'), (200, b"[]"),
                     (400, b'{"error": "TypeError: read-only"}'), (400, b'{"error": "LookupError: no such path"}'),
                     (400, b'{"error": "malformed"}'), (503, b'{"error": "the database is unreachable"}'),
                     (410, b'{"error": "restarted"}'), (500, b"not json")])
@@ -186,24 +191,29 @@ def test_documents_by_path(api):
 
 
 def test_the_change_feed_read_from_any_position(api):
-    """Each transaction once, in order, from any position the feed keeps; refused (410) where it is another feed's,
-    after its head, or before what it keeps."""
+    """Each transaction once, in order, a journal, after any position the feed keeps, a transaction's id, or from its
+    first; refused (410) where it is another feed's, a position it does not keep, or from its first once it has let one
+    go."""
     client, service = TestClient(api), api.state.service
     for name in ("A", "B", "C"):
         rename(service.store, "BK-1", name)
     head = client.get("/changes").json()
-    assert (head["head"], head["changes"], head["feed"]) == (4, [], service.feed)  # the seed, then each
-    every = client.get("/changes?after=0").json()["changes"]
-    assert [c["position"] for c in every] == [1, 2, 3, 4]
-    assert client.get("/changes?after=2").json()["changes"] == every[2:]
-    assert client.get(f"/changes?after=4&feed={service.feed}").json()["changes"] == []
-    for query in ("after=5", "after=-1", "after=0&feed=another"):
+    every = client.get(f"/changes?feed={service.feed}").json()["journal"]  # the seed, then each
+    ids = [t["id"] for t in every]
+    assert (head["head"], head["journal"], head["feed"]) == (ids[-1], [], service.feed) and len(set(ids)) == 4
+    assert ids[0] == "lib.seed/1" and all(set(t) == {"id", "symbols", "changes"} for t in every)
+    assert client.get(f"/changes?after={ids[1]}").json()["journal"] == every[2:]
+    assert client.get(f"/changes?after={ids[3]}&feed={service.feed}").json()["journal"] == []
+    for query in ("after=nothing", f"after={ids[0]}&feed=another", "feed=another"):
         assert client.get(f"/changes?{query}").status_code == 410
     small = TestClient(Service.app([install], seed=seed, window=2))
     for name in ("A", "B", "C"):
         rename(small.app.state.service.store, "BK-1", name)
-    assert [c["position"] for c in small.get("/changes?after=2").json()["changes"]] == [3, 4]
-    assert "keeps positions 2 to 4, not 1" in small.get("/changes?after=1").json()["error"]
+    kept = [t["id"] for t in small.app.state.service.journal]
+    assert [t["id"] for t in small.get(f"/changes?after={kept[0]}").json()["journal"]] == kept[1:]
+    assert "keeps its latest 2 transactions" in small.get("/changes?after=lib.seed/1").json()["error"]
+    feed_ = small.app.state.service.feed
+    assert "not its first" in small.get(f"/changes?feed={feed_}").json()["error"]
 
 
 def test_the_change_feed_in_pages(api, monkeypatch):
@@ -212,21 +222,22 @@ def test_the_change_feed_in_pages(api, monkeypatch):
     for name in ("A", "B", "C", "D"):
         rename(service.store, "BK-1", name)
     client = Store.Remote(transport(api))
-    client._seq = 0
-    assert client.poll() == 5 and client._seq == 5  # in three reads, each of two at most
+    client._head = None  # from the feed's first
+    assert client.poll() == 5 and client._head == service.head  # in three reads, each of two at most
 
 
 def test_a_read_of_the_change_feed_waits_for_a_commit(api):
     client, service = TestClient(api), api.state.service
+    head = service.head
     started = time.monotonic()
-    assert client.get("/changes?after=1&wait=0.2").json()["changes"] == []  # none: held open, then given none
+    assert client.get(f"/changes?after={head}&wait=0.2").json()["journal"] == []  # none: held open, given none
     assert time.monotonic() - started >= 0.2
     later = threading.Timer(0.2, lambda: rename(service.store, "BK-1", "Later"))
     later.start()
     started = time.monotonic()
-    changes = client.get("/changes?after=1&wait=10").json()["changes"]
+    journal = client.get(f"/changes?after={head}&wait=10").json()["journal"]
     later.join()
-    assert [c["position"] for c in changes] == [2] and time.monotonic() - started < 5
+    assert [t["id"] for t in journal] == [service.head] != [head] and time.monotonic() - started < 5
 
 
 def test_the_service_polls_a_store_below_followed_by_polling():
@@ -242,9 +253,10 @@ def test_the_service_polls_a_store_below_followed_by_polling():
     names(client)
     rename(client, "BK-1", "Polled")
     assert Polled.polls >= 4  # the head read, a document or more, the transaction, and the feed read after it
-    assert TestClient(api).get("/changes?after=2&wait=1.5").json()["changes"] == []
+    head = api.state.service.head
+    assert TestClient(api).get(f"/changes?after={head}&wait=1.5").json()["journal"] == []
     assert Service.fresh(Polled()) and not Service.fresh(type("Kept", (Builders.Store,), {
-        "journal": lambda self: iter([{"mutations": []}])})())
+        "journal": lambda self: [{"id": "t", "symbols": {}, "changes": []}]})())
 
 
 def test_an_install_a_client_runs_is_sent_to_the_service():

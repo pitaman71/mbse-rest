@@ -17,9 +17,9 @@
  * - `install(plain)` sends an install, a transaction that writes schemas, to the service (`POST /schemas`), which runs
  *   it in its store and the store below that; one of the installs the service gave it, run again over it, is not sent
  *   back.
- * - `follow(follower)` gives `follower` each transaction the service's store committed, as plain data, once each, in
- *   the order it committed them, read from its change feed (`GET /changes`) on `poll()` and after each commit, its own
- *   among them.
+ * - `follow(follower)` gives `follower` each transaction the service's store committed, as a `Changes.Journal` of that
+ *   one transaction, as plain data, once each, in the order it committed them, read from its change feed
+ *   (`GET /changes`) after the last it was given, by its id, on `poll()` and after each commit, its own among them.
  * - `records` is true: the service's lowest store records each transaction, so that a store over it records none.
  *
  * `Store(transport)`, or `Store(remote)`, is a plain `Builders.Store` over it, given the service's schemas: it runs
@@ -137,9 +137,9 @@ export class Remote implements Stores.Below {
   installs: unknown[];
   readonly _transport: Transport;
   readonly _followers: ((plain: unknown) => void)[] = [];
-  /** The change feed's name, and the last change its followers were given. */
+  /** The change feed's name, and the position its followers were given last: the id of a transaction, null for none. */
   _feed: string;
-  _seq: number;
+  _head: string | null;
   /** How deep in running the service's own installs over it (`Store`): those are not sent back. */
   _served = 0;
 
@@ -147,7 +147,7 @@ export class Remote implements Stores.Below {
     this._transport = typeof transport === "string" ? transportFor(transport) : transport;
     const head = this._call("GET", "/changes") as Map<string, unknown>;
     this._feed = head.get("feed") as string;
-    this._seq = Number(head.get("head"));
+    this._head = (head.get("head") ?? null) as string | null;
     this.installs = this._call("GET", "/schemas") as unknown[];
   }
 
@@ -190,8 +190,8 @@ export class Remote implements Stores.Below {
     if (this._served === 0) this.installs = this._call("POST", "/schemas", plain) as unknown[];
   }
 
-  /** Gives `follower` each transaction the service's store commits from now, once each, in its order, as the change
-   * feed gives them; gives back a function that ends it. */
+  /** Gives `follower` each transaction the service's store commits from now, once each, in its order, as a
+   * one-transaction journal, as plain data; gives back a function that ends it. */
   follow(follower: (plain: unknown) => void): () => void {
     this._followers.push(follower);
     return () => {
@@ -201,18 +201,19 @@ export class Remote implements Stores.Below {
   }
 
   /** Gives the followers each transaction the service's store committed since they were last given one, in the order
-   * it committed them; how many. */
+   * it committed them, each a one-transaction journal, read from the change feed after the last's id; how many. */
   poll(): number {
     let count = 0;
     for (;;) {
-      const query = `after=${this._seq}&feed=${encodeURIComponent(this._feed)}`;
-      const read = this._call("GET", `/changes?${query}`) as Map<string, any>;
-      for (const change of read.get("changes") as Map<string, unknown>[]) {
-        this._seq = Number(change.get("position"));
+      const after = this._head === null ? "" : `&after=${encodeURIComponent(this._head)}`;
+      const read = this._call("GET", `/changes?feed=${encodeURIComponent(this._feed)}${after}`) as Map<string, any>;
+      const journal = read.get("journal") as Map<string, unknown>[];
+      for (const transaction of journal) {
+        this._head = transaction.get("id") as string;
         count += 1;
-        for (const follower of [...this._followers]) follower(change.get("effect"));
+        for (const follower of [...this._followers]) follower([transaction]);
       }
-      if (this._seq >= Number(read.get("head"))) return count;
+      if (journal.length === 0 || this._head === read.get("head")) return count;
     }
   }
 }

@@ -1,17 +1,17 @@
 {
   "mbse-schemas": {
     "repository": "git@github.com:pitaman71/mbse-schemas.git",
-    "commit": "c5ab6ff55e93a3ac1cf2a531b621e8d6b0545452",
-    "version": "0.26.30"
+    "commit": "3fe5b5df6988176950ffc273e0fb7fc9a2b65a6b",
+    "version": "0.29.0"
   },
   "mbse-demo-apps": {
     "repository": "git@github.com:pitaman71/mbse-demo-apps.git",
-    "commit": "bb3254f3d742d9f47cabc123d7c60a8195addc92",
-    "version": "0.1.0"
+    "commit": "3ee9843bc8b7caafe0ddb2537394ef6398e1afd6",
+    "version": "0.1.1"
   },
   "mbse-journals": {
     "repository": "git@github.com:pitaman71/mbse-journals.git",
-    "commit": "f565d1818c78e94e65301bdba82c0a062128b8f7",
-    "version": "0.2.1"
+    "commit": "c7026e362749d86ec1546eb13b5413b94e11848a",
+    "version": "0.3.0"
   }
 }

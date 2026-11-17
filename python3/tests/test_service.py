@@ -95,9 +95,10 @@ def test_chip_view_falls_back_to_the_first_scalars(client):
 
 def test_detail_view_gives_every_adjacency_and_each_linked_label(client):
     store = store_of(client)
-    goal = store.singleton("work.Goals").goals({"id": "GOL-001"})
+    with store.transaction():
+        goal = References.of(store, store.singleton("work.Goals").goals({"id": "GOL-001"}))
     body = Plain.ToPlain(store).Transaction(store.Mutations.OfTransaction(lambda t: t.mutations([lambda mu: mu.map(
-        lambda m: m.symbols([lambda p: p.symbols({"x": References.of(store, goal)})]))])))
+        lambda m: m.symbols([lambda p: p.symbols({"x": goal})]))])))
     [frame] = frames(client.post("/views/detail", json=body))
     relations = [e["relation"]["next"]["entry"]["next"]["entry"]["properties"]["name"] for e in frame["entries"]]
     assert relations == ["InGoals", "HasGoal", "Plans", "Plans"]
@@ -135,7 +136,9 @@ def test_a_counted_object_is_left_out():
     [frame] = store.transaction(lambda t: t.mutations([lambda mu: mu.map(
         lambda m: m.symbols([lambda p: p.symbols({"x": store.t.Note})]))]))
     assert Views.witness(store, "label", frame) is None  # a frame binding a counted object: no reference
-    detail = Views.witness(store, "detail", {"x": store.singleton("t.TheBook")})
+    with store.transaction():
+        book = References.of(store, store.singleton("t.TheBook"))
+    detail = Views.witness(store, "detail", {"x": book})
     plain = Plain.ToPlain(store)(detail.as_schema(), detail)
     assert plain["entries"] == [] and [a["properties"] for a in plain["assigns"]] == [{"title": {"str": "Book"}}]
 
@@ -151,11 +154,11 @@ def test_an_edit_is_committed_below_and_kept():
     client = TestClient(Service.work_tracker())
     below = client.app.state.service.below
     store = store_of(client)
-    task = store.singleton("work.Tasks").tasks({"id": "TSK-001"})
-    body = Conformance._edit(store, lambda s: References.of(s, task), {"title": "**Bold**", "description": None})
+    body = Conformance._edit(store, lambda s: by_path(s, TSK_1), {"title": "**Bold**", "description": None})
     [frame] = frames(client.post("/views/detail", json=body))
     assert label_of(frame) == {"title": "**Bold**"}
-    assert str(below.singleton("work.Tasks").tasks({"id": "TSK-001"}).title) == "**Bold**"
+    with below.transaction():
+        assert str(below.singleton("work.Tasks").tasks({"id": "TSK-001"}).title) == "**Bold**"
     again = TestClient(Service.app(Service.installs_of(Service.WORK_TRACKER), below))  # not seeded again
     [kept] = frames(again.post("/views/detail", json=Conformance._map(store_of(again), lambda s: {"x": by_path(s, TSK_1)})))
     assert label_of(kept) == {"title": "**Bold**"}
@@ -163,6 +166,8 @@ def test_an_edit_is_committed_below_and_kept():
 
 TSK_1 = {"singleton": "work.Tasks", "next": {"entry": {"i": "tasks", "o": "directory", "properties": {"id": "TSK-001"},
                                                        "next": {"target": {}}}}}
+CMT_1 = {"singleton": "work.Comments", "next": {"entry": {"i": "comments", "o": "directory",
+                                                          "properties": {"id": "CMT-001"}, "next": {"target": {}}}}}
 
 
 def by_path(store, path):
@@ -186,16 +191,18 @@ def test_a_proposed_object_is_created_with_its_entry_and_owned():
     client = TestClient(Service.work_tracker())
     below = client.app.state.service.below
     store = store_of(client)
-    thread = store.singleton("work.Comments").comments({"id": "CMT-001"})
-    body = Conformance._propose(store, lambda s: References.of(s, thread), "replies", "reply", "work.Comment",
+    body = Conformance._propose(store, lambda s: by_path(s, CMT_1), "replies", "reply", "work.Comment",
                                 {"text": "Closing this.", "resolves_thread": True})
     [frame] = frames(client.post("/views/detail", json=body))
-    assert [str(e.reply.text) for e in thread.replies][-1] == "Closing this."
-    reply = [e.reply for e in thread.replies][-1]
-    assert [str(e.id) for e in reply.directory] == ["CMT-004"]
+    with store.transaction():
+        thread = store.singleton("work.Comments").comments({"id": "CMT-001"})
+        assert [str(e.reply.text) for e in thread.replies][-1] == "Closing this."
+        reply = [e.reply for e in thread.replies][-1]
+        assert [str(e.id) for e in reply.directory] == ["CMT-004"]
     assert len(frame["entries"]) > 0
-    assert [str(e.reply.text) for e in below.singleton("work.Comments").comments({"id": "CMT-001"}).replies][-1] == \
-        "Closing this."
+    with below.transaction():
+        assert [str(e.reply.text) for e in below.singleton("work.Comments").comments({"id": "CMT-001"}).replies][-1] \
+            == "Closing this."
 
 
 def _stamped_edit():
@@ -205,8 +212,7 @@ def _stamped_edit():
     moment = datetime.datetime(2026, 10, 26, 9, 15, tzinfo=datetime.timezone.utc)
     client = TestClient(Service.work_tracker(user="ada", clock=lambda: moment, uids=lambda: "tx-1"))
     store = store_of(client)
-    thread = store.singleton("work.Comments").comments({"id": "CMT-001"})
-    body = Conformance._edit(store, lambda s: References.of(s, thread), {"text": "Edited."})
+    body = Conformance._edit(store, lambda s: by_path(s, CMT_1), {"text": "Edited."})
     body["session"] = {"locale": "en-GB"}  # the client's part
     [frame] = frames(client.post("/views/detail", json=body, headers={"x-mbse-session": "tab-7"}))
     return store, client.app.state.service.below, frame
@@ -217,12 +223,13 @@ def test_a_write_is_stamped_and_its_provenance_is_in_the_detail():
     detail of a comment carries the record that created it and the one that last wrote it, with their session and
     identity; the store below records the same transaction, found by its uid, not one of its own."""
     _, below, frame = _stamped_edit()
-    records = below.singleton("Provenance.Transactions")
-    assert [str(e.uid) for e in records.transactions] == ["work.seed/1", "tx-1"]
-    record = records.transactions({"uid": "tx-1"})
-    [session] = [e.session for e in record.session]
-    assert str(record.when) == "2026-10-26T09:15:00Z"
-    assert [str(session.locale), [str(e.id) for e in session.directory]] == ["en-GB", ["tab-7"]]
+    with below.transaction():
+        records = below.singleton("Provenance.Transactions")
+        assert [str(e.uid) for e in records.transactions] == ["work.seed/1", "tx-1"]
+        record = records.transactions({"uid": "tx-1"})
+        [session] = [e.session for e in record.session]
+        assert str(record.when) == "2026-10-26T09:15:00Z"
+        assert [str(session.locale), [str(e.id) for e in session.directory]] == ["en-GB", ["tab-7"]]
     relations = [e["relation"]["next"]["entry"]["next"]["entry"]["properties"]["name"] for e in frame["entries"]]
     assert {"CreatedBy", "ModifiedBy", "InSession", "Who"} <= set(relations)
     values = [a["properties"] for a in frame["assigns"]]
@@ -234,8 +241,11 @@ def test_a_restart_reads_the_same_records():
     """CAP-015: a restart over the same store below reads the same records from it, on demand."""
     store, below, _ = _stamped_edit()
     replayed = store_of(TestClient(Service.app(Service.installs_of(Service.WORK_TRACKER), below)))
-    assert sorted(str(e.uid) for e in replayed.singleton("Provenance.Transactions").transactions) == \
-        sorted(str(e.uid) for e in store.singleton("Provenance.Transactions").transactions)
+
+    def uids(store):
+        with store.transaction():
+            return sorted(str(e.uid) for e in store.singleton("Provenance.Transactions").transactions)
+    assert uids(replayed) == uids(store)
 
 
 def test_stamp_leaves_a_read_as_it_is():
