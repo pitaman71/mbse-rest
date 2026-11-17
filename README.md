@@ -16,17 +16,19 @@ capabilities: [CAP-002: named schema list](https://github.com/pitaman71/mbse-bas
 [CAP-290: a service's store stacked, with no snapshot](https://github.com/pitaman71/mbse-basis/blob/main/docs/capabilities/README.md#CAP-290) and [the stacked stores proposal](https://github.com/pitaman71/mbse-basis/blob/main/proposals/STACKED-STORES.md) state.
 
 The service's store is a `Builders.Store` over a store below it, a database's in production (mbse-dynamodb's), one in
-memory by default: it loads what it is asked for, writes each transaction through, and persists by the store below's
-journal alone, so that no snapshot is taken or read. Its endpoints, each in `Service.py`'s module docstring, are those a
+memory by default: it loads what it is asked for, writes each transaction through, and persists by what the store below
+keeps alone, so that no snapshot is taken or read. Its endpoints, each in `Service.py`'s module docstring, are those a
 client needs to be a store below: an object's document by path (`POST /documents`), a transaction committed or refused
-(`POST /transactions`), the change feed read by position (`GET /changes`), and the schemas as the install transactions
+(`POST /transactions`), the change feed (`GET /changes`), each committed transaction as mbse-schemas' `follow` gives it,
+a one-transaction `Changes.Journal`, read after a position, a transaction's `id`, with
+[mbse-journals](https://github.com/pitaman71/mbse-journals), and the schemas as the install transactions
 that made them (`GET /schemas`, `POST /schemas`); and the logical views ([FEA-003: no-code logical views](https://github.com/pitaman71/mbse-basis/blob/main/docs/features/FEA-003.md)). The contract
 is what mbse-basis' features and capabilities say, as built; the [golden corpus](conformance/README.md) holds real
 requests and responses for clients to develop against.
 
-It depends on [mbse-schemas](https://github.com/pitaman71/mbse-schemas) as a checkout beside this repository, and on
-[mbse-demo-apps](https://github.com/pitaman71/mbse-demo-apps)' WorkTracker and
-[mbse-journals](https://github.com/pitaman71/mbse-journals)' suite JRN for its tests, pinned in `siblings.json`.
+It depends on [mbse-schemas](https://github.com/pitaman71/mbse-schemas) and, the service,
+[mbse-journals](https://github.com/pitaman71/mbse-journals), as checkouts beside this repository, and on
+[mbse-demo-apps](https://github.com/pitaman71/mbse-demo-apps)' WorkTracker for its tests, pinned in `siblings.json`.
 
 ## Running the service
 
@@ -87,9 +89,10 @@ cd python3 && uv sync --all-extras && uv run pytest
 cd typescript5 && npm install && npm run typecheck && npm test
 ```
 
-Both run mbse-schemas' suite BLW and mbse-journals' suite JRN from the sibling checkouts, unchanged but for the store
-below, which is the client of a service over a store in memory: Python's in this process, TypeScript's against the
-Python service, which its tests start (`python3/tests/serve.py`). mbse-dynamodb's tests run the service over its store.
+Both run mbse-schemas' suite BLW from the sibling checkout, unchanged but for the store below, which is the client of a
+service over a store in memory: Python's in this process, TypeScript's against the Python service, which its tests
+start (`python3/tests/serve.py`). What a follow gives is held to mbse-schemas' own suites (BLW, and CHG-14): a journal is
+not kept in a store, so mbse-journals' suite is not run over one. mbse-dynamodb's tests run the service over its store.
 
 ---
 

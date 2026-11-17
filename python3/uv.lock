@@ -140,7 +140,7 @@ wheels = [
 
 [[package]]
 name = "mbse-demo-apps"
-version = "0.1.0"
+version = "0.1.2"
 source = { editable = "../../mbse-demo-apps/python3" }
 dependencies = [
     { name = "mbse-schemas" },
@@ -154,7 +154,7 @@ dev = [{ name = "pytest", specifier = ">=9.1.1" }]
 
 [[package]]
 name = "mbse-journals"
-version = "0.2.1"
+version = "0.3.0"
 source = { editable = "../../mbse-journals/python3" }
 dependencies = [
     { name = "mbse-schemas" },
@@ -174,10 +174,11 @@ dev = [
 
 [[package]]
 name = "mbse-rest"
-version = "0.2.1"
+version = "0.3.0"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
+    { name = "mbse-journals" },
     { name = "mbse-schemas" },
     { name = "uvicorn" },
 ]
@@ -186,13 +187,13 @@ dependencies = [
 dev = [
     { name = "httpx2" },
     { name = "mbse-demo-apps" },
-    { name = "mbse-journals" },
     { name = "pytest" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "fastapi", specifier = ">=0.115" },
+    { name = "mbse-journals", editable = "../../mbse-journals/python3" },
     { name = "mbse-schemas", editable = "../../mbse-schemas/python3" },
     { name = "uvicorn", specifier = ">=0.30" },
 ]
@@ -201,13 +202,12 @@ requires-dist = [
 dev = [
     { name = "httpx2", specifier = ">=2.16" },
     { name = "mbse-demo-apps", editable = "../../mbse-demo-apps/python3" },
-    { name = "mbse-journals", editable = "../../mbse-journals/python3" },
     { name = "pytest", specifier = ">=9.1.1" },
 ]
 
 [[package]]
 name = "mbse-schemas"
-version = "0.26.30"
+version = "0.29.0"
 source = { editable = "../../mbse-schemas/python3" }
 
 [package.metadata]

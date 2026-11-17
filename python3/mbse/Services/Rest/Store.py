@@ -16,9 +16,9 @@ public store-below interface alone, `Stores.Below`
 - `install(plain)` sends an install, a transaction that writes schemas, to the service (`POST /schemas`), which runs
   it in its store and the store below that; one of the installs the service gave it, run again over it, is not sent
   back.
-- `follow(follower)` gives `follower` each transaction the service's store committed, as plain data, once each, in the
-  order it committed them, read from its change feed (`GET /changes`) on `poll()` and after each commit, its own among
-  them.
+- `follow(follower)` gives `follower` each transaction the service's store committed, as a `Changes.Journal` of that
+  one transaction, as plain data, once each, in the order it committed them, read from its change feed (`GET /changes`)
+  after the last it was given, by its id, on `poll()` and after each commit, its own among them.
 - `records` is true: the service's lowest store records each transaction, so that a store over it records none.
 
 `Store(transport)`, or `Store(remote)`, is a plain `Builders.Store` over it, given the service's schemas: it runs each
@@ -96,7 +96,8 @@ class Remote:
         self._transport = Http(transport) if isinstance(transport, str) else transport
         self._followers: dict[object, Callable[[PlainData], None]] = {}
         head = self._call("GET", "/changes")
-        self._feed, self._seq = head["feed"], head["head"]  # the change feed, and the last change its followers were given
+        # the change feed, and the position its followers were given last: the id of a transaction, None for none
+        self._feed, self._head = head["feed"], head["head"]
         self.installs: list[PlainData] = self._call("GET", "/schemas")  # those that made the service's schemas, in order
         self._served = 0  # how deep in running the service's own installs over it (`Store`): those are not sent back
 
@@ -141,8 +142,8 @@ class Remote:
             self.installs = self._call("POST", "/schemas", plain)
 
     def follow(self, follower: Callable[[PlainData], None]) -> Callable[[], None]:
-        """Gives `follower` each transaction the service's store commits from now, once each, in its order, as the change
-        feed gives them; gives back a function that ends it."""
+        """Gives `follower` each transaction the service's store commits from now, once each, in its order, as a
+        one-transaction journal, as plain data; gives back a function that ends it."""
         token = object()  # this following, though the same follower follow twice
         self._followers[token] = follower
 
@@ -155,17 +156,18 @@ class Remote:
 
     def poll(self) -> int:
         """Gives the followers each transaction the service's store committed since they were last given one, in the
-        order it committed them; how many."""
+        order it committed them, each a one-transaction journal, read from the change feed after the last's id; how
+        many."""
         count = 0
         while True:
-            query = urllib.parse.urlencode({"after": self._seq, "feed": self._feed})
+            query = urllib.parse.urlencode({"feed": self._feed, **({} if self._head is None else {"after": self._head})})
             read = self._call("GET", f"/changes?{query}")
-            for change in read["changes"]:
-                self._seq = change["position"]
+            for transaction in read["journal"]:
+                self._head = transaction["id"]
                 count += 1
                 for follower in list(self._followers.values()):
-                    follower(change["effect"])
-            if self._seq >= read["head"]:
+                    follower([transaction])
+            if not read["journal"] or self._head == read["head"]:
                 return count
 
 

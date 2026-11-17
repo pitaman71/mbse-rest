@@ -20,6 +20,11 @@ reference: the client gives each one exactly one ([CAP-004: logical view templat
 `_.x.<adjacency>([_.y])`, once `x` is given, since an adjacency is a member of `x`'s schema.
 
 Counted objects have no reference, so a frame that binds one, and an entry that links one, are left out ([FEA-003: no-code logical views](mbse:mbse-basis/docs/features/FEA-003.md)).
+
+A frame a transaction gives back holds each object by its reference, and what reads an object lives only within a
+transaction ([CAP-315: every read within a transaction or through a follow](mbse:mbse-basis/docs/capabilities/CAP-315.md)):
+`witness` reads, within a transaction of its own, each object a frame binds again by its reference, found from its
+singleton through the keyed entries that own it, as its path names them.
 """
 
 from __future__ import annotations
@@ -91,6 +96,34 @@ def _reference(store: Any, obj: Any) -> Any | None:
         return None
 
 
+def _found(store: Any, reference: Any) -> Any | None:
+    """Within the transaction open, the object `reference` designates: from its path's singleton, through each entry
+    of the owner's adjacency the step names whose keys are the step's, to what it links besides the owner; None where
+    the store holds none, or the path is a schema object's or steps through an adjacency with no name."""
+    path = Plain.ToPlain(store)(reference.as_schema(), reference)["path"]
+    try:
+        found = store.singleton(path["singleton"])
+    except LookupError:  # a schema object's path, from the root module ("."), or no singleton the store holds
+        return None
+    step = path["next"]
+    while found is not None and "entry" in step:
+        step = step["entry"]
+        found, step = _owned(found, step["i"], step["properties"]), step["next"]
+    return found
+
+
+def _owned(owner: Any, name: str, keys: Mapping[str, Any]) -> Any | None:
+    """What `owner` owns through its adjacency `name` by the entry whose keys are `keys`; None where none."""
+    adjacency = owner.as_schema().adjacencies.get(name)
+    if adjacency is None:
+        return None
+    (link,) = [link for link in adjacency.relation.entry.links if link != adjacency.me]
+    for entry in getattr(owner, name):
+        if all(getattr(entry, key).get() == value for key, value in keys.items()):
+            return getattr(entry, link)
+    return None
+
+
 class _Witness:
     """What one frame witnesses: each object's assigned properties, once, and each entry, once, in the order met."""
 
@@ -145,14 +178,14 @@ def _history(store: Any, reference: Any) -> list[tuple[str, Mapping[str, Any]]]:
     return found
 
 
-def _witness_history(seen: "_Witness", obj: Any) -> None:
-    """Witnesses `obj`'s provenance ([CAP-015: transaction provenance](mbse:mbse-basis/docs/capabilities/CAP-015.md)): each record, its session and identity, with what they hold, and the
-    entries linking them: `CreatedBy` and `ModifiedBy` (from the record), `InSession`, `Who`."""
-    reference = _reference(seen.store, obj)
-    if reference is None:
-        return
-    for relation, frame in _history(seen.store, reference):
-        record, session, identity = frame["t"], frame["s"], frame["i"]
+def _witness_history(seen: "_Witness", obj: Any, history: list[tuple[str, Mapping[str, Any]]]) -> None:
+    """Witnesses `obj`'s provenance ([CAP-015: transaction provenance](mbse:mbse-basis/docs/capabilities/CAP-015.md)), `history`, read before the transaction open: each record, its
+    session and identity, with what they hold, read again within it, and the entries linking them: `CreatedBy` and
+    `ModifiedBy` (from the record), `InSession`, `Who`."""
+    for relation, frame in history:
+        record, session, identity = (_found(seen.store, frame[symbol]) for symbol in ("t", "s", "i"))
+        if record is None or session is None or identity is None:
+            continue
         for entry in getattr(record, relation):
             if entry.object is obj:
                 seen.enter(entry)
@@ -171,30 +204,36 @@ def _linked(obj: Any, entry: Any, adjacency: Any) -> list[Any]:
 
 
 def witness(store: Any, kind: str, frame: Mapping[str, Any]) -> Any | None:
-    """The frame's `References.OfFrame`, its `assigns` and `entries` filled as `kind` defines; None where it binds a
-    counted object, which has no reference."""
-    binds = {}
-    for name, obj in frame.items():
-        binds[name] = _reference(store, obj)
-        if binds[name] is None:
+    """The `References.OfFrame` of a frame a transaction gave back, each object it binds by its reference, its
+    `assigns` and `entries` filled as `kind` defines, read within a transaction of its own; None where it binds a
+    counted object, which has no reference, or an object the store no longer holds."""
+    try:
+        binds = {name: frame[name] for name in frame}
+    except LookupError:  # a counted object: the frame refuses it
+        return None
+    witnessed = {"detail": "x", "adjacency": "y"}.get(kind)
+    history = [] if witnessed is None else _history(store, binds[witnessed])  # a transaction of its own, first
+    with store.transaction():
+        objects = {name: _found(store, reference) for name, reference in binds.items()}
+        if any(obj is None for obj in objects.values()):
             return None
-    seen = _Witness(store)
-    x = frame["x"]
-    if kind in ("label", "chip", "detail"):
-        seen.assign(x, kind)
-    if kind == "detail":
-        _witness_history(seen, x)
-        for name, adjacency in x.as_schema().adjacencies.items():
-            for entry in getattr(x, name):
-                if seen.enter(entry):
-                    for other in _linked(x, entry, adjacency):
-                        seen.assign(other, "label")
-    if kind == "adjacency":
-        y = frame["y"]
-        for name, adjacency in x.as_schema().adjacencies.items():
-            for entry in getattr(x, name):
-                if any(other is y for other in _linked(x, entry, adjacency)):
-                    seen.enter(entry)
-        seen.assign(y, "chip")
-        _witness_history(seen, y)
-    return store.References.OfFrame(lambda f: f.binds(binds).assigns(seen.assigns).entries(seen.entries))
+        seen = _Witness(store)
+        x = objects["x"]
+        if kind in ("label", "chip", "detail"):
+            seen.assign(x, kind)
+        if kind == "detail":
+            _witness_history(seen, x, history)
+            for name, adjacency in x.as_schema().adjacencies.items():
+                for entry in getattr(x, name):
+                    if seen.enter(entry):
+                        for other in _linked(x, entry, adjacency):
+                            seen.assign(other, "label")
+        if kind == "adjacency":
+            y = objects["y"]
+            for name, adjacency in x.as_schema().adjacencies.items():
+                for entry in getattr(x, name):
+                    if any(other is y for other in _linked(x, entry, adjacency)):
+                        seen.enter(entry)
+            seen.assign(y, "chip")
+            _witness_history(seen, y, history)
+        return store.References.OfFrame(lambda f: f.binds(binds).assigns(seen.assigns).entries(seen.entries))

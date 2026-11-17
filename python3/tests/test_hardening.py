@@ -21,10 +21,17 @@ class Failing(Builders.Store):
         super().__init__()
         self.failing = False
 
-    def transaction(self, spec=None):
+    def _reached(self) -> None:
         if self.failing:
             raise ConnectionError("the database is unreachable")
-        return super().transaction(spec)
+
+    def commit(self, plain):
+        self._reached()
+        return super().commit(plain)
+
+    def install(self, plain):
+        self._reached()
+        return super().install(plain)
 
 
 def store_of(client):
@@ -38,13 +45,21 @@ def write_task(store, id_, title):
             lambda _: _.d.tasks({id_: lambda e: e.task(_.x)}), lambda _: _.x.title(title)])]))])))
 
 
-def titles(client):
-    return [str(e.task.title) for e in store_of(client).singleton("work.Tasks").tasks]
+def titles(client, store=None):
+    """The titles of the tasks the service's store holds, read within a transaction."""
+    store = store_of(client) if store is None else store
+    with store.transaction():
+        return [str(e.task.title) for e in store.singleton("work.Tasks").tasks]
 
 
 def held_below(client):
     """The titles of the tasks the store below holds."""
-    return [str(e.task.title) for e in client.app.state.service.below.singleton("work.Tasks").tasks]
+    return titles(client, client.app.state.service.below)
+
+
+def fed(client):
+    """The change feed's journal, from its first transaction."""
+    return client.get(f"/changes?feed={client.app.state.service.feed}").json()["journal"]
 
 
 def refusal(response, status):
@@ -79,8 +94,8 @@ def test_a_write_whose_frames_bind_no_symbol_is_refused_before_it_is_written():
     body = write_task(store_of(client), "TSK-009", "Unwritten")
     assert "binds no y" in refusal(client.post("/views/adjacency", json=body), 400)  # it binds no y
     assert "Unwritten" not in titles(client) and "Unwritten" not in held_below(client)
-    assert client.get("/changes").json()["head"] == 1  # the seed's alone, its record among it, as the store below
-    # committed it: one transaction per write
+    assert len(fed(client)) == 1  # the seed's alone, its record among it, as the store below committed it: one
+    # transaction per write
 
 
 def test_unknown_paths_and_methods_answer_the_error_body(client):
@@ -150,8 +165,8 @@ def test_a_transaction_the_store_refuses_names_the_kind_of_error():
         "singleton": "work.Tasks", "next": {"target": {}}}}}}, "spec": [{"x": [{"as_property": {
             "name": "nope", "mutations": [{"set": {"value": "Z"}}]}}]}]}]}}]}
     assert refusal(client.post("/transactions", json=directory), 400).endswith("has no property 'nope'")
-    assert client.get("/changes").json()["head"] == 1  # the seed's alone, its record among it, as the store below
-    # committed it: one transaction per write
+    assert len(fed(client)) == 1  # the seed's alone, its record among it, as the store below committed it: one
+    # transaction per write
 
 
 def test_a_fault_of_the_services_own_is_a_500_with_the_error_body(client, monkeypatch):
@@ -172,12 +187,12 @@ class Overlapping(Builders.Store):
         self.inside = 0
         self.overlapped = False
 
-    def transaction(self, spec=None):
+    def commit(self, plain):
         self.inside += 1
         self.overlapped |= self.inside > 1
         time.sleep(0.01)
         try:
-            return super().transaction(spec)
+            return super().commit(plain)
         finally:
             self.inside -= 1
 
@@ -198,7 +213,7 @@ def test_one_transaction_at_a_time():
         thread.join(timeout=30)
     assert statuses == [200] * len(bodies) and not below.overlapped
     assert held_below(client) == titles(client)  # the store below's order is the commit order
-    changes = client.get("/changes?after=0").json()["changes"]
-    assert [c["position"] for c in changes] == list(range(1, len(bodies) + 2))  # the seed, then each, once, each one
+    journal = fed(client)
+    assert len(journal) == len(bodies) + 1 == len({t["id"] for t in journal})  # the seed, then each, once, each one
     # transaction, its record among it, which the store below made (mbse-schemas' Provenance, recorded in the lowest
     # store) and the service's store took into it before it committed

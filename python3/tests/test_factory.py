@@ -57,7 +57,8 @@ def test_another_app_label_and_chip(library):
 
 def test_another_app_detail_and_adjacency(library):
     store = library.app.state.service.store
-    sicp = References.of(store, store.singleton("lib.TheShelf").books({"id": "BK-1"}))
+    with store.transaction():
+        sicp = References.of(store, store.singleton("lib.TheShelf").books({"id": "BK-1"}))
     detail = Plain.ToPlain(store).Transaction(store.Mutations.OfTransaction(lambda t: t.mutations([lambda mu: mu.map(
         lambda m: m.symbols([lambda p: p.symbols({"x": sicp})]))])))
     [frame] = frames(library.post("/views/detail", json=detail))
@@ -83,11 +84,13 @@ def test_another_app_writes_and_restarts():
             lambda _: _.s.books({"BK-3": lambda e: e.book(_.x)}), lambda _: _.x.name("HtDP")])]))])))
     assert [assigned(f) for f in frames(library.post("/views/label", json=add))] == [{"name": "HtDP"}]
     below = library.app.state.service.below
-    assert [str(b.book.name) for b in below.singleton("lib.TheShelf").books] == ["SICP", "LISP 1.5", "HtDP"]
+    with below.transaction():
+        assert [str(b.book.name) for b in below.singleton("lib.TheShelf").books] == ["SICP", "LISP 1.5", "HtDP"]
     again = TestClient(Service.app([install], below, seed))
     store = again.app.state.service.store
-    assert again.get("/changes").json()["head"] == 0  # the seed, run again, wrote nothing
-    assert sorted(str(b.book.name) for b in store.singleton("lib.TheShelf").books) == ["HtDP", "LISP 1.5", "SICP"]
+    assert again.get("/changes").json()["head"] is None  # the seed, run again, wrote nothing
+    with store.transaction():
+        assert sorted(str(b.book.name) for b in store.singleton("lib.TheShelf").books) == ["HtDP", "LISP 1.5", "SICP"]
 
 
 def test_an_app_without_a_seed():
@@ -136,9 +139,10 @@ def test_from_the_environment():
     api = Service.from_environment({"MBSE_REST_SEED": "0", "MBSE_REST_WINDOW": "7", "MBSE_REST_STORE": "memory",
                                     "MBSE_REST_ORIGINS": "http://localhost:5173, http://ui.example"})
     service = api.state.service
-    assert len(service.installs) == len(Schemas.INSTALLS) and service._changes.maxlen == 7
+    assert len(service.installs) == len(Schemas.INSTALLS) and service.window == 7
     assert type(service.below) is Builders.Store
-    assert list(service.store.singleton("work.Tasks").tasks) == []  # not seeded
+    with service.store.transaction():
+        assert list(service.store.singleton("work.Tasks").tasks) == []  # not seeded
     client = TestClient(api)
     preflight = client.options("/views/label", headers={
         "origin": "http://ui.example", "access-control-request-method": "POST",
