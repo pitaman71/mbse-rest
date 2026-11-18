@@ -1,6 +1,6 @@
 {
   "name": "@mbse/rest",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "type": "module",
   "description": "The client side of mbse-rest: a store served over REST, which a store stacks on, and logical views over it (mbse-basis FEA-006: persistence, CAP-290)",

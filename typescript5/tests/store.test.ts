@@ -104,23 +104,11 @@ const OVER_REST: [string, string, number][] =
   [["const below: any = new B.Store();", "const below: any = (globalThis as any).__servedOverRest();", 1]];
 
 describe("mbse-schemas' BLW, over REST", () => {
-  // BLW-15 fails over REST for a fault of mbse-schemas 0.29.0's: an upsert finds a counted object it made before by
-  // its key, its symbol and the frame that reached it (Python's `Transactions._upsert_index`), alike in every
-  // transaction with no key and an empty frame, so that the service's store, long-lived, binds BLW-15's counted
-  // `crm.Badge` to the `crm.Tag` an earlier transaction made under the same symbol. It is left out of the suite's run,
-  // and held, apart, to fail so until mbse-schemas tells them apart.
-  test("BLW-01..21: the client as the store below, each case as mbse-schemas wrote it, but BLW-15", async () => {
+  test("BLW-01..21: the client as the store below, each case as mbse-schemas wrote it", async () => {
     (globalThis as any).__servedOverRest = () => Store(nodeTransport(fresh()));
-    await run(generated("mbse-schemas", "36_Below.ipynb", "BLW.ts", OVER_REST, ["BLW-15"]));
+    await run(generated("mbse-schemas", "36_Below.ipynb", "BLW.ts", OVER_REST));
     assert.equal((globalThis as any).__case, "BLW-21");
   });
-
-  test("BLW-15 fails over REST, the service's store binding a counted object to another's (mbse-schemas 0.29.0)",
-    async () => {
-      (globalThis as any).__servedOverRest = () => Store(nodeTransport(fresh()));
-      await assert.rejects(run(generated("mbse-schemas", "36_Below.ipynb", "BLW-aliased.ts", OVER_REST)),
-        /^Error: BLW-15: TypeError: instance is a 'crm\.Tag', not a 'crm\.Badge'/);
-    });
 });
 
 /** The book on the library's shelf whose key is `id`, within the transaction open. */

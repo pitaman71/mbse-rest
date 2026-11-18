@@ -174,7 +174,7 @@ dev = [
 
 [[package]]
 name = "mbse-rest"
-version = "0.3.0"
+version = "0.3.1"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
@@ -207,7 +207,7 @@ dev = [
 
 [[package]]
 name = "mbse-schemas"
-version = "0.29.0"
+version = "0.29.1"
 source = { editable = "../../mbse-schemas/python3" }
 
 [package.metadata]
