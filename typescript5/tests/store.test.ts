@@ -104,10 +104,10 @@ const OVER_REST: [string, string, number][] =
   [["const below: any = new B.Store();", "const below: any = (globalThis as any).__servedOverRest();", 1]];
 
 describe("mbse-schemas' BLW, over REST", () => {
-  test("BLW-01..21: the client as the store below, each case as mbse-schemas wrote it", async () => {
+  test("BLW-01..22: the client as the store below, each case as mbse-schemas wrote it", async () => {
     (globalThis as any).__servedOverRest = () => Store(nodeTransport(fresh()));
     await run(generated("mbse-schemas", "36_Below.ipynb", "BLW.ts", OVER_REST));
-    assert.equal((globalThis as any).__case, "BLW-21");
+    assert.equal((globalThis as any).__case, "BLW-22");
   });
 });
 

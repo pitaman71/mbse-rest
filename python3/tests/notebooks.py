@@ -32,9 +32,10 @@ def cells(sibling: str, notebook: str) -> list[tuple[str | None, str]]:
 
 
 @contextlib.contextmanager
-def raises(kind: type[BaseException], match: str | None = None) -> Any:
-    """mbse-schemas' notebook helper (`tests/support.py`), as its notebooks import it."""
-    with pytest.raises(kind, match=match):
+def raises(*kinds: type[BaseException], match: str | None = None) -> Any:
+    """mbse-schemas' notebook helper (`tests/support.py`), as its notebooks import it: one of `kinds` raised, with
+    `match` in its message, as text, not a pattern."""
+    with pytest.raises(kinds, match=None if match is None else re.escape(match)):
         yield
 
 
