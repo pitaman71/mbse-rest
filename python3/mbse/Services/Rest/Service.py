@@ -1,29 +1,36 @@
 """The REST service over an mbse-schemas store (mbse-basis [CAP-002: named schema list](mbse:mbse-basis/docs/capabilities/CAP-002.md) to [CAP-004: logical view templates](mbse:mbse-basis/docs/capabilities/CAP-004.md), [CAP-012: logical view endpoints](mbse:mbse-basis/docs/capabilities/CAP-012.md) and [CAP-290: a service's store stacked, with no snapshot](mbse:mbse-basis/docs/capabilities/README.md#CAP-290)).
 
-`app(installs, below)` gives a FastAPI application that serves a store given a store below it, a database's in
-production (mbse-dynamodb's `Store`), one in memory by default: the service's store, a `Builders.Store` over `below`,
-which loads what it is asked for from it and writes each transaction through to it, so that it
-persists by the journal of the store below alone, and no snapshot is taken or read. Each install (an app's
-`Schemas.install`, or each of its `Schemas.INSTALLS`) runs in the store below and in the service's store, and is served
-to clients as the install transaction that made the schemas; the seed, where given, runs after, as any transaction.
-`installs_of(module)` and `seed_of(module)` find an app's by mbse-demo-apps' layout; `from_environment()` builds the
-application from `MBSE_REST_*` variables, as `python -m mbse.Services.Rest` serves it. The endpoints:
+`app(installs, store)` gives a FastAPI application that serves a store: one in memory by default, or any other, a
+database's store in production (mbse-dynamodb's), so that it persists by that store's journal alone, and no snapshot
+is taken or read. It serves the store as a layer below for a cache layer in another process
+(mbse-basis [the stacked stores proposal](mbse:mbse-basis/proposals/STACKED-STORES.md#a-cache-layer-and-the-layer-below), its third stage): the
+store's transaction, held open for the client's, and its `exec`, each call a request answered with a stream of frames;
+and its follow, as a change feed. Each install (an app's `Schemas.install`, or each of its `Schemas.INSTALLS`) runs in
+the store and is served as the install transaction that made the schemas; the seed, where given, runs after, as any
+transaction. `installs_of(module)` and `seed_of(module)` find an app's by mbse-demo-apps' layout; `from_environment()`
+builds the application from `MBSE_REST_*` variables, as `python -m mbse.Services.Rest` serves it. The endpoints:
 
 | Method and path | Capability | Response |
 |---|---|---|
-| `GET /schemas` | [CAP-002: named schema list](mbse:mbse-basis/docs/capabilities/CAP-002.md) | the install transactions that made the store's schemas, in order, each a transaction's expression |
-| `POST /schemas` | [CAP-290: a service's store stacked, with no snapshot](mbse:mbse-basis/docs/capabilities/README.md#CAP-290) | an install transaction, run in the store below and the service's store, then served with the others; the installs |
+| `GET /schemas` | [CAP-002: named schema list](mbse:mbse-basis/docs/capabilities/CAP-002.md) | the install transactions the service was given, in order, each a transaction's expression: a client given no installs of its own runs them |
 | `GET /schemas/{name}` | [CAP-003: schema inspector](mbse:mbse-basis/docs/capabilities/CAP-003.md) | 501 until mbse-schemas writes one schema object as a document (CAP-003, Blocked) |
-| `POST /documents` | [CAP-290: a service's store stacked, with no snapshot](mbse:mbse-basis/docs/capabilities/README.md#CAP-290) | the document of the object at the path given, a one-transaction document, or null |
-| `POST /transactions` | [CAP-290: a service's store stacked, with no snapshot](mbse:mbse-basis/docs/capabilities/README.md#CAP-290) | a transaction's expression, committed: `{"position": id, "effect": e}`, the change feed's position once it has, the id of the last transaction fed, and the transaction as the store committed it, its record among it (null where it changed nothing) |
+| `POST /transactions` | [CAP-308: stacking by mutation transactions, in one round trip](mbse:mbse-basis/docs/capabilities/README.md#CAP-308) | a transaction of the store opened for the client's: `{"transaction": id, "feed", "head"}`, the change feed's position as it opened |
+| `POST /transactions/{id}/exec` | [CAP-308: stacking by mutation transactions, in one round trip](mbse:mbse-basis/docs/capabilities/README.md#CAP-308) | `{"expression", "remainder", "frames", "write"}` executed within it, `txn.exec`: its stream, one `References.OfItem` a line (NDJSON), the last `{"end": {}}` |
+| `POST /transactions/{id}/commit` | [CAP-308: stacking by mutation transactions, in one round trip](mbse:mbse-basis/docs/capabilities/README.md#CAP-308) | committed: `{"head", "journal", "after"}`, the change feed's position once it has, what the store's follow gave of it, a `Changes.Journal`, and the feed's position just before it |
+| `DELETE /transactions/{id}` | [CAP-308: stacking by mutation transactions, in one round trip](mbse:mbse-basis/docs/capabilities/README.md#CAP-308) | dropped, nothing written: `{}` |
 | `GET /changes?after=id&feed=id&wait=s` | [CAP-290: a service's store stacked, with no snapshot](mbse:mbse-basis/docs/capabilities/README.md#CAP-290) | `{"feed", "head", "journal"}`: the transactions the store committed after the one of id `after`, in order, a `Changes.Journal` as plain data; `head`, the id of the last |
 | `GET /views` | [CAP-004: logical view templates](mbse:mbse-basis/docs/capabilities/CAP-004.md) | `{kind: template, ...}`, each a transaction's expression |
 | `POST /views/{kind}` | [CAP-012: logical view endpoints](mbse:mbse-basis/docs/capabilities/CAP-012.md) | the frames, `References.OfFrame`, one JSON document a line (NDJSON) |
 
-A transaction's expression is `Plain.ToPlain(store).Transaction`'s. The service reads it (`JSON.loads`,
-`Plain.FromPlain(store).Transaction`), stamps it where it writes (`stamp`), and executes it; the store below commits
-what it writes first, and where the store below refuses it or fails, nothing is written. One transaction runs at a
-time.
+A client's transaction is a request sequence: `POST /transactions` opens one of the store's; each `exec` of the
+client's is a `POST /transactions/{id}/exec`, whose body is the expression, `Plain.ToPlain(store).Transaction`'s, the
+subterm its `remainder` starts at (none: the whole of it), the input frames, each a `References.OfFrame` as plain
+data, and whether it writes; then `POST /transactions/{id}/commit`, or `DELETE /transactions/{id}` where the client's
+transaction raises. The service reads the expression in its store, stamps it where it writes (`stamp`), and executes it
+within the transaction open; its stream is written as `Frames` writes it. The store commits, the layers below it first,
+where the client commits: the client's layer below commits before the client does, as in a process. One transaction is
+open at a time: another client's waits for it, up to `WAIT` seconds, else is refused (503); one left idle for `lease`
+seconds is dropped, as a client gone away leaves it, and the next request on it is refused (410).
 
 The change feed is the store's committed transactions, as its `follow` gives them, each a one-transaction
 `Changes.Journal` as plain data, joined into one journal in the order the store committed them (mbse-journals'
@@ -34,7 +41,8 @@ position is given the feed from its first transaction; one naming neither, the h
 the feed then another, named by its `feed` id), or a read from the first once it has let one go, is refused (410), and
 the client's store is made again. `wait` holds a read that finds nothing new open for up to that many seconds (30 at
 most), until one commits: long polling, so that a client hears of a commit at once, through any proxy, without a stream
-held open.
+held open. Where the store is over one followed by polling, as a store kept in a database is, the service polls it
+(`poll`) while no transaction is open, before a read of the feed and while one is held open.
 
 Every refusal is `{"error": message}` ([CAP-012: logical view endpoints](mbse:mbse-basis/docs/capabilities/CAP-012.md), the wire format); a transaction's refusal (400) begins
 with the kind of error its store raised, `ValueError: `, `TypeError: ` or `LookupError: `.
@@ -42,6 +50,7 @@ with the kind of error its store raised, `ValueError: `, `TypeError: ` or `Looku
 
 from __future__ import annotations
 
+import contextlib
 import datetime
 import importlib
 import logging
@@ -61,12 +70,13 @@ from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException
 
 from mbse.Journals.Framework import Journals
-from mbse.Schemas.Framework import JSON, Builders, Plain, Stores
+from mbse.Schemas.Framework import JSON, Builders, Plain
+from mbse.Schemas.Framework.Transactions import Remainder
 
-from . import Views
+from . import Frames, Views
 
 __all__ = ["NDJSON", "Install", "Refused", "Unavailable", "Service", "app", "installs_of", "seed_of", "store_of", "fresh",
-           "from_environment", "work_tracker", "writes", "stamp", "WINDOW", "WAIT"]
+           "from_environment", "work_tracker", "writes", "stamp", "WINDOW", "WAIT", "LEASE"]
 
 PlainData = Any  # mbse-schemas' plain data: mappings, lists, strings, numbers, booleans and None
 NDJSON = "application/x-ndjson"
@@ -74,8 +84,9 @@ UNWRITTEN = ("mbse-schemas writes no schema object as a document of its own: Pla
              "one, owned through an anonymous adjacency (mbse-basis CAP-003: schema inspector, Blocked)")
 WORK_TRACKER = "mbse.Demos.Apps.WorkTracker"
 WINDOW = 10_000  # the latest committed transactions the change feed keeps
-WAIT = 30.0  # the longest a read of the change feed is held open, in seconds
+WAIT = 30.0  # the longest a read of the change feed, or a request waiting for the store, is held, in seconds
 PAGE = 1_000  # the most changes one read of the feed gives
+LEASE = 60.0  # how long a client's transaction is kept open with no request on it, in seconds
 
 Install = Callable[[Any], Any]
 """An install: a callback given a transaction, `store.transaction(install)`, as an app's `Schemas.install` and
@@ -106,7 +117,7 @@ class Refused(Exception):
 
 
 class Unavailable(Refused):
-    """The store failed, its store below for one: nothing was written (503)."""
+    """The store failed, a layer below it for one: nothing was written (503)."""
 
     def __init__(self, message: str) -> None:
         super().__init__(503, message)
@@ -149,63 +160,111 @@ def stamp(plain: PlainData, session: str | None, who: str, clock: Clock = _now, 
     return stamped
 
 
-class _Below:
-    """The store below the service's store, as that store sees it (`Stores.Below`): the store below it is given, each
-    install the service's store gives it, a transaction that writes schemas, kept as plain data, in order, which the
-    service serves as the install transactions that made its schemas."""
+class _Named:
+    """What an install's callback is given, as `store.transaction(install)` gives it: the transaction's builder, and the
+    store's schemas by name besides, `txn.Schemas.OfObject`."""
 
-    def __init__(self, below: Any) -> None:
-        self.below = below
-        self.records = below.records
-        self.installs: list[PlainData] = []
+    def __init__(self, store: Any, builder: Any) -> None:
+        self._store, self._builder = store, builder
 
-    def document(self, path: PlainData) -> PlainData:
-        return self.below.document(path)
+    def __getattr__(self, name: str) -> Any:
+        if name.startswith("_"):
+            raise AttributeError(name)
+        schema = self._builder.as_schema()
+        if name in schema.properties or name in schema.adjacencies:
+            return getattr(self._builder, name)
+        return getattr(self._store, name)
 
-    def commit(self, plain: PlainData) -> PlainData:
-        return self.below.commit(plain)
 
-    def install(self, plain: PlainData) -> None:
-        self.below.install(plain)
-        plain = JSON.loads(JSON.dumps(plain))
-        if all(JSON.dumps(plain) != JSON.dumps(held) for held in self.installs):
-            self.installs.append(plain)
+def _read(store: Any, txn: Any, plain: PlainData) -> Any:
+    """A transaction's expression, read in `store` while `txn`, its transaction, is open, built outside the
+    transaction's proposals, as an expression is (object identity 94 in mbse-basis
+    [CAP-138: mutation expressions over frame streams](mbse:mbse-basis/docs/capabilities/CAP-138.md#decided)): by the
+    callback `txn.exec` builds an expression with, the expression it builds empty but for the expression's `uid`,
+    `when`, `session` and `where`, so that nothing is executed, and where it is the first a transaction is given, its
+    record (`Provenance`) is the expression's. Its stream is read only where `txn.exec` builds no expression until it
+    is, as one that wraps a store's own may."""
+    built: list[Any] = []
+    schema = store.registered("Mutations.OfTransaction")
 
-    def follow(self, follower: Callable[[PlainData], None]) -> Callable[[], None]:
-        return self.below.follow(follower)
+    def build(t: Any) -> Any:
+        built.append(Plain.FromPlain(store).Transaction(plain))
+        for name, value in plain.items():
+            if name in schema.properties and value is not None:
+                t = getattr(t, name)(Plain.FromPlain(store).Value(schema.properties[name].schema, value)
+                                     if isinstance(value, dict) else value)
+        return t
+
+    stream = txn.exec(Frames.Frame(), build, False)
+    if not built:
+        list(stream)
+    return built[0]
+
+
+class _Open:
+    """A client's transaction, open in the store: its scope, the store's transaction (`Transactions.Transaction`),
+    opened once its first expression is read, so that that one is read outside it; its session, its `when` and its
+    `uid`, the same for each of its writes, and when it was last used."""
+
+    def __init__(self, session: str | None, when: datetime.datetime, uid: str) -> None:
+        self.id = _uuid()
+        self.session, self.when, self.uid = session, when, uid
+        self.scope: Any = None  # the store's transaction, opened as its first exec is read: none before
+        self.txn: Any = None
+        self.first: str | None = None  # the uid of its first expression, under which the store commits it
+        self.journal: Journals.Journal = []  # what the store's follow gave of it, as it committed
+        self.after: str | None = None  # the change feed's position just before it
+        self.last = time.monotonic()
+
+
+class _Dropped(Exception):
+    """A client's transaction ended without its commit: aborted, or left idle."""
 
 
 class Service:
-    """A store given a store below, and its change feed: what the endpoints call, apart from HTTP."""
+    """A store, the transaction open for a client in it, and its change feed: what the endpoints call, apart from
+    HTTP."""
 
-    def __init__(self, installs: Iterable[Install | PlainData] = (), below: Any = None, seed: Install | None = None, *,
-                 window: int = WINDOW, user: str = "demo", clock: Clock = _now, uids: Uids = _uuid) -> None:
+    def __init__(self, installs: Iterable[Install | PlainData] = (), store: Any = None, seed: Install | None = None, *,
+                 poll: Callable[[], Any] | None = None, window: int = WINDOW, user: str = "demo", clock: Clock = _now,
+                 uids: Uids = _uuid, lease: float = LEASE) -> None:
         self.user = user  # the demo's identity, standing in for a validated token's ([CAP-015: transaction provenance](mbse:mbse-basis/docs/capabilities/CAP-015.md); [CAP-177: sessions and identities from a validated token](mbse:mbse-basis/docs/capabilities/CAP-177.md))
         self.clock, self.uids = clock, uids  # a write's `when` and, where it has none, its `uid` (`stamp`)
-        self.below = below if below is not None else Builders.Store()
-        self._recorded = _Below(self.below)  # which keeps each install the store gives the store below
-        self.store = Builders.Store(self._recorded)
-        self._lock = threading.RLock()  # one transaction at a time: transactions on one store do not nest
-        self._committed = threading.Condition(self._lock)  # notified as each transaction is fed
+        self.store = store if store is not None else Builders.Store()
+        self.lease = lease
+        self._lock = threading.RLock()  # the store, used by one request at a time
+        self._free = threading.Condition(self._lock)  # notified as a client's transaction ends
+        self._open: _Open | None = None  # the client's transaction open, held across its requests
+        self._committing: _Open | None = None
+        self._fed_lock = threading.Lock()
+        self._committed = threading.Condition(self._fed_lock)  # notified as each transaction is fed
         self.feed = _uuid()  # this feed's own name: a position is this feed's alone
         self.head: str | None = None  # the position of the last transaction fed: its id
         self.window = window
         self.journal: Journals.Journal = []  # the latest `window` transactions fed, a `Changes.Journal` as plain data
         self._dropped = False  # whether the feed has let a transaction go: then it is not read from its first
-        # a store kept in a database, followed by polling: what other processes committed (a method of its class, since
-        # a store's own attributes are its schemas' paths)
-        self._poll = self.below.poll if callable(getattr(type(self.below), "poll", None)) else None
-        self._reference = self.store.References.OfObject.as_schema()
+        self._poll = poll  # what others committed below the store, given to it, where it is followed by polling
+        self._installs: list[PlainData] = []
         self.store.follow(self._fed)
         for install in installs:
             self.install(install)
         if seed is not None:  # as any transaction, its `when` the service's (CAP-015)
-            self.store.transaction(lambda t: seed(t).when(_iso(self.clock())))
+            with self._turn():
+                self.store.transaction(lambda t: seed(t).when(_iso(self.clock())))
+
+    # --- The change feed ---
 
     def _fed(self, journal: Journals.Journal) -> None:
         """A transaction the store committed, a one-transaction journal as its follow gives it, fed: joined to the
-        latest, its id the head, and those waiting told."""
-        with self._lock:  # held already, but where the store commits apart from a request: at the seed
+        latest, its id the head, and those waiting told; the client's transaction committing given it, where it is
+        its own."""
+        committing = self._committing
+        with self._fed_lock:
+            if committing is not None:
+                own = [t for t in journal if t["id"] in (committing.first, committing.uid)]
+                if own and not committing.journal:
+                    committing.after = self.head
+                committing.journal += own
             joined = Journals.join(self.journal, journal)
             self._dropped = self._dropped or len(joined) > self.window
             self.journal = joined[-self.window:]
@@ -213,92 +272,14 @@ class Service:
             self._committed.notify_all()
 
     def _polled(self) -> None:
-        """What other processes committed to the store below, given to the service's store, where the store below is
-        one followed by polling, as a store kept in a database is."""
-        if self._poll is not None:
-            self._poll()
-
-    @property
-    def installs(self) -> list[PlainData]:
-        """The install transactions that made the store's schemas, in order, each as the store gave it the store below."""
-        return list(self._recorded.installs)
-
-    def install(self, install: Install | PlainData) -> list[PlainData]:
-        """Runs an install, a callback or its transaction expression, in the service's store, which runs it in the
-        store below first (`Stores.Below.install`), and serves it after the others where it is not among them already;
-        the installs."""
-        with self._lock:
+        """What others committed below the store, given to it, where it is followed by polling and no client's
+        transaction is open in it."""
+        if self._poll is not None and self._lock.acquire(blocking=False):
             try:
-                if isinstance(install, dict):
-                    self.store.install(install)
-                else:  # its `when` the service's (CAP-015)
-                    when = _iso(self.clock())
-                    self.store.transaction(lambda txn: install(txn).when(when))
-            except REFUSALS as error:
-                raise Refused(400, _describe(error)) from error
-            return self.installs
-
-    def names(self) -> list[str]:
-        """Every named schema, by name."""
-        with self._lock:
-            return list(self.store.names())
-
-    def schemas(self) -> list[PlainData]:
-        """[CAP-002: named schema list](mbse:mbse-basis/docs/capabilities/CAP-002.md), while [CAP-003: schema inspector](mbse:mbse-basis/docs/capabilities/CAP-003.md) is blocked: the install transactions that made the store's
-        schemas, in order, from which a client's store takes every schema by executing each."""
-        with self._lock:
-            return self.installs
-
-    def templates(self) -> dict[str, PlainData]:
-        """[CAP-004: logical view templates](mbse:mbse-basis/docs/capabilities/CAP-004.md): each kind's template."""
-        with self._lock:
-            return {kind: Plain.ToPlain(self.store).Transaction(tx) for kind, tx in Views.templates(self.store).items()}
-
-    def document(self, path: PlainData) -> PlainData:
-        """The document of the object at `path`, None where the store holds none: what a store above loads."""
-        with self._lock:
-            self._polled()
-            try:
-                return self.store.document(path)
-            except REFUSALS as error:
-                raise Refused(400, _describe(error)) from error
-
-    def _execute(self, plain: PlainData, run: Callable[[PlainData], Any] | None = None) -> Any:
-        """Executes a transaction's expression, giving its frames, or what `run`, given it, gives; refused (400) where
-        its store refuses it, unavailable (503) where its store fails otherwise. Either way, nothing it wrote is kept."""
-        self._polled()
-        try:
-            self._load(plain)
-            if run is not None:
-                return run(plain)
-            return self.store.transaction(Plain.FromPlain(self.store).Transaction(plain))
-        except REFUSALS as error:
-            raise Refused(400, _describe(error)) from error
-        except Exception as error:  # the store below's own, whatever it raises
-            log.exception("a transaction could not be committed")
-            raise Unavailable(f"the transaction could not be committed, and nothing is written: "
-                              f"{type(error).__name__}: {error}") from error
-
-    def _load(self, plain: PlainData) -> None:
-        """Loads each object a transaction's expression binds to a symbol by its reference, before the expression is
-        read: mbse-schemas reads a spec written on an object it has not loaded no further than to load it, within the
-        expression it builds, and refuses that (`AttributeError: _working`), where loaded first it does not. Each is
-        loaded within a transaction of its own, a map whose one symbol is given its reference, since a reference is
-        resolved only within a transaction ([CAP-315: every read within a transaction or through a follow](mbse:mbse-basis/docs/capabilities/CAP-315.md))."""
-        for path in _referenced(plain):
-            reference = Plain.FromPlain(self.store)(self._reference, {"path": path})
-            self.store.transaction(lambda t, given=reference: t.mutations([lambda mu: mu.map(
-                lambda m: m.symbols([lambda p: p.symbols({"x": given})]))]))
-
-    def transaction(self, plain: PlainData, session: str | None = None) -> dict[str, Any]:
-        """Commits a transaction's expression, stamped where it writes ([CAP-015: transaction provenance](mbse:mbse-basis/docs/capabilities/CAP-015.md), `stamp`), in `session`:
-        `{"position", "effect"}`, the change feed's position once it has, its own id where it changed anything, and
-        the transaction as the store committed it (`Builders.Store.commit`), as plain data, its record (`Provenance`)
-        among it; None where it changed nothing. A client takes it into its transaction, as a store above takes what
-        the store below gives back it committed while it sends it (CAP-285)."""
-        with self._lock:
-            effect = self._execute(stamp(plain, session, self.user, self.clock, self.uids), self.store.commit)
-            return {"position": self.head, "effect": effect}
+                if self._open is None:
+                    self._poll()
+            finally:
+                self._lock.release()
 
     def changes(self, after: str | None = None, feed: str | None = None, wait: float = 0.0) -> dict[str, Any]:
         """The change feed, `{"feed", "head", "journal"}`: its transactions after the one of id `after`, or, where
@@ -307,8 +288,8 @@ class Service:
         Refused (410) where `feed` is another's, `after` is a transaction it does not keep, or it is read from its first
         once it has let one go."""
         deadline = time.monotonic() + min(max(wait, 0.0), WAIT)
-        with self._lock:
-            self._polled()
+        self._polled()
+        with self._fed_lock:
             if after is None and feed is None:
                 return {"feed": self.feed, "head": self.head, "journal": []}
             if feed is not None and feed != self.feed:
@@ -320,7 +301,11 @@ class Service:
             self._after(after)
             while self.head == after and (left := deadline - time.monotonic()) > 0:
                 self._committed.wait(min(left, 1.0))  # woken by a commit here; polling the store below meanwhile
-                self._polled()
+                self._fed_lock.release()
+                try:
+                    self._polled()
+                finally:
+                    self._fed_lock.acquire()
             return {"feed": self.feed, "head": self.head, "journal": self._after(after)[:PAGE]}
 
     def _after(self, after: str | None) -> Journals.Journal:
@@ -332,16 +317,194 @@ class Service:
             raise Refused(410, f"the change feed keeps its latest {len(self.journal)} transactions, to "
                                f"{JSON.dumps(self.head)}, not {JSON.dumps(after)}: make the store again") from error
 
+    # --- The store, one use at a time ---
+
+    def _await(self) -> None:
+        """Waits, holding the store, until no client's transaction is open in it, up to `WAIT` seconds, else refused
+        (503); one idle for `lease` seconds is dropped."""
+        deadline = time.monotonic() + WAIT
+        while self._open is not None:
+            held = self._open
+            if time.monotonic() - held.last > self.lease:
+                log.warning("a client's transaction left idle for %s seconds is dropped", self.lease)
+                self._drop(held, f"left idle for {self.lease} seconds")
+                break
+            left = min(deadline, held.last + self.lease) - time.monotonic()
+            if time.monotonic() >= deadline:
+                raise Unavailable(f"another client's transaction holds the store: try again (after {WAIT} seconds)")
+            self._free.wait(max(min(left, 1.0), 0.01))
+
+    @contextlib.contextmanager
+    def _turn(self) -> Iterator[None]:
+        """The store, while no client's transaction is open in it: for an install, the seed or a view."""
+        with self._lock:
+            self._await()
+            yield
+
+    def _drop(self, held: _Open, why: str) -> None:
+        """Ends a client's transaction without its commit, nothing written."""
+        if self._open is held:
+            self._open = None
+        error = _Dropped(why)
+        try:
+            if held.scope is not None:
+                held.scope.__exit__(_Dropped, error, None)
+        finally:
+            self._free.notify_all()
+
+    def _holding(self, transaction: str) -> _Open:
+        """The client's transaction of id `transaction`, open; refused (410) where it is not."""
+        held = self._open
+        if held is None or held.id != transaction:
+            raise Refused(410, f"no transaction {transaction!r} is open: it has ended, committed or dropped, or the "
+                               f"service restarted; one left idle for {self.lease} seconds is dropped")
+        return held
+
+    # --- Installs ---
+
+    @property
+    def installs(self) -> list[PlainData]:
+        """The install transactions the service was given, in order, each a transaction's expression."""
+        return list(self._installs)
+
+    def install(self, install: Install | PlainData) -> list[PlainData]:
+        """Runs an install, a callback or its transaction expression, in the store, and serves it after the others
+        where it is not among them already; the installs."""
+        with self._turn():
+            try:
+                if isinstance(install, dict):
+                    expression = Plain.FromPlain(self.store).Transaction(install)
+                else:  # its `when` the service's (CAP-015)
+                    when = _iso(self.clock())
+                    expression = self.store.Mutations.OfTransaction(
+                        lambda t: install(_Named(self.store, t)).when(when))
+                plain = JSON.loads(JSON.dumps(Plain.ToPlain(self.store).Transaction(expression)))
+                self.store.transaction(expression)
+            except REFUSALS as error:
+                raise Refused(400, _describe(error)) from error
+            if all(JSON.dumps(plain) != JSON.dumps(held) for held in self._installs):
+                self._installs.append(plain)
+            return self.installs
+
+    def names(self) -> list[str]:
+        """Every named schema, by name."""
+        with self._lock:
+            return list(self.store.names())
+
+    def schemas(self) -> list[PlainData]:
+        """[CAP-002: named schema list](mbse:mbse-basis/docs/capabilities/CAP-002.md), while [CAP-003: schema inspector](mbse:mbse-basis/docs/capabilities/CAP-003.md) is blocked: the install transactions the service
+        was given, in order, from which a client's store takes every schema by executing each."""
+        return self.installs
+
+    def templates(self) -> dict[str, PlainData]:
+        """[CAP-004: logical view templates](mbse:mbse-basis/docs/capabilities/CAP-004.md): each kind's template."""
+        with self._turn():
+            return {kind: Plain.ToPlain(self.store).Transaction(tx) for kind, tx in Views.templates(self.store).items()}
+
+    # --- A client's transaction ---
+
+    def open(self, session: str | None = None) -> dict[str, Any]:
+        """Opens a transaction of the store for a client's, in `session`, once no other is open: `{"transaction",
+        "feed", "head"}`, its id, and the change feed's position as it opened, so that a client may read the feed up
+        to it before it reads what it holds (the follow mode that catches up)."""
+        with self._lock:
+            self._await()
+            if self._poll is not None:
+                self._poll()
+            self._open = _Open(session, self.clock(), self.uids())
+            with self._fed_lock:
+                head = self.head
+            return {"transaction": self._open.id, "feed": self.feed, "head": head}
+
+    def exec(self, transaction: str, body: PlainData) -> list[str]:
+        """Executes, within the client's transaction of id `transaction`, `body`'s `expression`, a transaction's
+        expression, from the subterm its `remainder` names (the whole of it where none), over its input `frames`, each
+        a `References.OfFrame` (one, empty, where none are given), writing where `write` (the default): the stream
+        `txn.exec` gives, each item as JSON text (`Frames.item`), then `{"end": {}}`. Refused (400) where the store
+        refuses what no one frame met, or the body is malformed; the transaction stays open, for the client to abort.
+        Where the store fails otherwise, the transaction is dropped (503)."""
+        with self._lock:
+            held = self._holding(transaction)
+            held.last = time.monotonic()
+            try:
+                if not isinstance(body, dict) or not isinstance(body.get("expression"), dict):
+                    raise ValueError("an exec is {\"expression\", \"remainder\", \"frames\", \"write\"}, its expression "
+                                     "a transaction's, a JSON object")
+                plain = stamp(body["expression"], held.session, self.user, lambda: held.when, lambda: held.uid)
+                if held.first is None:
+                    held.first = plain.get("uid") if isinstance(plain.get("uid"), str) else None
+                if held.scope is None:  # its first: read, then the store's transaction opened
+                    expression = Plain.FromPlain(self.store).Transaction(plain)
+                    scope = self.store.transaction()
+                    held.txn, held.scope = scope.__enter__(), scope
+                else:
+                    expression = _read(self.store, held.txn, plain)
+                subterm = body.get("remainder")
+                given = expression if subterm is None else Remainder(expression, Frames.at(subterm))
+                inputs = [Frames.read_frame(self.store, frame) for frame in (body.get("frames") or [{}])]
+                items = [JSON.dumps(Frames.item(self.store, x)) for x in held.txn.exec(
+                    inputs, given, bool(body.get("write", True)))]
+            except REFUSALS as error:
+                raise Refused(400, _describe(error)) from error
+            except Exception as error:  # the store's own, a layer below it for one, whatever it raises
+                log.exception("a transaction's exec failed")
+                self._drop(held, "its exec failed")
+                raise Unavailable(f"the transaction could not be executed, and nothing is written: "
+                                  f"{type(error).__name__}: {error}") from error
+            finally:
+                held.last = time.monotonic()
+            return [*items, JSON.dumps(Frames.END)]
+
+    def commit(self, transaction: str) -> dict[str, Any]:
+        """Commits the client's transaction of id `transaction`, the layers below the store first: `{"head",
+        "journal", "after"}`, the change feed's position once it has, what the store's follow gave of it, a
+        `Changes.Journal` as plain data, empty where it changed nothing, and the feed's position just before it, so that
+        a client that had read the feed to there need not read it again. Refused (400) as the store refuses it, or
+        unavailable (503) where it fails otherwise: either way, nothing it wrote is kept."""
+        with self._lock:
+            held = self._holding(transaction)
+            self._open, self._committing = None, held
+            try:
+                if held.scope is not None:
+                    held.scope.__exit__(None, None, None)
+            except REFUSALS as error:
+                raise Refused(400, _describe(error)) from error
+            except Exception as error:
+                log.exception("a transaction could not be committed")
+                raise Unavailable(f"the transaction could not be committed, and nothing is written: "
+                                  f"{type(error).__name__}: {error}") from error
+            finally:
+                self._committing = None
+                self._free.notify_all()
+            with self._fed_lock:
+                return {"head": self.head, "journal": held.journal, "after": held.after}
+
+    def abort(self, transaction: str) -> dict[str, Any]:
+        """Drops the client's transaction of id `transaction`, nothing written: `{}`."""
+        with self._lock:
+            self._drop(self._holding(transaction), "aborted by its client")
+            return {}
+
+    # --- Logical views ---
+
     def view(self, kind: str, plain: PlainData, session: str | None = None) -> list[str]:
         """[CAP-012: logical view endpoints](mbse:mbse-basis/docs/capabilities/CAP-012.md): the frames a transaction gives, each a `References.OfFrame` filled as `kind` defines, as JSON. A
         transaction that writes is stamped first ([CAP-015: transaction provenance](mbse:mbse-basis/docs/capabilities/CAP-015.md), `stamp`), in `session`, and refused before it is
         executed where its frames cannot each bind the kind's symbols, since what it writes is committed below first."""
-        with self._lock:
+        with self._turn():
             if writes(plain):
                 unbound = _unbound(kind, plain)
                 if unbound:
                     raise Refused(400, unbound)
-            frames = self._execute(stamp(plain, session, self.user, self.clock, self.uids))
+            try:
+                frames = self.store.transaction(Plain.FromPlain(self.store).Transaction(
+                    stamp(plain, session, self.user, self.clock, self.uids)))
+            except REFUSALS as error:
+                raise Refused(400, _describe(error)) from error
+            except Exception as error:  # the store's own, a layer below it for one, whatever it raises
+                log.exception("a transaction could not be committed")
+                raise Unavailable(f"the transaction could not be committed, and nothing is written: "
+                                  f"{type(error).__name__}: {error}") from error
             missing = _missing(kind, frames)
             if missing:
                 raise Refused(400, missing)
@@ -351,21 +514,6 @@ class Service:
                 if witnessed is not None:
                     out.append(JSON.ToJSON(self.store)(witnessed.as_schema(), witnessed))
             return out
-
-
-def _referenced(plain: PlainData) -> Iterator[PlainData]:
-    """The path of each object a transaction's expression binds to a symbol by its reference."""
-    if isinstance(plain, dict):
-        for name, value in plain.items():
-            if name == "symbols" and isinstance(value, dict):
-                for bound in value.values():
-                    path = bound.get("reference", {}).get("path") if isinstance(bound, dict) else None
-                    if isinstance(path, dict) and path.get("singleton") != ".":  # a schema object's is not loaded
-                        yield path
-            yield from _referenced(value)
-    elif isinstance(plain, list):
-        for value in plain:
-            yield from _referenced(value)
 
 
 PATTERNS = {"map": "symbols", "upsert": "exists", "update": "apply"}  # where each term that has one gives its patterns
@@ -418,19 +566,20 @@ def _lines(lines: list[str]) -> Iterator[str]:
         yield line + "\n"
 
 
-def app(installs: Iterable[Install | PlainData] = (), below: Any = None, seed: Install | None = None, *,
-        origins: Iterable[str] = (), window: int = WINDOW, user: str = "demo", clock: Clock = _now,
-        uids: Uids = _uuid) -> FastAPI:
-    """The FastAPI application over a `Service` of the store given `below` (one in memory where None), which
-    `installs` give their schemas and `seed`, where given, its data. It holds the service as `app.state.service`.
-    `origins` are those a browser may call it from (CORS), the UI's: none by default."""
-    service = Service(installs, below, seed, window=window, user=user, clock=clock, uids=uids)
+def app(installs: Iterable[Install | PlainData] = (), store: Any = None, seed: Install | None = None, *,
+        poll: Callable[[], Any] | None = None, origins: Iterable[str] = (), window: int = WINDOW, user: str = "demo",
+        clock: Clock = _now, uids: Uids = _uuid, lease: float = LEASE) -> FastAPI:
+    """The FastAPI application over a `Service` of `store` (one in memory where None), which `installs` give their
+    schemas and `seed`, where given, its data; `poll`, where given, gives the store what others committed below it. It
+    holds the service as `app.state.service`. `origins` are those a browser may call it from (CORS), the UI's: none by
+    default."""
+    service = Service(installs, store, seed, poll=poll, window=window, user=user, clock=clock, uids=uids, lease=lease)
     api = FastAPI(title="mbse-rest", description="A store served over REST, and logical views over it (mbse-basis "
-                                                 "FEA-003: no-code logical views, CAP-290)")
+                                                 "FEA-003: no-code logical views, CAP-290, CAP-308)")
     api.state.service = service
     allowed = list(origins)
     if allowed:
-        api.add_middleware(CORSMiddleware, allow_origins=allowed, allow_methods=["GET", "POST"],
+        api.add_middleware(CORSMiddleware, allow_origins=allowed, allow_methods=["GET", "POST", "DELETE"],
                            allow_headers=["accept", "content-type", SESSION_HEADER])
 
     @api.exception_handler(HTTPException)
@@ -464,16 +613,6 @@ def app(installs: Iterable[Install | PlainData] = (), below: Any = None, seed: I
     def schemas() -> Any:
         return answer(service.schemas)
 
-    @api.post("/schemas")
-    async def install(request: Request) -> Any:
-        try:
-            plain = await body_of(request, "an install transaction's expression")
-        except Refused as error:
-            return _error(error.status, str(error))
-        if not isinstance(plain, dict):
-            return _error(400, "an install is a transaction's expression, a JSON object")
-        return await threaded(lambda: service.install(plain))
-
     @api.get("/schemas/{name}")
     def schema(name: str) -> Any:
         def call() -> Any:
@@ -482,29 +621,33 @@ def app(installs: Iterable[Install | PlainData] = (), below: Any = None, seed: I
             return _error(501, UNWRITTEN)
         return answer(call)
 
-    @api.post("/documents")
-    async def document(request: Request) -> Any:
-        try:
-            path = await body_of(request, "an object's path")
-        except Refused as error:
-            return _error(error.status, str(error))
-        return await threaded(lambda: JSONResponse(service.document(path)))
-
     @api.post("/transactions")
-    async def transaction(request: Request) -> Any:
+    async def open_transaction(request: Request) -> Any:
+        return await threaded(lambda: service.open(request.headers.get(SESSION_HEADER)))
+
+    @api.post("/transactions/{transaction}/exec")
+    async def exec_transaction(transaction: str, request: Request) -> Any:
         try:
-            plain = await body_of(request, "a transaction's expression")
+            body = await body_of(request, "an exec, {\"expression\", \"remainder\", \"frames\", \"write\"}")
         except Refused as error:
             return _error(error.status, str(error))
-        return await threaded(lambda: service.transaction(plain, request.headers.get(SESSION_HEADER)))
+        return await threaded(lambda: StreamingResponse(_lines(service.exec(transaction, body)), media_type=NDJSON))
+
+    @api.post("/transactions/{transaction}/commit")
+    async def commit_transaction(transaction: str) -> Any:
+        return await threaded(lambda: service.commit(transaction))
+
+    @api.delete("/transactions/{transaction}")
+    async def abort_transaction(transaction: str) -> Any:
+        return await threaded(lambda: service.abort(transaction))
 
     @api.get("/changes")
     async def changes(after: str | None = None, feed: str | None = None, wait: float = 0.0) -> Any:
         return await threaded(lambda: service.changes(after, feed, wait))
 
     @api.get("/views")
-    def templates() -> Any:
-        return answer(service.templates)
+    async def templates() -> Any:
+        return await threaded(service.templates)
 
     @api.post("/views/{kind}")
     async def view(kind: str, request: Request) -> Any:
@@ -545,27 +688,28 @@ def seed_of(module: str | ModuleType) -> Install | None:
 
 
 def store_of(name: str) -> Any:
-    """The store below by name: `memory`, a store in memory, or `module:attribute`, a class or function that makes one
-    when called with no arguments (its own configuration is its own, from the environment for instance), a store
-    below (mbse-schemas' `Stores.Below`): `mbse.Persistence.DynamoDB.Store:Store`, mbse-dynamodb's, for one."""
+    """The store the service serves, by name: `memory`, a store in memory, or `module:attribute`, a class or function
+    that makes one when called with no arguments (its own configuration is its own, from the environment for instance):
+    a store, with its `transaction` and its `follow`, the layer a cache layer over the service stacks on.
+    `mbse.Persistence.DynamoDB.Store:Store`, mbse-dynamodb's, for one."""
     if name.strip().lower() in ("", "memory"):
         return Builders.Store()
     module, _, attribute = name.partition(":")
     if not attribute:
         raise ValueError(f"a store below is 'memory' or 'module:attribute', not {name!r}")
     made = getattr(importlib.import_module(module), attribute)()
-    if not isinstance(made, Stores.Below):
-        raise TypeError(f"{name} makes no store below (mbse-schemas' Stores.Below)")
+    if not all(callable(getattr(type(made), member, None)) for member in ("transaction", "follow")):
+        raise TypeError(f"{name} makes no store: one with its transaction and its follow")
     return made
 
 
-def fresh(below: Any) -> bool:
-    """Whether a store below has committed nothing, so that an app's seed is run in it: one that gives the position of
+def fresh(store: Any) -> bool:
+    """Whether a store has committed nothing, so that an app's seed is run in it: one that gives the position of
     the last transaction it committed, its id (`head()`, as mbse-dynamodb's does), where it gives none; one that keeps
     none, as a store in memory, made new with the service, always. A seed is not run again over what it wrote, which may
     have been edited since."""
-    head = getattr(type(below), "head", None)  # a method of its class: a store's own attributes are its paths
-    return not callable(head) or below.head() is None
+    head = getattr(type(store), "head", None)  # a method of its class: a store's own attributes are its paths
+    return not callable(head) or store.head() is None
 
 
 def _flag(value: str) -> bool:
@@ -585,8 +729,10 @@ def from_environment(environ: Mapping[str, str] | None = None) -> FastAPI:
 
     - `MBSE_REST_APP`: the app's package, its installs found by `installs_of` (`mbse.Demos.Apps.WorkTracker`);
     - `MBSE_REST_SEED`: whether its `Seed.seed` runs at start (`1`), where the store below is new (`fresh`);
-    - `MBSE_REST_STORE`: the store below, `store_of`'s name (`memory`);
+    - `MBSE_REST_STORE`: the store served, `store_of`'s name (`memory`), polled where it is followed by polling
+      (`poll()`);
     - `MBSE_REST_WINDOW`: how many of the latest committed transactions the change feed keeps (`10000`);
+    - `MBSE_REST_LEASE`: how long a client's transaction is kept open with no request on it, in seconds (`60`);
     - `MBSE_REST_ORIGINS`: the UI's origins a browser may call from, comma-separated (none);
     - `MBSE_REST_USER`: the identity each write is stamped with (`demo`).
 
@@ -597,14 +743,16 @@ def from_environment(environ: Mapping[str, str] | None = None) -> FastAPI:
         if name in env:
             raise ValueError(f"{name} is retired: {instead}")
     module = env.get("MBSE_REST_APP", WORK_TRACKER)
-    below = store_of(env.get("MBSE_REST_STORE", "memory"))
-    seed = seed_of(module) if _flag(env.get("MBSE_REST_SEED", "1")) and fresh(below) else None
+    store = store_of(env.get("MBSE_REST_STORE", "memory"))
+    seed = seed_of(module) if _flag(env.get("MBSE_REST_SEED", "1")) and fresh(store) else None
     origins = [origin.strip() for origin in env.get("MBSE_REST_ORIGINS", "").split(",") if origin.strip()]
-    return app(installs_of(module), below, seed, origins=origins,
-               window=int(env.get("MBSE_REST_WINDOW", str(WINDOW))), user=env.get("MBSE_REST_USER", "demo"))
+    poll = store.poll if callable(getattr(type(store), "poll", None)) else None
+    return app(installs_of(module), store, seed, poll=poll, origins=origins,
+               window=int(env.get("MBSE_REST_WINDOW", str(WINDOW))), user=env.get("MBSE_REST_USER", "demo"),
+               lease=float(env.get("MBSE_REST_LEASE", str(LEASE))))
 
 
-def work_tracker(below: Any = None, **options: Any) -> FastAPI:
+def work_tracker(store: Any = None, **options: Any) -> FastAPI:
     """The stub server: the service over the demo app's store (mbse-demo-apps, a development dependency), its schemas
-    installed and seeded, over `below`, one in memory where None."""
-    return app(installs_of(WORK_TRACKER), below, seed_of(WORK_TRACKER), **options)
+    installed and seeded, `store`, one in memory where None."""
+    return app(installs_of(WORK_TRACKER), store, seed_of(WORK_TRACKER), **options)

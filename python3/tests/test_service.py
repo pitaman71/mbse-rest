@@ -1,4 +1,4 @@
-"""The service: its endpoints (mbse-basis CAP-012: logical view endpoints), its views (Views) and its store below (CAP-290)."""
+"""The service: its endpoints (mbse-basis CAP-012: logical view endpoints), its views (Views) and the store it serves (CAP-290)."""
 
 from __future__ import annotations
 
@@ -150,9 +150,9 @@ def test_errors(client):
 
 def test_an_edit_is_committed_below_and_kept():
     """CAP-014: an edit through the detail view writes the object's properties, gives its detail as the edit left it,
-    is committed by the store below, and survives a restart over it; None clears a property."""
+    is committed by the store, and survives a restart over it; None clears a property."""
     client = TestClient(Service.work_tracker())
-    below = client.app.state.service.below
+    below = client.app.state.service.store
     store = store_of(client)
     body = Conformance._edit(store, lambda s: by_path(s, TSK_1), {"title": "**Bold**", "description": None})
     [frame] = frames(client.post("/views/detail", json=body))
@@ -176,20 +176,20 @@ def by_path(store, path):
 
 
 def test_a_write_after_a_restart_of_an_app_with_a_history():
-    """A service over a store below that already holds the write's session, as after a restart, commits it."""
+    """A service over a store that already holds the write's session, as after a restart, commits it."""
     client = TestClient(Service.work_tracker())
     body = Conformance._edit(store_of(client), lambda s: by_path(s, TSK_1), {"title": "Once"})
-    frames(client.post("/views/detail", json=body))  # its session, `demo:default`, now held below
-    again = TestClient(Service.app(Service.installs_of(Service.WORK_TRACKER), client.app.state.service.below))
+    frames(client.post("/views/detail", json=body))  # its session, `demo:default`, now held in the store
+    again = TestClient(Service.app(Service.installs_of(Service.WORK_TRACKER), client.app.state.service.store))
     body = Conformance._edit(store_of(client), lambda s: by_path(s, TSK_1), {"title": "Again"})
     frames(again.post("/views/detail", json=body))
 
 
 def test_a_proposed_object_is_created_with_its_entry_and_owned():
     """CAP-018: a reply proposed through a thread's replies is made with its entry, placed in its directory (its
-    ID given there), committed by the store below, and the thread's detail given back with it."""
+    ID given there), committed by the store, and the thread's detail given back with it."""
     client = TestClient(Service.work_tracker())
-    below = client.app.state.service.below
+    below = client.app.state.service.store
     store = store_of(client)
     body = Conformance._propose(store, lambda s: by_path(s, CMT_1), "replies", "reply", "work.Comment",
                                 {"text": "Closing this.", "resolves_thread": True})
@@ -207,7 +207,7 @@ def test_a_proposed_object_is_created_with_its_entry_and_owned():
 
 def _stamped_edit():
     """An edit of the thread CMT-001 through a service with a fixed clock and uid, in the session `tab-7`: the store,
-    the store below, and the detail frame the edit gave."""
+    the store again, and the detail frame the edit gave."""
     import datetime
     moment = datetime.datetime(2026, 10, 26, 9, 15, tzinfo=datetime.timezone.utc)
     client = TestClient(Service.work_tracker(user="ada", clock=lambda: moment, uids=lambda: "tx-1"))
@@ -215,13 +215,13 @@ def _stamped_edit():
     body = Conformance._edit(store, lambda s: by_path(s, CMT_1), {"text": "Edited."})
     body["session"] = {"locale": "en-GB"}  # the client's part
     [frame] = frames(client.post("/views/detail", json=body, headers={"x-mbse-session": "tab-7"}))
-    return store, client.app.state.service.below, frame
+    return store, client.app.state.service.store, frame
 
 
 def test_a_write_is_stamped_and_its_provenance_is_in_the_detail():
     """CAP-015: the service stamps a write's `when`, uid, session id and identity, keeping the client's locale; the
     detail of a comment carries the record that created it and the one that last wrote it, with their session and
-    identity; the store below records the same transaction, found by its uid, not one of its own."""
+    identity; the store records the same transaction, found by its uid, not one of its own."""
     _, below, frame = _stamped_edit()
     with below.transaction():
         records = below.singleton("Provenance.Transactions")
@@ -238,7 +238,7 @@ def test_a_write_is_stamped_and_its_provenance_is_in_the_detail():
 
 
 def test_a_restart_reads_the_same_records():
-    """CAP-015: a restart over the same store below reads the same records from it, on demand."""
+    """CAP-015: a restart over the same store reads the same records from it, on demand."""
     store, below, _ = _stamped_edit()
     replayed = store_of(TestClient(Service.app(Service.installs_of(Service.WORK_TRACKER), below)))
 

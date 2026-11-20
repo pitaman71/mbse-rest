@@ -15,16 +15,28 @@ It consolidates and verifies the entire interface in one repository: the server 
 capabilities: [CAP-002: named schema list](https://github.com/pitaman71/mbse-basis/blob/main/docs/capabilities/CAP-002.md) to [CAP-004: logical view templates](https://github.com/pitaman71/mbse-basis/blob/main/docs/capabilities/CAP-004.md) and [CAP-012: logical view endpoints](https://github.com/pitaman71/mbse-basis/blob/main/docs/capabilities/CAP-012.md), over the stack under [FEA-006: persistence](https://github.com/pitaman71/mbse-basis/blob/main/docs/features/FEA-006.md), as
 [CAP-290: a service's store stacked, with no snapshot](https://github.com/pitaman71/mbse-basis/blob/main/docs/capabilities/README.md#CAP-290) and [the stacked stores proposal](https://github.com/pitaman71/mbse-basis/blob/main/proposals/STACKED-STORES.md) state.
 
-The service's store is a `Builders.Store` over a store below it, a database's in production (mbse-dynamodb's), one in
-memory by default: it loads what it is asked for, writes each transaction through, and persists by what the store below
-keeps alone, so that no snapshot is taken or read. Its endpoints, each in `Service.py`'s module docstring, are those a
-client needs to be a store below: an object's document by path (`POST /documents`), a transaction committed or refused
-(`POST /transactions`), the change feed (`GET /changes`), each committed transaction as mbse-schemas' `follow` gives it,
-a one-transaction `Changes.Journal`, read after a position, a transaction's `id`, with
-[mbse-journals](https://github.com/pitaman71/mbse-journals), and the schemas as the install transactions
-that made them (`GET /schemas`, `POST /schemas`); and the logical views ([FEA-003: no-code logical views](https://github.com/pitaman71/mbse-basis/blob/main/docs/features/FEA-003.md)). The contract
-is what mbse-basis' features and capabilities say, as built; the [golden corpus](conformance/README.md) holds real
-requests and responses for clients to develop against.
+The service serves a store, a database's in production (mbse-dynamodb's), one in memory by default, as the layer below
+a cache layer in another process ([the stacked stores proposal, a cache layer and the layer below](https://github.com/pitaman71/mbse-basis/blob/main/proposals/STACKED-STORES.md#a-cache-layer-and-the-layer-below),
+its third stage; [CAP-308: stacking by mutation transactions, in one round trip](https://github.com/pitaman71/mbse-basis/blob/main/docs/capabilities/README.md#CAP-308)): it persists by what that store keeps alone, so that no snapshot is
+taken or read. Its endpoints, each in `Service.py`'s module docstring, are the store's transaction, held open across a
+client's requests, and its `exec`; the change feed; the install transactions it was given; and the logical views
+([FEA-003: no-code logical views](https://github.com/pitaman71/mbse-basis/blob/main/docs/features/FEA-003.md)). A client's transaction is a request sequence:
+
+| Request | What it does | Answer |
+|---|---|---|
+| `POST /transactions` | opens a transaction of the store for the client's, once no other is open | `{"transaction": id, "feed", "head"}` |
+| `POST /transactions/{id}/exec` | `txn.exec` within it: `{"expression", "remainder", "frames", "write"}`, the expression as `Plain.ToPlain(store).Transaction` writes it, the subterm the remainder starts at, the input frames, each a `References.OfFrame` | the stream of frames, one `References.OfItem` a line (NDJSON), as mbse-schemas writes it, the last `{"end": {}}` |
+| `POST /transactions/{id}/commit` | commits it, the layers below the store first | `{"head", "journal", "after"}`: what the store's follow gave of it, a `Changes.Journal` |
+| `DELETE /transactions/{id}` | drops it, nothing written | `{}` |
+| `GET /changes?feed=f&after=id&wait=s` | the change feed: each committed transaction as mbse-schemas' `follow` gives it, a one-transaction `Changes.Journal`, read after a position, a transaction's `id`, with [mbse-journals](https://github.com/pitaman71/mbse-journals) | `{"feed", "head", "journal"}` |
+| `GET /schemas` | the install transactions the service was given | a list of transactions' expressions |
+
+One client's transaction is open at a time: another's waits for it, up to 30 seconds, else is refused (503), and one
+left idle (`MBSE_REST_LEASE`, 60 seconds) is dropped. A frame crosses as mbse-schemas writes it, with its scope, its
+remainder, its errors and its journal; what has no reference, a counted object, crosses refused: the frame comes over
+with that symbol left out and an error annotated, which the transaction raises at its end. The contract is what
+mbse-basis' features and capabilities say, as built; the [golden corpus](conformance/README.md) holds real requests and
+responses of the logical views for clients to develop against.
 
 It depends on [mbse-schemas](https://github.com/pitaman71/mbse-schemas) and, the service,
 [mbse-journals](https://github.com/pitaman71/mbse-journals), as checkouts beside this repository, and on
@@ -39,34 +51,41 @@ MBSE_REST_ORIGINS=http://localhost:5173 MBSE_REST_PORT=8080 uv run python -m mbs
 ```
 
 It serves any MBSE app: `MBSE_REST_APP` names the app's package (its `Schemas.install`, or `Schemas.INSTALLS`, then
-its `Seed.seed`, run where the store below is new), `MBSE_REST_STORE` the store below (`memory`, or `module:attribute`,
+its `Seed.seed`, run where the store is new), `MBSE_REST_STORE` the store served (`memory`, or `module:attribute`,
 `mbse.Persistence.DynamoDB.Store:Store` for mbse-dynamodb's, configured by its own `MBSE_DYNAMODB_*`),
-`MBSE_REST_ORIGINS` the UI's origins for CORS. Every variable is in `Service.from_environment`; `Service.app(installs,
-below, seed)` serves an app from code. `MBSE_REST_PLUGIN` and `MBSE_REST_SNAPSHOT_EVERY` are retired, and refused.
+`MBSE_REST_ORIGINS` the UI's origins for CORS, `MBSE_REST_LEASE` how long an idle client's transaction is kept. Every
+variable is in `Service.from_environment`; `Service.app(installs, store, seed)` serves an app from code.
+`MBSE_REST_PLUGIN` and `MBSE_REST_SNAPSHOT_EVERY` are retired, and refused.
 
 ## Using the client
 
-The service as a store below (`Remote`), mbse-schemas' public store-below interface (`Stores.Below`,
-[CAP-306: a public store-below interface](https://github.com/pitaman71/mbse-basis/blob/main/docs/capabilities/README.md#CAP-306)), and an app's store over it, a plain `Builders.Store` given the service's schemas
-(`Store`):
+The service as a layer below (`Remote`), a store holding the schemas alone whose transaction is the service's, and an
+app's store over it, a cache layer (`Store`), given the installs the service was given, and what others commit by the
+change feed, in a follow mode chosen as it is made: `CATCH_UP`, the default, reads the feed to its head before each
+transaction; `POLLED` on `poll()` alone, reading what it holds a poll behind.
 
 ```typescript
-import { Remote, Store } from "@mbse/rest/Services/Rest/Store";
+import { POLLED, Remote, Store } from "@mbse/rest/Services/Rest/Store";
 
+const store = Store("http://localhost:8000");   // a cache layer over the service, caught up before each transaction
+store.transaction(install);                     // its own schemas: the service's store first, then the client, then it
+const frames = store.transaction(query);        // its frames come from the service, in one transaction of its
 const remote = new Remote("http://localhost:8000");
-const store = Store(remote);       // a Builders.Store over it: the service's schemas, from the installs that made them
-store.transaction(install);        // its own schemas, run by the service first, as any store below runs them
-remote.poll();                     // what others committed since, given to the store
+const polled = Store(remote, POLLED);           // what others commit, on remote.poll() alone
 ```
 
 ```python
-from mbse.Services.Rest.Store import Remote, Store
+from mbse.Services.Rest.Store import POLLED, Remote, Store
 
-remote = Remote("http://localhost:8000")
-store = Store(remote)              # Builders.Store(remote), given the service's schemas
-remote.poll()
+store = Store("http://localhost:8000")
+with store.transaction() as txn:           # one transaction of the service's, held open across each exec
+    for item in txn.exec(Frame(), query, True):
+        ...
+polled = Store(Remote("http://localhost:8000"), follow=POLLED)
 ```
 
+A cache layer reads what it holds alone: an object it made, or a follow gave it; every other read is a transaction's
+frames, which come from the service ([the completeness rule](https://github.com/pitaman71/mbse-basis/blob/main/proposals/STACKED-STORES.md#a-cache-layer-and-the-layer-below)).
 mbse-schemas' store interface is synchronous, and so is the client: in Node, each request waits on a worker thread
 that fetches; in a browser, it is a synchronous `XMLHttpRequest`, best made from a worker. The logical views:
 
@@ -89,9 +108,12 @@ cd python3 && uv sync --all-extras && uv run pytest
 cd typescript5 && npm install && npm run typecheck && npm test
 ```
 
-Both run mbse-schemas' suite BLW from the sibling checkout, unchanged but for the store below, which is the client of a
-service over a store in memory: Python's in this process, TypeScript's against the Python service, which its tests
-start (`python3/tests/serve.py`). What a follow gives is held to mbse-schemas' own suites (BLW, and CHG-14): a journal is
+Both run mbse-schemas' suite BLW from the sibling checkout, with mbse-rest in its stack: Python's with its cache layer
+over the client of a service, in this process, that serves the suite's layer below; TypeScript's with its layer below a
+cache layer over the client of a service of its own, against the Python service, which its tests start
+(`python3/tests/serve.py`). Each case runs as mbse-schemas wrote it, but for the few lines `tests/test_below.py` and
+`tests/store.test.ts` list, each saying why. Suite EXE is not run over REST: its cases read the store through builders
+within the transaction, which a client holding no data cannot. What a follow gives is held to mbse-schemas' own suites (BLW, and CHG-14): a journal is
 not kept in a store, so mbse-journals' suite is not run over one. mbse-dynamodb's tests run the service over its store.
 
 ---
