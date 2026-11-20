@@ -39,7 +39,7 @@
 
 import { Builders, JSON as J, Plain, Transactions } from "@mbse/schemas/Framework";
 import { LookupError, ValueError } from "@mbse/schemas/Framework/Errors";
-import { Gone, ServiceError, TransportError, Unavailable } from "./Client.js";
+import { ServiceError, TransportError, Unavailable } from "./Client.js";
 import * as Frames from "./Frames.js";
 
 const { Frame, Observable, Remainder } = Transactions;
@@ -402,4 +402,3 @@ export function Store(transport: Transport | string | Remote, follow: string = C
   return store;
 }
 
-export { Gone, LookupError };
