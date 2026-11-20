@@ -1,7 +1,8 @@
-"""mbse-schemas' suite BLW (`tests/36_Below.ipynb`, a store given a store below, mbse-basis CAP-283 to CAP-285), each case
-as mbse-schemas wrote it, run with mbse-rest's client as the store below in place of the store in memory: its setup's
-`below = B.Store()` alone is changed (CAP-290). The client is over a service of its own, over a store in memory, which
-starts holding nothing: the suite's install, run in the client, is sent to it."""
+"""mbse-schemas' suite BLW (`tests/36_Below.ipynb`, a cache layer over a layer below, the stacked stores proposal's
+second stage), each case as mbse-schemas wrote it, run with mbse-rest between the two layers: the cache layer is
+mbse-rest's client store (`Store.Store`), over the service, which serves the suite's layer below, `lower`, in this
+process. Where the suite makes a cache layer over `lower`, `B.Store(lower)`, it makes it over REST, `over_rest(lower)`;
+nothing else is changed but what `CHANGED` lists, each a line that reads what crossing a process changes."""
 
 from __future__ import annotations
 
@@ -13,30 +14,55 @@ from conftest import transport
 from notebooks import cells, namespace
 
 SUITE = cells("mbse-schemas", "36_Below.ipynb")
-IN_MEMORY = "below = B.Store()\n"
+OVER = "B.Store(lower)"
+
+CHANGED = {
+    # The cache layer's layer below is the client, which the service serves `lower` to.
+    "BLW-01": [("assert cache._below is lower and", "assert cache._below is served[lower] and")],
+    # What has no reference crosses refused: a frame binding a counted object comes over with that symbol left out,
+    # annotated with why, and one binding a schema object the client does not hold likewise, so that the transaction
+    # raises it at its end, where in a process the symbol is bound refused, raising where it is read.
+    "BLW-12": [
+        ("""        with raises(LookupError, match="symbol 'n' of the frame: a counted 'crm.Note' has no reference"):
+            noted["n"]""", """        assert "n" not in noted and noted.errors[0].message.startswith(
+            "symbol 'n' of the frame: a counted 'crm.Note' has no reference")"""),
+        ("""(rack,) = cache.transaction(racks)
+with raises(LookupError, match="symbol 's' of the frame: a schema object the layer it goes to does not hold"):
+    rack["s"]""", """with raises(LookupError, match="symbol 's' of the frame: a schema object the layer it goes to does not hold"):
+    cache.transaction(racks)"""),
+    ],
+}
+
+
+def over_rest(lower):
+    """A cache layer over mbse-rest's client of a service, in this process, serving `lower`."""
+    api = Service.app(store=lower)
+    store = Store.Store(transport(api))
+    served[lower] = store._below
+    return store
+
+
+served = {}
 
 
 @pytest.fixture(scope="module")
 def run():
-    """Runs the setup cell, its store below mbse-rest's client, then gives each case's cell to run, in order."""
+    """Runs the setup cell, its cache layers over REST, then gives each case's cell to run, in order."""
     ((_, setup), *_) = SUITE
-    assert setup.count(IN_MEMORY) == 1
+    assert setup.count(OVER) == 1
     scope = namespace()
-    api = Service.app()
-    scope["served_over_rest"] = lambda: Store.Store(transport(api))
-    exec(setup.replace(IN_MEMORY, "below = served_over_rest()\n"), scope)
-    scope["__service__"] = api.state.service
-    return lambda source: exec(source, scope)
+    scope.update(over_rest=over_rest, served=served)
+    exec(setup.replace(OVER, "over_rest(lower)"), scope)
+    return lambda case, source: exec(_changed(case, source).replace(OVER, "over_rest(lower)"), scope)
 
 
-@pytest.mark.parametrize("source", [pytest.param(source, id=case) for case, source in SUITE[1:]])
-def test_blw_case_over_rest(run, source):
-    run(source)
+def _changed(case, source):
+    for before, after in CHANGED.get(case, []):
+        assert before in source, (case, before)
+        source = source.replace(before, after)
+    return source
 
 
-def test_the_service_holds_what_the_suite_wrote_below(run):
-    """What the suite wrote to the store below, the client, the service's store below holds, and its feed reported."""
-    run("with __service__.below.transaction(), below.transaction():\n"
-        "    assert sorted(e.key.get() for e in __service__.below.singleton('crm.TheBook').contacts) == "
-        "sorted(e.key.get() for e in below.singleton('crm.TheBook').contacts) != []")
-    run("assert __service__.head is not None and 'crm.Person' in __service__.names()")
+@pytest.mark.parametrize("case,source", [pytest.param(case, source, id=case) for case, source in SUITE[1:]])
+def test_blw_case_over_rest(run, case, source):
+    run(case, source)
