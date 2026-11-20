@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mbse-rest"
-version = "0.3.2"
+version = "0.4.0"
 description = "A store served over REST, and logical views over it (mbse-basis FEA-003: no-code logical views, CAP-290)."
 requires-python = ">=3.11"
 dependencies = [

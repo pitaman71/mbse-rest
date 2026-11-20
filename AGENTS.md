@@ -25,13 +25,16 @@ directory that holds `mbse/`; npm: the package's directory), where the package s
 
 ## This repository
 
-- `Service.py` is the service, `Store.py` and `Store.ts` the client, `Remote`, the service as a store below
-  (mbse-schemas' `Stores.Below`), and `Store`, a plain `Builders.Store` over it, the same in both languages: a change
-  to one is made to the other. Both use mbse-schemas' public interface alone: no private name of it, nor a subclass
-  overriding one (mbse-basis [CAP-306: a public store-below interface](https://github.com/pitaman71/mbse-basis/blob/main/docs/capabilities/README.md#CAP-306)). Their deliberate differences: the
+- `Service.py` is the service, which serves a store's transaction, held open across a client's requests, and its
+  `exec`; `Frames.py` and `Frames.ts` write and read a frame stream as mbse-schemas writes it (`References.OfItem`);
+  `Store.py` and `Store.ts` the client, `Remote`, the service as a layer below (a `Builders.Store` holding the schemas
+  alone, whose transaction is the service's), and `Store`, a cache layer over it, in a follow mode, the same in both
+  languages: a change to one is made to the other. Both use mbse-schemas' public interface alone: no private name of
+  it, nor a subclass overriding one (mbse-basis [CAP-306: a public store-below interface](https://github.com/pitaman71/mbse-basis/blob/main/docs/capabilities/README.md#CAP-306)). Their deliberate differences: the
   transport, synchronous in both since the store interface is, Python's through the standard library, TypeScript's
-  waiting on a worker thread in Node or a synchronous `XMLHttpRequest` in a browser; and the errors for a status,
-  Python's `Store.ServiceError`, `Gone` and `Unavailable`, TypeScript's `Client.ts`'s, which the view calls share.
+  waiting on a worker thread in Node or a synchronous `XMLHttpRequest` in a browser; `exec`'s stream, a list's
+  iterator in Python, an observable in TypeScript, as mbse-schemas' are; and the errors for a status, Python's
+  `Store.ServiceError`, `Gone` and `Unavailable`, TypeScript's `Client.ts`'s, which the view calls share.
 - `Views.py` and `Views.ts` are the contract's two halves. A change to what the server answers regenerates
   [the golden corpus](conformance/README.md), committed with it, and is reviewed as a change to the contract:
   mbse-react and mbse-dynamodb build against it.
