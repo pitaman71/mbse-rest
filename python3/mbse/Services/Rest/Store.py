@@ -15,10 +15,12 @@ for as long as its own (`Service`'s request sequence):
   the expression given; the scope's end commits it (`POST /transactions/{id}/commit`), a refusal raised as the error
   the service's store raised (`ValueError`, `TypeError` or `LookupError`), or, where it raises, drops it
   (`DELETE /transactions/{id}`). What the service's follow gave of it as it committed is given to this store's
-  followers within the commit, so that a cache layer over it takes it into its own transaction.
-- An install, an expression binding a symbol of a meta-schema, is run in this store too, within a transaction of its
-  own that commits with the service's, so that it holds the schemas of the stores above it: an install a cache layer
-  over it runs reaches it, and the service, first.
+  followers within the commit, so that a cache layer over it takes it into its own transaction; where the change feed
+  was read to just before it, the feed's position moves past it, else the feed gives it again, in its place among
+  others', where applying it again changes nothing.
+- An install, an expression binding a symbol of a meta-schema, executed from its root term, is run in this store too,
+  within a transaction of its own that commits after the service's, so that it holds the schemas of the stores above
+  it: an install a cache layer over it runs reaches it, and the service, first.
 - `follow(follower)` gives `follower` each transaction the service's store committed, as a `Changes.Journal` of that
   one transaction, as plain data, once each, in the order it committed them, read from its change feed
   (`GET /changes`) after the last it was given, by its id, on `poll()`.
@@ -188,12 +190,11 @@ def _installs(remote: Remote, plain: PlainData) -> bool:
 
 class Transaction:
     """A transaction of the service's store, open for one of this store's: what a cache layer over the store is given
-    by `transaction()`. It lives as long as its scope."""
+    by `transaction()`. It lives as long as its scope, within this store's own transaction, `local`, which runs the
+    installs it is given and commits after the service's."""
 
-    def __init__(self, remote: Remote, id: str) -> None:
-        self._remote, self.id = remote, id
-        self._local: Any = None  # this store's own transaction, open where it has run an install
-        self._local_txn: Any = None
+    def __init__(self, remote: Remote, id: str, local: Any) -> None:
+        self._remote, self.id, self._local = remote, id, local
         self.ended = False
 
     def exec(self, frame: Any, remainder: Any, allow_write: bool) -> Iterator[Any]:
@@ -208,8 +209,11 @@ class Transaction:
         expression = remainder.transaction if isinstance(remainder, Remainder) else remainder
         plain = Plain.ToPlain(remote).Transaction(expression)
         inputs = [frame] if isinstance(frame, Mapping) else list(frame)
-        if (not isinstance(remainder, Remainder) or not remainder.at) and _installs(remote, plain):
-            self._install(expression, inputs, allow_write)
+        if (not isinstance(remainder, Remainder) or len(remainder.at) <= 3) and _installs(remote, plain):
+            made = [item for item in self._local.exec(inputs, expression, allow_write) if isinstance(item, Frame)]
+            failed = next((each for each in made if each.errors), None)
+            if failed is not None and failed.errors[0].error is not None:
+                raise failed.errors[0].error
         body = {"expression": plain, "frames": [Frames.frame(remote, given) for given in inputs], "write": allow_write}
         if isinstance(remainder, Remainder):
             body["remainder"] = remainder.subterm
@@ -219,46 +223,22 @@ class Transaction:
             raise Unavailable(503, "the service's stream ended before its completion marker: nothing it gave is whole")
         return iter([Frames.read_item(remote, line, expression) for line in lines[:-1]])
 
-    def _install(self, expression: Any, inputs: list[Any], allow_write: bool) -> None:
-        """Runs an install in this store too, within a transaction of its own, which commits with the service's."""
-        if self._local is None:
-            self._local = Builders.Store.transaction(self._remote)
-            self._local_txn = self._local.__enter__()
-        made = [item for item in self._local_txn.exec(inputs, expression, allow_write) if isinstance(item, Frame)]
-        failed = next((made_frame for made_frame in made if made_frame.errors), None)
-        if failed is not None and failed.errors[0].error is not None:
-            raise failed.errors[0].error
-
     def commit(self) -> None:
-        """Commits the service's transaction, then this store's own; what the service's follow gave of it given to the
-        followers between. A refusal raised, as the service's store raised it, nothing committed."""
+        """Commits the service's transaction; what the service's follow gave of it given to the followers. A refusal
+        raised, as the service's store raised it, nothing committed."""
         self.ended = True
-        try:
-            committed = self._remote._rest.call("POST", f"/transactions/{self.id}/commit")
-        except BaseException as error:
-            self._close_local(error)
-            raise
+        rest = self._remote._rest
+        committed = rest.call("POST", f"/transactions/{self.id}/commit")
         if committed["journal"]:
-            self._remote._rest.give(committed["journal"])
-        self._close_local(None)
+            rest.give(committed["journal"])
+            if committed.get("after") == rest.head:  # read to just before it: the feed holds nothing else to it
+                rest.head = committed["journal"][-1]["id"]
 
-    def abort(self, error: BaseException) -> None:
-        """Drops the service's transaction and this store's own; a failure to reach the service is left to it, which
-        drops one left idle."""
+    def abort(self) -> None:
+        """Drops the service's transaction; a failure to reach the service is left to it, which drops one left idle."""
         self.ended = True
-        try:
-            with contextlib.suppress(ServiceError, OSError):
-                self._remote._rest.call("DELETE", f"/transactions/{self.id}")
-        finally:
-            self._close_local(error)
-
-    def _close_local(self, error: BaseException | None) -> None:
-        if self._local is not None:
-            local, self._local = self._local, None
-            if error is None:
-                local.__exit__(None, None, None)
-            else:
-                local.__exit__(type(error), error, error.__traceback__)
+        with contextlib.suppress(ServiceError, OSError):
+            self._remote._rest.call("DELETE", f"/transactions/{self.id}")
 
 
 class Remote(Builders.Store):
@@ -271,7 +251,8 @@ class Remote(Builders.Store):
 
     def transaction(self, spec: Any = None) -> Any:
         """With no `spec`, the scope of a transaction of the service's store, giving it (`Transaction`): committed where
-        the scope ends, dropped where it raises. With a transaction's expression, it executed over one empty frame,
+        the scope ends, dropped where it raises; this store's own transaction, which runs the installs it is given,
+        commits after it. With a transaction's expression, it executed over one empty frame,
         writing, within one, its frames given back; the first error annotated on one raised."""
         if spec is None:
             return self._opened()
@@ -284,14 +265,15 @@ class Remote(Builders.Store):
 
     @contextlib.contextmanager
     def _opened(self) -> Iterator[Transaction]:
-        opened = self._rest.call("POST", "/transactions")
-        txn = Transaction(self, opened["transaction"])
-        try:
-            yield txn
-        except BaseException as error:
-            txn.abort(error)
-            raise
-        txn.commit()
+        with Builders.Store.transaction(self) as local:  # this store's own: the installs it is given, committed after
+            opened = self._rest.call("POST", "/transactions")
+            txn = Transaction(self, opened["transaction"], local)
+            try:
+                yield txn
+            except BaseException:
+                txn.abort()
+                raise
+            txn.commit()
 
     def follow(self, follower: Callable[[PlainData], None]) -> Callable[[], None]:
         """Gives `follower` each transaction the service's store commits from now, once each, in its order, as a

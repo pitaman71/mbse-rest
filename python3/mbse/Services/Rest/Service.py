@@ -1,8 +1,8 @@
 """The REST service over an mbse-schemas store (mbse-basis [CAP-002: named schema list](mbse:mbse-basis/docs/capabilities/CAP-002.md) to [CAP-004: logical view templates](mbse:mbse-basis/docs/capabilities/CAP-004.md), [CAP-012: logical view endpoints](mbse:mbse-basis/docs/capabilities/CAP-012.md) and [CAP-290: a service's store stacked, with no snapshot](mbse:mbse-basis/docs/capabilities/README.md#CAP-290)).
 
 `app(installs, store)` gives a FastAPI application that serves a store: one in memory by default, or any other, a
-`Builders.Store` over a database's store in production (mbse-dynamodb's), so that it persists by that store's journal
-alone, and no snapshot is taken or read. It serves the store as a layer below for a cache layer in another process
+database's store in production (mbse-dynamodb's), so that it persists by that store's journal alone, and no snapshot
+is taken or read. It serves the store as a layer below for a cache layer in another process
 (mbse-basis [the stacked stores proposal](mbse:mbse-basis/proposals/STACKED-STORES.md#a-cache-layer-and-the-layer-below), its third stage): the
 store's transaction, held open for the client's, and its `exec`, each call a request answered with a stream of frames;
 and its follow, as a change feed. Each install (an app's `Schemas.install`, or each of its `Schemas.INSTALLS`) runs in
@@ -16,7 +16,7 @@ builds the application from `MBSE_REST_*` variables, as `python -m mbse.Services
 | `GET /schemas/{name}` | [CAP-003: schema inspector](mbse:mbse-basis/docs/capabilities/CAP-003.md) | 501 until mbse-schemas writes one schema object as a document (CAP-003, Blocked) |
 | `POST /transactions` | [CAP-308: stacking by mutation transactions, in one round trip](mbse:mbse-basis/docs/capabilities/README.md#CAP-308) | a transaction of the store opened for the client's: `{"transaction": id, "feed", "head"}`, the change feed's position as it opened |
 | `POST /transactions/{id}/exec` | [CAP-308: stacking by mutation transactions, in one round trip](mbse:mbse-basis/docs/capabilities/README.md#CAP-308) | `{"expression", "remainder", "frames", "write"}` executed within it, `txn.exec`: its stream, one `References.OfItem` a line (NDJSON), the last `{"end": {}}` |
-| `POST /transactions/{id}/commit` | [CAP-308: stacking by mutation transactions, in one round trip](mbse:mbse-basis/docs/capabilities/README.md#CAP-308) | committed: `{"head", "journal"}`, the change feed's position once it has, and what the store's follow gave of it, a `Changes.Journal` |
+| `POST /transactions/{id}/commit` | [CAP-308: stacking by mutation transactions, in one round trip](mbse:mbse-basis/docs/capabilities/README.md#CAP-308) | committed: `{"head", "journal", "after"}`, the change feed's position once it has, what the store's follow gave of it, a `Changes.Journal`, and the feed's position just before it |
 | `DELETE /transactions/{id}` | [CAP-308: stacking by mutation transactions, in one round trip](mbse:mbse-basis/docs/capabilities/README.md#CAP-308) | dropped, nothing written: `{}` |
 | `GET /changes?after=id&feed=id&wait=s` | [CAP-290: a service's store stacked, with no snapshot](mbse:mbse-basis/docs/capabilities/README.md#CAP-290) | `{"feed", "head", "journal"}`: the transactions the store committed after the one of id `after`, in order, a `Changes.Journal` as plain data; `head`, the id of the last |
 | `GET /views` | [CAP-004: logical view templates](mbse:mbse-basis/docs/capabilities/CAP-004.md) | `{kind: template, ...}`, each a transaction's expression |
@@ -213,6 +213,7 @@ class _Open:
         self.txn: Any = None
         self.first: str | None = None  # the uid of its first expression, under which the store commits it
         self.journal: Journals.Journal = []  # what the store's follow gave of it, as it committed
+        self.after: str | None = None  # the change feed's position just before it
         self.last = time.monotonic()
 
 
@@ -258,9 +259,12 @@ class Service:
         latest, its id the head, and those waiting told; the client's transaction committing given it, where it is
         its own."""
         committing = self._committing
-        if committing is not None:
-            committing.journal += [t for t in journal if t["id"] in (committing.first, committing.uid)]
         with self._fed_lock:
+            if committing is not None:
+                own = [t for t in journal if t["id"] in (committing.first, committing.uid)]
+                if own and not committing.journal:
+                    committing.after = self.head
+                committing.journal += own
             joined = Journals.join(self.journal, journal)
             self._dropped = self._dropped or len(joined) > self.window
             self.journal = joined[-self.window:]
@@ -453,8 +457,9 @@ class Service:
 
     def commit(self, transaction: str) -> dict[str, Any]:
         """Commits the client's transaction of id `transaction`, the layers below the store first: `{"head",
-        "journal"}`, the change feed's position once it has, and what the store's follow gave of it, a
-        `Changes.Journal` as plain data, empty where it changed nothing. Refused (400) as the store refuses it, or
+        "journal", "after"}`, the change feed's position once it has, what the store's follow gave of it, a
+        `Changes.Journal` as plain data, empty where it changed nothing, and the feed's position just before it, so that
+        a client that had read the feed to there need not read it again. Refused (400) as the store refuses it, or
         unavailable (503) where it fails otherwise: either way, nothing it wrote is kept."""
         with self._lock:
             held = self._holding(transaction)
@@ -472,7 +477,7 @@ class Service:
                 self._committing = None
                 self._free.notify_all()
             with self._fed_lock:
-                return {"head": self.head, "journal": held.journal}
+                return {"head": self.head, "journal": held.journal, "after": held.after}
 
     def abort(self, transaction: str) -> dict[str, Any]:
         """Drops the client's transaction of id `transaction`, nothing written: `{}`."""
@@ -683,29 +688,28 @@ def seed_of(module: str | ModuleType) -> Install | None:
 
 
 def store_of(name: str) -> Any:
-    """The store below the service's by name: None for `memory`, the service's store holding what it is written in
-    memory; or `module:attribute`, a class or function that makes one when called with no arguments (its own
-    configuration is its own, from the environment for instance), a layer below that a `Builders.Store` is stacked on:
-    a store, with its `transaction` and its `follow`. `mbse.Persistence.DynamoDB.Store:Store`, mbse-dynamodb's, for
-    one."""
+    """The store the service serves, by name: `memory`, a store in memory, or `module:attribute`, a class or function
+    that makes one when called with no arguments (its own configuration is its own, from the environment for instance):
+    a store, with its `transaction` and its `follow`, the layer a cache layer over the service stacks on.
+    `mbse.Persistence.DynamoDB.Store:Store`, mbse-dynamodb's, for one."""
     if name.strip().lower() in ("", "memory"):
-        return None
+        return Builders.Store()
     module, _, attribute = name.partition(":")
     if not attribute:
         raise ValueError(f"a store below is 'memory' or 'module:attribute', not {name!r}")
     made = getattr(importlib.import_module(module), attribute)()
     if not all(callable(getattr(type(made), member, None)) for member in ("transaction", "follow")):
-        raise TypeError(f"{name} makes no layer below: a store, with its transaction and its follow")
+        raise TypeError(f"{name} makes no store: one with its transaction and its follow")
     return made
 
 
-def fresh(below: Any) -> bool:
-    """Whether a store below has committed nothing, so that an app's seed is run in it: one that gives the position of
+def fresh(store: Any) -> bool:
+    """Whether a store has committed nothing, so that an app's seed is run in it: one that gives the position of
     the last transaction it committed, its id (`head()`, as mbse-dynamodb's does), where it gives none; one that keeps
     none, as a store in memory, made new with the service, always. A seed is not run again over what it wrote, which may
     have been edited since."""
-    head = getattr(type(below), "head", None)  # a method of its class: a store's own attributes are its paths
-    return not callable(head) or below.head() is None
+    head = getattr(type(store), "head", None)  # a method of its class: a store's own attributes are its paths
+    return not callable(head) or store.head() is None
 
 
 def _flag(value: str) -> bool:
@@ -725,8 +729,8 @@ def from_environment(environ: Mapping[str, str] | None = None) -> FastAPI:
 
     - `MBSE_REST_APP`: the app's package, its installs found by `installs_of` (`mbse.Demos.Apps.WorkTracker`);
     - `MBSE_REST_SEED`: whether its `Seed.seed` runs at start (`1`), where the store below is new (`fresh`);
-    - `MBSE_REST_STORE`: the store below the service's, `store_of`'s name (`memory`); the service serves a
-      `Builders.Store` over it, polling it where it is followed by polling (`poll()`);
+    - `MBSE_REST_STORE`: the store served, `store_of`'s name (`memory`), polled where it is followed by polling
+      (`poll()`);
     - `MBSE_REST_WINDOW`: how many of the latest committed transactions the change feed keeps (`10000`);
     - `MBSE_REST_LEASE`: how long a client's transaction is kept open with no request on it, in seconds (`60`);
     - `MBSE_REST_ORIGINS`: the UI's origins a browser may call from, comma-separated (none);
@@ -739,11 +743,11 @@ def from_environment(environ: Mapping[str, str] | None = None) -> FastAPI:
         if name in env:
             raise ValueError(f"{name} is retired: {instead}")
     module = env.get("MBSE_REST_APP", WORK_TRACKER)
-    below = store_of(env.get("MBSE_REST_STORE", "memory"))
-    seed = seed_of(module) if _flag(env.get("MBSE_REST_SEED", "1")) and (below is None or fresh(below)) else None
+    store = store_of(env.get("MBSE_REST_STORE", "memory"))
+    seed = seed_of(module) if _flag(env.get("MBSE_REST_SEED", "1")) and fresh(store) else None
     origins = [origin.strip() for origin in env.get("MBSE_REST_ORIGINS", "").split(",") if origin.strip()]
-    poll = below.poll if below is not None and callable(getattr(type(below), "poll", None)) else None
-    return app(installs_of(module), None if below is None else Builders.Store(below), seed, poll=poll, origins=origins,
+    poll = store.poll if callable(getattr(type(store), "poll", None)) else None
+    return app(installs_of(module), store, seed, poll=poll, origins=origins,
                window=int(env.get("MBSE_REST_WINDOW", str(WINDOW))), user=env.get("MBSE_REST_USER", "demo"),
                lease=float(env.get("MBSE_REST_LEASE", str(LEASE))))
 

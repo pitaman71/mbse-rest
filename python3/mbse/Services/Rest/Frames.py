@@ -137,8 +137,10 @@ def read_frame(store: Any, plain: PlainData, transaction: Any = None) -> Frame:
     """A `References.OfFrame`, as plain data, as a frame of `store`'s (`Transactions.Frame`): its bindings, errors,
     scope, what it assigns, its journal and, where `transaction` is the expression it was executed over, its
     remainder in it. A symbol binding a schema object the store does not hold is left out, and the frame annotated."""
-    if not isinstance(plain, Mapping):
-        raise ValueError("a frame is a References.OfFrame, a JSON object")
+    if not (isinstance(plain, Mapping) and isinstance(plain.get("binds", {}), Mapping)
+            and all(isinstance(plain.get(name, []), list) for name in ("assigns", "errors"))):
+        raise ValueError("a frame is a References.OfFrame, a JSON object: its binds an object, its assigns and its "
+                         "errors lists")
     bound: dict[str, Any] = {}
     errors = [FrameError(e.get("subterm", "$"), e.get("kind", "RuntimeError"), e.get("message", ""),
                          error_of(e.get("kind", "RuntimeError"), e.get("message", "")))

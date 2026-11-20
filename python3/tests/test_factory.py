@@ -75,18 +75,18 @@ def test_another_app_detail_and_adjacency(library):
 
 
 def test_another_app_writes_and_restarts():
-    """What the service writes, its store below holds; a service started again over that store below holds it, loading
-    what it is asked for from it, and its seed, run again, writes nothing."""
+    """What the service writes, its store holds; a service started again over that store holds it, and its seed, run
+    again, writes nothing."""
     library = TestClient(Service.app([install], seed=seed))
     store = library.app.state.service.store
     add = Plain.ToPlain(store).Transaction(store.Mutations.OfTransaction(lambda t: t.mutations([lambda mu: mu.upsert(
         lambda u: u.exists([lambda p: p.symbols({"s": store.lib.Shelf, "x": store.lib.Book}).spec([
             lambda _: _.s.books({"BK-3": lambda e: e.book(_.x)}), lambda _: _.x.name("HtDP")])]))])))
     assert [assigned(f) for f in frames(library.post("/views/label", json=add))] == [{"name": "HtDP"}]
-    below = library.app.state.service.below
-    with below.transaction():
-        assert [str(b.book.name) for b in below.singleton("lib.TheShelf").books] == ["SICP", "LISP 1.5", "HtDP"]
-    again = TestClient(Service.app([install], below, seed))
+    kept = library.app.state.service.store
+    with kept.transaction():
+        assert [str(b.book.name) for b in kept.singleton("lib.TheShelf").books] == ["SICP", "LISP 1.5", "HtDP"]
+    again = TestClient(Service.app([install], kept, seed))
     store = again.app.state.service.store
     assert again.get("/changes").json()["head"] is None  # the seed, run again, wrote nothing
     with store.transaction():
@@ -115,15 +115,15 @@ def test_installs_by_the_apps_layout(monkeypatch):
 
 
 class Recorder(Builders.Store):
-    """A store below made by name, `module:attribute`."""
+    """A store made by name, `module:attribute`."""
 
 
-def test_stores_below_by_name(monkeypatch):
+def test_stores_by_name(monkeypatch):
     assert type(Service.store_of("memory")) is Builders.Store
     assert type(Service.store_of("")) is Builders.Store
     monkeypatch.setitem(sys.modules, "recorders", types.SimpleNamespace(Recorder=Recorder, Nothing=object))
     assert isinstance(Service.store_of("recorders:Recorder"), Recorder)
-    with pytest.raises(TypeError, match="no store below"):
+    with pytest.raises(TypeError, match="makes no store"):
         Service.store_of("recorders:Nothing")
     with pytest.raises(ValueError, match="module:attribute"):
         Service.store_of("recorders")
@@ -140,7 +140,7 @@ def test_from_the_environment():
                                     "MBSE_REST_ORIGINS": "http://localhost:5173, http://ui.example"})
     service = api.state.service
     assert len(service.installs) == len(Schemas.INSTALLS) and service.window == 7
-    assert type(service.below) is Builders.Store
+    assert type(service.store) is Builders.Store
     with service.store.transaction():
         assert list(service.store.singleton("work.Tasks").tasks) == []  # not seeded
     client = TestClient(api)
