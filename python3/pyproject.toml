@@ -8,7 +8,7 @@ version = "0.4.0"
 description = "A store served over REST, and logical views over it (mbse-basis FEA-003: no-code logical views, CAP-290)."
 requires-python = ">=3.11"
 dependencies = [
-    "mbse-schemas>=0.34.0,<0.35",
+    "mbse-schemas>=0.35.0,<0.36",
     "mbse-journals>=0.3.2,<0.4",
     "fastapi>=0.115",
     "uvicorn>=0.30",

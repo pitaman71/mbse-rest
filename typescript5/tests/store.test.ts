@@ -101,16 +101,12 @@ async function run(module: string): Promise<void> {
   }
 }
 
-/** BLW's setup, its layer below a cache layer over mbse-rest's client of a service of its own; BLW-10's installs given
- * to that layer below too, a layer between two others running no install it is given by `exec` (mbse-schemas 0.34.0
- * finds an install in `store.transaction` alone), as each process gives its store its installs; BLW-11's count of
- * what is forwarded, the cache layer's alone; and BLW-12's frame binding a counted object, which crosses from the service
- * refused, its symbol left out. */
+/** BLW's setup, its layer below a cache layer over mbse-rest's client of a service of its own, which an install given to
+ * the cache layer reaches through `exec` (mbse-schemas 0.35.0, BLW-15); BLW-11's count of what is forwarded, the cache
+ * layer's alone; and BLW-12's frame binding a counted object, which crosses from the service refused, its symbol left
+ * out. */
 const OVER_REST: [string, string, number][] = [
   ["const lower = seeded(new B.Store());", "const lower = seeded((globalThis as any).__servedOverRest());", 1],
-  ["  cache.transaction(Provenance.install);", "  lower.transaction(Provenance.install);\n  cache.transaction(Provenance.install);", 1],
-  ["  cache.transaction((t: any) => Provenance.extend(t, [t.crm.Person]));",
-    "  lower.transaction((t: any) => Provenance.extend(t, [t.crm.Person]));\n  cache.transaction((t: any) => Provenance.extend(t, [t.crm.Person]));", 1],
   // BLW-11 counts what the cache layer forwards: the layer below, a cache layer too, forwards to the service besides
   ["    sent.push(rest.subterm);", "    if (this.store === cache) sent.push(rest.subterm);", 1],
   // BLW-12: a frame binding a counted object crosses from the service with that symbol left out, annotated with why
@@ -122,7 +118,7 @@ describe("mbse-schemas' BLW, over REST", () => {
   test("BLW: each case as mbse-schemas wrote it, mbse-rest at the bottom of the stack", async () => {
     (globalThis as any).__servedOverRest = () => Store(nodeTransport(fresh()));
     await run(generated("mbse-schemas", "36_Below.ipynb", "BLW.ts", OVER_REST));
-    assert.equal((globalThis as any).__case, "BLW-14");
+    assert.equal((globalThis as any).__case, "BLW-15");
   });
 });
 
