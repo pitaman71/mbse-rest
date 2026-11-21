@@ -65,23 +65,39 @@ export type Transport = (method: string, path: string, body?: string) => Reply;
 export interface TransportOptions {
   /** Headers sent with each request besides `content-type`: the session's, `x-mbse-session`, for one. */
   readonly headers?: Readonly<Record<string, string>>;
-  /** How long a request may take, in milliseconds: 60 seconds by default. */
+  /** How long a request may take, in milliseconds, while the process runs: 60 seconds by default. In Node, a time the
+   * process is stopped, as a machine asleep stops it, counts as one tick of a tenth of it at most (`nodeTransport`). */
   readonly timeout?: number;
 }
 
 /** Each kind of refusal the service reports, by the name its error message begins with, and the error thrown for it. */
 export const REFUSALS: Readonly<Record<string, new (message: string) => Error>> = { ValueError, TypeError, LookupError };
 
-/** The worker a Node transport fetches in, its caller waiting on `Atomics.wait` until it has the response. */
+/** How often a Node transport counts the time a request has taken, in milliseconds, at most: a tenth of its timeout,
+ * else a second. */
+const TICK = 1_000;
+
+/** The worker a Node transport fetches in, its caller waiting on `Atomics.wait` until it has the response. Its timeout
+ * is counted in ticks, not by the clock: a timer due during a time the process is stopped, as a machine asleep stops
+ * it, fires once as it resumes, so that such a time counts as one tick, and a request the service answered meanwhile
+ * is read, not aborted. */
 const WORKER = `
 const { parentPort } = require("node:worker_threads");
-parentPort.on("message", async ({ signal, port, method, url, body, headers, timeout }) => {
+parentPort.on("message", async ({ signal, port, method, url, body, headers, ticks, tick }) => {
   let reply;
+  const abort = new AbortController();
+  let counted = 0;
+  const timer = setInterval(() => {
+    counted += 1;
+    if (counted >= ticks) abort.abort(new DOMException("The operation was aborted due to timeout", "TimeoutError"));
+  }, tick);
   try {
-    const response = await fetch(url, { method, body, headers, signal: AbortSignal.timeout(timeout) });
+    const response = await fetch(url, { method, body, headers, signal: abort.signal });
     reply = { status: response.status, body: await response.text() };
   } catch (error) {
     reply = { error: String(error && error.message ? error.message : error) };
+  } finally {
+    clearInterval(timer);
   }
   port.postMessage(reply);
   port.close();
@@ -95,12 +111,15 @@ function headersOf(options: TransportOptions, body: string | undefined): Record<
 }
 
 /** A transport to the service at `base` (`http://localhost:8000`), in Node: each request is fetched in a worker thread,
- * which this one waits on. */
+ * which this one waits on, a tick at a time, for as many ticks as the worker counts and five seconds' more, so that
+ * neither counts a time the process is stopped as more than a tick. */
 export function nodeTransport(base: string, options: TransportOptions = {}): Transport {
   const threads = (globalThis as any).process?.getBuiltinModule?.("node:worker_threads");
   if (threads === undefined) throw new TransportError("nodeTransport: not in Node 22 or later, which has worker threads");
   const root = base.replace(/\/+$/, "");
   const timeout = options.timeout ?? 60_000;
+  const tick = Math.min(TICK, timeout / 10);
+  const ticks = Math.ceil(timeout / tick);
   let worker: any = null;
   return (method, path, body) => {
     if (worker === null) {
@@ -110,8 +129,10 @@ export function nodeTransport(base: string, options: TransportOptions = {}): Tra
     const signal = new Int32Array(new SharedArrayBuffer(4));
     const { port1, port2 } = new threads.MessageChannel();
     worker.postMessage({ signal, port: port2, method, url: root + path, body, headers: headersOf(options, body),
-      timeout }, [port2]);
-    Atomics.wait(signal, 0, 0, timeout + 5_000);
+      ticks, tick }, [port2]);
+    for (let waited = 0; waited < ticks + Math.ceil(5_000 / tick); waited++) {
+      if (Atomics.wait(signal, 0, 0, tick) !== "timed-out") break;
+    }
     const received = threads.receiveMessageOnPort(port1);
     port1.close();
     if (received === undefined) throw new TransportError(`${method} ${path}: no response in ${timeout} ms`);
