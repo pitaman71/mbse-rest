@@ -349,6 +349,24 @@ describe("the client", () => {
       /has ended/);
   });
 
+  test("transports: time the process is stopped, as a machine asleep, is not counted against a request", () => {
+    // A request held open by the service (a read of the change feed waiting 2.5 s for a commit), while this process is
+    // stopped 3 s, as a laptop asleep stops it: on waking, the request has waited longer than its timeout by the clock,
+    // but less while the process ran, and is answered, not aborted.
+    const url = fresh();
+    const transport = nodeTransport(url, { timeout: 2_000 });
+    const name = (J.loads(transport("GET", "/changes").body) as Map<string, unknown>).get("feed") as string;
+    spawn("sh", ["-c", `sleep 0.3; kill -STOP ${process.pid}; sleep 3; kill -CONT ${process.pid}`],
+      { stdio: "ignore" }).unref();
+    const started = Date.now();
+    const reply = transport("GET", `/changes?feed=${encodeURIComponent(name)}&wait=2.5`);
+    assert.ok(Date.now() - started >= 3_000); // stopped meanwhile: longer than its timeout, by the clock
+    assert.equal(reply.status, 200);
+    const hurried = nodeTransport(url, { timeout: 1_000 }); // running all along: aborted at its timeout
+    assert.throws(() => hurried("GET", `/changes?feed=${encodeURIComponent(name)}&wait=5`),
+      (e: Error) => e instanceof TransportError && /aborted due to timeout/.test(e.message));
+  });
+
   test("transports: an unreachable service, and a browser's synchronous XMLHttpRequest", () => {
     assert.throws(() => nodeTransport("http://127.0.0.1:9", { timeout: 2_000 })("GET", "/changes"), TransportError);
     const sent: unknown[] = [];
