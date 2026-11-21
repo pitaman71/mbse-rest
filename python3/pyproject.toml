@@ -4,12 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mbse-rest"
-version = "0.4.0"
+version = "0.4.1"
 description = "A store served over REST, and logical views over it (mbse-basis FEA-003: no-code logical views, CAP-290)."
 requires-python = ">=3.11"
 dependencies = [
-    "mbse-schemas>=0.35.0,<0.36",
-    "mbse-journals>=0.3.2,<0.4",
+    "mbse-schemas>=0.36.0,<1.0",
+    "mbse-journals>=0.3.3,<1.0",
     "fastapi>=0.115",
     "uvicorn>=0.30",
 ]
@@ -19,7 +19,7 @@ include = ["mbse*"]
 namespaces = true
 
 [dependency-groups]
-dev = ["pytest>=9.1.1", "mbse-demo-apps>=0.1.4,<0.2", "httpx2>=2.16"]
+dev = ["pytest>=9.1.1", "mbse-demo-apps>=0.1.5,<1.0", "httpx2>=2.16"]
 
 [tool.uv.sources]
 mbse-schemas = { path = "../../mbse-schemas/python3", editable = true }  # the sibling checkouts: ../mbse-basis/scripts/polyrepo.py

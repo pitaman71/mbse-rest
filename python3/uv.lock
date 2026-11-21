@@ -140,7 +140,7 @@ wheels = [
 
 [[package]]
 name = "mbse-demo-apps"
-version = "0.1.4"
+version = "0.1.5"
 source = { editable = "../../mbse-demo-apps/python3" }
 dependencies = [
     { name = "mbse-schemas" },
@@ -154,7 +154,7 @@ dev = [{ name = "pytest", specifier = ">=9.1.1" }]
 
 [[package]]
 name = "mbse-journals"
-version = "0.3.2"
+version = "0.3.3"
 source = { editable = "../../mbse-journals/python3" }
 dependencies = [
     { name = "mbse-schemas" },
@@ -174,7 +174,7 @@ dev = [
 
 [[package]]
 name = "mbse-rest"
-version = "0.4.0"
+version = "0.4.1"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
@@ -207,7 +207,7 @@ dev = [
 
 [[package]]
 name = "mbse-schemas"
-version = "0.35.0"
+version = "0.36.0"
 source = { editable = "../../mbse-schemas/python3" }
 
 [package.metadata]
