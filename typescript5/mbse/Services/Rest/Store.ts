@@ -10,9 +10,10 @@
  * `xhrTransport(base)` in a browser, or the URL, which chooses one): a store, a `Builders.Store` holding the schemas
  * alone, whose transaction is one of the service's store, held open by the service for as long as its own:
  *
- * - `transaction((txn = null) => ...)` opens one (`POST /transactions`); its `exec(frame, remainder, allowWrite)` is a
- *   request (`POST /transactions/{id}/exec`) carrying the expression, the subterm the remainder starts at and the input
- *   frames, answered with the stream of frames, each read back as a frame of this store's (`Frames.ts`), its remainder
+ * - `transaction((txn = null) => ...)` opens one (`POST /transactions`); its `exec(frame, remainder, allowWrite,
+ *   terminal)` is a request (`POST /transactions/{id}/exec`) carrying the expression, the subterm the remainder starts
+ *   at, the input frames and whether terminal frames are asked for, answered with the stream of frames, each its
+ *   journal, read back as a frame of this store's (`Frames.ts`), its remainder
  *   a position in the expression given; the scope's end commits it (`POST /transactions/{id}/commit`), a refusal
  *   thrown as the error the service's store raised (`ValueError`, `TypeError` or `LookupError`), or, where it throws,
  *   drops it (`DELETE /transactions/{id}`). What the service's follow gave of it as it committed is given to this
@@ -265,14 +266,15 @@ export class Transaction {
 
   /** Executes the suffix of a transaction's expression over input frames within the service's transaction, as
    * `Transactions.Transaction.exec` does in a process: `frame`, a frame or a stream of them; `remainder`, a
-   * `Transactions.Remainder` or a whole transaction's expression, of this store's. Gives the stream the service gave, an
-   * observable, its request made as it is subscribed to, each item read as this store's, a frame's remainder a position
-   * in the same expression; an error of no one frame, the observable's error, as the service's store raised it. */
-  exec(frame: unknown, remainder: unknown, allowWrite: boolean): Transactions.Observable<Item> {
+   * `Transactions.Remainder` or a whole transaction's expression, of this store's; terminal frames given where
+   * `terminal`, as a cache layer above asks for them. Gives the stream the service gave, an observable, its request made
+   * as it is subscribed to, each item read as this store's, each frame its journal, a frame's remainder a position in
+   * the same expression; an error of no one frame, the observable's error, as the service's store raised it. */
+  exec(frame: unknown, remainder: unknown, allowWrite: boolean, terminal = false): Transactions.Observable<Item> {
     return new Observable<Item>((observer) => {
       let items: Item[];
       try {
-        items = this.items(frame, remainder, allowWrite);
+        items = this.items(frame, remainder, allowWrite, terminal);
       } catch (error) {
         observer.error!(error);
         return;
@@ -285,7 +287,7 @@ export class Transaction {
     });
   }
 
-  items(frame: unknown, remainder: unknown, allowWrite: boolean): Item[] {
+  items(frame: unknown, remainder: unknown, allowWrite: boolean, terminal = false): Item[] {
     if (this.ended) throw new ValueError("a transaction's exec runs within it: this one has ended (store.transaction)");
     const remote = this._remote;
     const expression = remainder instanceof Remainder ? remainder.transaction : remainder;
@@ -303,7 +305,7 @@ export class Transaction {
       if (failed !== undefined && failed.errors[0]!.error !== null) throw failed.errors[0]!.error;
     }
     const body = new Map<string, unknown>([["expression", plain],
-      ["frames", inputs.map((given) => Frames.frame(remote, given))], ["write", allowWrite]]);
+      ["frames", inputs.map((given) => Frames.frame(remote, given))], ["write", allowWrite], ["terminal", terminal]]);
     if (remainder instanceof Remainder) body.set("remainder", remainder.subterm);
     const text = remote._rest.send("POST", `/transactions/${encodeURIComponent(this.id)}/exec`, body);
     const lines = text.split("\n").filter((line) => line.trim() !== "");

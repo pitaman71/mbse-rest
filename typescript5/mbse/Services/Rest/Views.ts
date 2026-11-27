@@ -2,7 +2,7 @@
  * frame of each kind carries read back ([CAP-005: label and summary view](mbse:mbse-basis/docs/capabilities/CAP-005.md) to [CAP-008: adjacency as a list of chips](mbse:mbse-basis/docs/capabilities/CAP-008.md)). The server's side is `python3/mbse/Services/Rest/Views.py`;
  * [FEA-003: no-code logical views](mbse:mbse-basis/docs/features/FEA-003.md#view-kinds) is the prose, and the golden corpus in `conformance/` checks that both agree. */
 
-import { JSON as J, Plain } from "@mbse/schemas/Framework";
+import { JSON as J, Paths, Plain, References } from "@mbse/schemas/Framework";
 
 export const KINDS = ["label", "chip", "detail", "adjacency"] as const;
 export type Kind = (typeof KINDS)[number];
@@ -88,59 +88,98 @@ export function propose(store: any, x: unknown, adjacency: string, link: string,
   return Plain.ToPlain(store).Transaction(transaction);
 }
 
-/** Property values a frame witnesses an object holds (`References.OfProperties`). */
-export interface Assigned {
-  /** The object's `References.OfObject`. */
-  readonly object: unknown;
-  /** Its properties, each its value, in the schema's order. */
+/** A relation entry a view's frame carries: one its journal inserts. */
+export interface Entry {
+  /** The symbol that binds its holder, the object whose adjacency holds it. */
+  readonly holder: string;
+  /** The holder's adjacency that holds it, by name. */
+  readonly adjacency: string;
+  /** Its relation's registered name (`relationName`). */
+  readonly relation: string;
+  /** Its links, each its name and the `References.OfObject` it links, the holder's own among them. */
+  readonly links: ReadonlyMap<string, unknown>;
+  /** Its properties, each its value. */
   readonly properties: ReadonlyMap<string, unknown>;
+  /** What tells it apart from any other entry: its relation, links and properties, as JSON. */
+  readonly key: string;
 }
 
-/** A frame of a view's response, a `References.OfFrame` read back. */
+/** A frame of a view's response, a `References.OfFrame` read back: its journal ([CAP-318: support for decoupled code](mbse:mbse-basis/docs/capabilities/README.md#CAP-318), mbse-schemas
+ * 0.38), a `Changes.Transaction` whose symbols are the frame's bindings, then the journal's own for the other objects
+ * whose properties it carries (`o0`, `o1`, ...), and whose changes set those properties and insert its entries. */
 export interface Frame {
   /** The `References.OfFrame` value, in the store that read it. */
   readonly value: any;
-  /** Each symbol's `References.OfObject`. */
+  /** Each symbol's `References.OfObject`, the journal's own among them. */
   readonly binds: ReadonlyMap<string, unknown>;
-  readonly assigns: readonly Assigned[];
-  /** Each entry witnessed, a `References.OfEntry`. */
-  readonly entries: readonly unknown[];
+  /** The properties the journal sets, by symbol, each its value, in the order set. */
+  readonly properties: ReadonlyMap<string, ReadonlyMap<string, unknown>>;
+  /** Each entry the journal inserts, in order. */
+  readonly entries: readonly Entry[];
 }
 
-const items = (container: any): [unknown, any][] => {
-  let out: [unknown, any][] = [];
-  container.as_value((v: any) => v.as_container((c: any) => c.as_entries((entries: Iterator<[unknown, any]>) => {
-    out = [...{ [Symbol.iterator]: () => entries }];
-  })));
-  return out;
-};
+type PlainMap = Map<string, any>;
 
-const valueOf = (any: any): unknown => {
-  let out: unknown = null;
-  any.as_scalar((s: any) => { out = s.get(); });
-  return out;
-};
+/** Each name, as a relation's path from the root module gives it, joined by dots: its registered name. */
+function pathName(path: Step | undefined): string {
+  const names: string[] = [];
+  for (let next = path?.get("next") as Step | undefined; next?.get("entry") !== undefined;
+    next = (next.get("entry") as Step).get("next") as Step | undefined) {
+    names.push(String(((next.get("entry") as Step).get("properties") as Step).get("name")));
+  }
+  return names.join(".");
+}
 
-const objectOf = (any: any): any => {
-  let out: any = null;
-  any.as_object((o: any) => { out = o; });
-  return out;
-};
+/** The schema of the object a journal's symbol binds: its `schema` where the symbol gives one, else the one its
+ * reference's path implies. */
+function schemaOf(store: any, symbol: PlainMap): any {
+  const given = symbol.get("schema") as PlainMap | undefined;
+  if (given !== undefined) return store.held(given.get("path"));
+  return References.implied(store, (symbol.get("reference") as PlainMap).get("path"));
+}
 
 /** One line of a view's response read back: decoded as a `References.OfFrame` of the store's, which needs only the
- * framework's schemas, and the schemas of any value object a property holds. */
+ * framework's schemas, and the schemas of the objects whose entries it carries; its journal read as `Frame` gives it. */
 export function read(store: any, line: string): Frame {
   const value: any = J.FromJSON(store)(store.References.OfFrame.as_schema(), line);
-  const binds = new Map(items(value.binds).map(([name, any]) => [name as string, objectOf(any)]));
-  const assigns = items(value.assigns).map(([, any]) => {
-    const assigned = objectOf(any);
-    return {
-      object: objectOf(assigned.object),
-      properties: new Map(items(assigned.properties).map(([name, v]) => [name as string, valueOf(v)])),
-    };
-  });
-  const entries = items(value.entries).map(([, any]) => objectOf(any));
-  return { value, binds, assigns, entries };
+  const journal = ((J.loads(line) as PlainMap).get("journal") ?? new Map()) as PlainMap;
+  const symbols = (journal.get("symbols") ?? new Map()) as Map<string, PlainMap>;
+  const OfObject = store.registered("References.OfObject");
+  const binds = new Map([...symbols].map(([name, symbol]) =>
+    [name, Plain.FromPlain(store)(OfObject, symbol.get("reference"))] as [string, unknown]));
+  const properties = new Map<string, Map<string, unknown>>();
+  const entries: Entry[] = [];
+  for (const change of (journal.get("changes") ?? []) as PlainMap[]) {
+    const set = (change.get("property") as PlainMap | undefined)?.get("set") as PlainMap | undefined;
+    if (set !== undefined) {
+      const held = properties.get(set.get("holder")) ?? new Map<string, unknown>();
+      held.set(set.get("name"), set.get("value"));
+      properties.set(set.get("holder"), held);
+    }
+    const insert = (change.get("entry") as PlainMap | undefined)?.get("insert") as PlainMap | undefined;
+    if (insert === undefined) continue;
+    const holder = (insert.get("holder") as PlainMap).get("symbol") as string;
+    const adjacency = insert.get("adjacency") as string;
+    const declared = schemaOf(store, symbols.get(holder)!).adjacencies.get(adjacency);
+    const path: any = Paths.of(declared.relation);
+    const relation = pathName(Plain.ToPlain(store)(path.as_schema(), path) as Step);
+    const linksGiven = (insert.get("links") ?? new Map()) as Map<string, PlainMap>;
+    const links = new Map<string, unknown>();
+    for (const link of declared.relation.entry.links.keys() as Iterable<string>) { // in the relation's order
+      const linked = linksGiven.get(link);
+      if (link === declared.me) links.set(link, binds.get(holder));
+      else if (linked !== undefined) {
+        links.set(link, linked.has("symbol") ? binds.get(linked.get("symbol")) : Plain.FromPlain(store)(OfObject,
+          linked.get("reference")));
+      }
+    }
+    const given = new Map([...((insert.get("properties") ?? new Map()) as PlainMap)]);
+    const key = J.dumps(new Map<string, unknown>([["relation", relation], ["links", new Map([...links].sort(([a], [b]) =>
+      a < b ? -1 : a > b ? 1 : 0).map(([link, reference]) => [link, J.loads(keyOf(store, reference))]))],
+      ["properties", given]]) as any);
+    entries.push({ holder, adjacency, relation, links, properties: given, key });
+  }
+  return { value, binds, properties, entries };
 }
 
 /** What tells a reference apart, so that two compare: its JSON. */
@@ -148,15 +187,20 @@ export function keyOf(store: any, reference: any): string {
   return J.dumps(Plain.ToPlain(store)(reference.as_schema(), reference));
 }
 
-/** The properties `frame` assigns to the object `symbol` binds; empty where it assigns none. */
+/** The properties `frame` carries of the object `symbol` binds; empty where it carries none. */
 export function properties(store: any, frame: Frame, symbol = "x"): ReadonlyMap<string, unknown> {
   return assignedTo(store, frame, frame.binds.get(symbol));
 }
 
+/** The properties `frame` carries of the object `reference` designates, by the symbol that binds it; empty where none
+ * does, or it carries none. */
 function assignedTo(store: any, frame: Frame, reference: unknown): ReadonlyMap<string, unknown> {
   if (reference === undefined || reference === null) return new Map();
   const key = keyOf(store, reference);
-  return frame.assigns.find((a) => keyOf(store, a.object) === key)?.properties ?? new Map();
+  for (const [symbol, bound] of frame.binds) {
+    if (keyOf(store, bound) === key && frame.properties.has(symbol)) return frame.properties.get(symbol)!;
+  }
+  return new Map();
 }
 
 type Step = Map<string, any>;
@@ -211,31 +255,24 @@ export function chip(store: any, frame: Frame, symbol = "x"): ReadonlyMap<string
   return new Map([...held].filter(([name]) => !skip.includes(name)));
 }
 
-/** A relation entry's relation, by its schema's name: its path's steps' names, joined by dots. */
-export function relationName(store: any, entry: any): string {
-  const plain = Plain.ToPlain(store)(entry.as_schema(), entry) as Step;
-  const names: string[] = [];
-  for (let next = (plain.get("relation") as Step).get("next") as Step | undefined; next?.get("entry") !== undefined;
-    next = (next.get("entry") as Step).get("next") as Step | undefined) {
-    names.push(String(((next.get("entry") as Step).get("properties") as Step).get("name")));
-  }
-  return names.join(".");
+/** A relation entry's relation, by its schema's registered name. */
+export function relationName(_store: any, entry: Entry): string {
+  return entry.relation;
 }
 
 /** [CAP-005: label and summary view](mbse:mbse-basis/docs/capabilities/CAP-005.md), an entry's label: its relation's name and its linked objects' labels, as the frame gives them. */
-export function entryLabel(store: any, frame: Frame, entry: any): string {
-  const links = items(entry.links).map(([, any]) => objectOf(any));
-  return `${relationName(store, entry)}: ${links.map((link) => labelOf(store, frame, link)).join(", ")}`;
+export function entryLabel(store: any, frame: Frame, entry: Entry): string {
+  return `${entry.relation}: ${[...entry.links.values()].map((link) => labelOf(store, frame, link)).join(", ")}`;
 }
 
 /** An entry's properties, each its value. */
-export function entryProperties(entry: any): ReadonlyMap<string, unknown> {
-  return new Map(items(entry.properties).map(([name, v]) => [name as string, valueOf(v)]));
+export function entryProperties(entry: Entry): ReadonlyMap<string, unknown> {
+  return entry.properties;
 }
 
 /** An entry's links, each its name and the `References.OfObject` it links. */
-export function entryLinks(entry: any): ReadonlyMap<string, unknown> {
-  return new Map(items(entry.links).map(([name, any]) => [String(name), objectOf(any)]));
+export function entryLinks(entry: Entry): ReadonlyMap<string, unknown> {
+  return entry.links;
 }
 
 /** One transaction in an object's provenance ([CAP-015: transaction provenance](mbse:mbse-basis/docs/capabilities/CAP-015.md)), as a frame carries it. */
@@ -252,7 +289,7 @@ export interface Written {
  * transaction that created it and the one that last wrote it after, where the frame has them. */
 export function provenance(store: any, frame: Frame, reference: unknown):
     { readonly created?: Written; readonly modified?: Written } {
-  const entries = frame.entries.map((entry) => ({ relation: relationName(store, entry), links: entryLinks(entry) }));
+  const entries = frame.entries;
   const linking = (relation: string, link: string, target: unknown) => {
     if (target === undefined || target === null) return undefined;
     const key = keyOf(store, target);

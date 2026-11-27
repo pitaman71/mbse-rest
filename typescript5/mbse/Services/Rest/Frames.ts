@@ -9,13 +9,22 @@
  * line, `{"frame": ...}` or `{"end": ...}`; the stream's last item is the completion marker of the whole stream,
  * `{"end": {}}`, the plain form of `{"end": null}`. An input frame is a `References.OfFrame` as plain data.
  *
- * Reading one back gives a `Transactions.Frame` of the reading store's: each symbol's object by its reference, a schema
- * object as the schema object the store holds; what it assigns, by symbol; its errors, each error as its kind names it
- * (`ValueError`, `TypeError`, `LookupError`, else `Error`); its scope; its remainder, a position in the expression the
- * reader gave; and its journal, a one-transaction `Changes.Journal`. What cannot cross is refused, not lost: a symbol
- * binding a schema object the store does not hold is left out, and the frame annotated with why (`LookupError`). */
+ * Each frame is its journal (mbse-schemas 0.38, mbse-basis
+ * [CAP-318: support for decoupled code](mbse:mbse-basis/docs/capabilities/README.md#CAP-318)): `{"frame": {"journal", "scope",
+ * "remainder", "errors", "terminal"}}`, its journal a `Changes.Transaction` whose `symbols` are the frame's bindings, an
+ * object by its `References.OfObject`, a schema object by its `References.OfSchema`, and whose `changes` are the state
+ * its path's clauses referenced or changed. A completion marker is `{"end": {"scope"}}`, and carries nothing else. A
+ * frame written before a frame was its journal, with `binds` or `assigns`, is refused where it is read.
+ *
+ * Reading one back gives a `Transactions.Frame` of the reading store's: each symbol's object by its reference (a
+ * `References.OfObject` of that store, a schema object's a `References.OfSchema`), read from its journal; its errors,
+ * each error as its kind names it (`ValueError`, `TypeError`, `LookupError`, else `Error`); its scope; its remainder, a
+ * position in the expression the reader gave; its journal, a `Changes.Transaction` of the reading store's; and whether
+ * it is terminal, a routing mark passed through to the layer that commits. What cannot cross is refused, not lost: a
+ * frame binding a counted object, which has no reference, comes over with that symbol left out of its journal, and
+ * annotated with why (`LookupError`), as mbse-schemas writes it. */
 
-import { Errors, JSON as J, Plain, References, Transactions } from "@mbse/schemas/Framework";
+import { Errors, Plain, References, Transactions } from "@mbse/schemas/Framework";
 import { LookupError, ValueError } from "@mbse/schemas/Framework/Errors";
 
 const { Frame, FrameError, Remainder } = Transactions;
@@ -52,24 +61,10 @@ export function errorOf(kind: string, message: string): Error {
   return new (ERRORS[kind] ?? Error)(message);
 }
 
-/** An input frame as plain data, a `References.OfFrame` of `store`'s, refused where it binds what has no reference. */
+/** An input frame as plain data, a `References.OfFrame` of `store`'s: its journal, its bindings each by its reference,
+ * and whether it is terminal; a symbol binding what has no reference left out, and annotated. */
 export function frame(store: any, given: Map<string, unknown>): Plain.PlainData {
   return Plain.ToPlain(store)(store.registered("References.OfFrame"), References.of(store, given));
-}
-
-function object(store: any, plain: unknown): unknown {
-  const path = plain instanceof Map ? plain.get("path") : undefined;
-  if (path instanceof Map && path.get("singleton") === ".") return store.held(path);
-  return Plain.FromPlain(store)(store.registered("References.OfObject"), plain as Plain.PlainData);
-}
-
-function value(store: any, plain: unknown): unknown {
-  const holder = Plain.FromPlain(store)(store.registered("References.OfValue"), new Map([["value", plain]]) as any);
-  return store.member(holder, "value");
-}
-
-function journal(store: any, plain: unknown): unknown {
-  return Plain.FromPlain(store)(store.registered("Changes.Journal"), [plain] as Plain.PlainData);
 }
 
 function list(plain: PlainMap, name: string): unknown[] {
@@ -78,53 +73,47 @@ function list(plain: PlainMap, name: string): unknown[] {
   return found;
 }
 
-/** A `References.OfFrame`, as plain data, as a frame of `store`'s: its bindings, errors, scope, what it assigns, its
- * journal and, where `transaction` is the expression it was executed over, its remainder in it. */
-export function readFrame(store: any, plain: unknown, transaction: unknown = null): Frame {
-  if (!(plain instanceof Map) || !((plain.get("binds") ?? new Map()) instanceof Map)) {
-    throw new ValueError("a frame is a References.OfFrame, a JSON object: its binds an object, its assigns and its "
-      + "errors lists");
+/** A frame's parts before it was its journal (mbse-schemas 0.38). */
+const OLD = ["binds", "assigns", "entries", "variables"];
+
+/** A `References.OfFrame`, as plain data, as a frame of `store`'s: its bindings, read from its journal's symbols, each a
+ * reference, data, a schema object's a `References.OfSchema`, which the layer it goes to resolves; its errors, scope,
+ * journal and whether it is terminal; and, where `transaction` is the expression it was executed over, its remainder
+ * in it. An input frame, `given` to `txn.exec`, carries no journal, as a layer above gives one in a process. One
+ * written before a frame was its journal, with `binds` or `assigns`, is refused (`ValueError`). */
+export function readFrame(store: any, plain: unknown, transaction: unknown = null, given = false): Frame {
+  if (!(plain instanceof Map)) {
+    throw new ValueError("a frame is a References.OfFrame, a JSON object: its journal a Changes.Transaction, its "
+      + "errors a list");
   }
-  const errors = list(plain, "errors").map((given) => {
-    const e = given as PlainMap;
+  const old = OLD.filter((name) => plain.has(name));
+  if (old.length > 0) {
+    throw new ValueError("a frame is a References.OfFrame, its journal a Changes.Transaction (mbse-schemas 0.38): "
+      + `its ${old.join(", ")} are gone`);
+  }
+  const journalPlain = plain.get("journal") ?? new Map();
+  if (!(journalPlain instanceof Map) || !((journalPlain.get("symbols") ?? new Map()) instanceof Map)) {
+    throw new ValueError("a frame's journal is a Changes.Transaction, a JSON object: its symbols an object");
+  }
+  const errors = list(plain, "errors").map((e0) => {
+    const e = e0 as PlainMap;
     const kind = (e.get("kind") ?? "Error") as string;
     const message = (e.get("message") ?? "") as string;
     return new FrameError((e.get("subterm") ?? "$") as string, kind, message, errorOf(kind, message));
   });
-  const bound: [string, unknown][] = [];
-  const paths: [string, string][] = [];
-  for (const [name, reference] of (plain.get("binds") ?? new Map()) as PlainMap) {
-    const found = object(store, reference);
-    if (found === null || found === undefined) {
-      const message = `symbol '${name}' of the frame: a schema object the layer it goes to does not hold`;
-      errors.push(new FrameError((plain.get("remainder") ?? "$") as string, "LookupError", message,
-        new LookupError(message)));
-      continue;
-    }
-    bound.push([name, found]);
-    paths.push([name, J.dumps(reference as Plain.PlainData)]);
-  }
-  const assigns = new Map<string, Map<string, unknown>>();
-  for (const witnessed of list(plain, "assigns") as PlainMap[]) {
-    const key = J.dumps(witnessed.get("object") as Plain.PlainData);
-    const values = [...((witnessed.get("properties") ?? new Map()) as PlainMap)]
-      .map(([name, given]) => [name, value(store, given)] as [string, unknown]);
-    for (const [name, path] of paths) {
-      if (path !== key) continue;
-      const held = assigns.get(name) ?? new Map<string, unknown>();
-      for (const [property, given] of values) held.set(property, given);
-      assigns.set(name, held);
-    }
-  }
+  const journal = Plain.FromPlain(store)(store.registered("Changes.Transaction"), journalPlain as Plain.PlainData);
+  const reference = store.registered("References.OfObject");
+  const bound = [...((journalPlain.get("symbols") ?? new Map()) as PlainMap)].map(([name, symbol]) =>
+    [name, Plain.FromPlain(store)(reference, ((symbol ?? new Map()) as PlainMap).get("reference") as Plain.PlainData)] as
+      [string, unknown]);
   const remainder = plain.get("remainder");
-  return new Frame(bound, errors, assigns,
+  return new Frame(bound, errors,
     typeof remainder !== "string" || transaction === null ? null : new Remainder(transaction, at(remainder)),
-    (plain.get("scope") ?? null) as string | null,
-    plain.get("journal") === undefined || plain.get("journal") === null ? null : journal(store, plain.get("journal")));
+    (plain.get("scope") ?? null) as string | null, given ? null : journal, plain.get("terminal") === true);
 }
 
 /** An item of a frame stream, a `References.OfItem` as plain data, as `txn.exec` gives it in a process: a frame
- * (`readFrame`), or the completion marker `{"end": scope}`, with its `journal` where it carries one. */
+ * (`readFrame`), or the completion marker `{"end": scope}`, which carries nothing else. */
 export function readItem(store: any, plain: unknown, transaction: unknown): Item {
   const refused = (): ValueError =>
     new ValueError('an item of a frame stream is a References.OfItem: {"frame": ...} or {"end": ...}');
@@ -132,9 +121,5 @@ export function readItem(store: any, plain: unknown, transaction: unknown): Item
   if (plain.has("frame")) return readFrame(store, plain.get("frame"), transaction);
   const end = plain.get("end");
   if (!(end instanceof Map)) throw refused();
-  const marker = new Map<string, unknown>([["end", end.get("scope") ?? null]]);
-  if (end.get("journal") !== undefined && end.get("journal") !== null) {
-    marker.set("journal", journal(store, end.get("journal")));
-  }
-  return marker as Item;
+  return new Map<string, unknown>([["end", end.get("scope") ?? null]]) as Item;
 }

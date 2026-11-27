@@ -15,7 +15,7 @@ builds the application from `MBSE_REST_*` variables, as `python -m mbse.Services
 | `GET /schemas` | [CAP-002: named schema list](mbse:mbse-basis/docs/capabilities/CAP-002.md) | the install transactions the service was given, in order, each a transaction's expression: a client given no installs of its own runs them |
 | `GET /schemas/{name}` | [CAP-003: schema inspector](mbse:mbse-basis/docs/capabilities/CAP-003.md) | 501 until mbse-schemas writes one schema object as a document (CAP-003, Blocked) |
 | `POST /transactions` | [CAP-308: stacking by mutation transactions, in one round trip](mbse:mbse-basis/docs/capabilities/README.md#CAP-308) | a transaction of the store opened for the client's: `{"transaction": id, "feed", "head"}`, the change feed's position as it opened |
-| `POST /transactions/{id}/exec` | [CAP-308: stacking by mutation transactions, in one round trip](mbse:mbse-basis/docs/capabilities/README.md#CAP-308) | `{"expression", "remainder", "frames", "write"}` executed within it, `txn.exec`: its stream, one `References.OfItem` a line (NDJSON), the last `{"end": {}}` |
+| `POST /transactions/{id}/exec` | [CAP-308: stacking by mutation transactions, in one round trip](mbse:mbse-basis/docs/capabilities/README.md#CAP-308) | `{"expression", "remainder", "frames", "write", "terminal"}` executed within it, `txn.exec`: its stream, one `References.OfItem` a line (NDJSON), each frame its journal, terminal frames among them where `terminal`, the last `{"end": {}}` |
 | `POST /transactions/{id}/commit` | [CAP-308: stacking by mutation transactions, in one round trip](mbse:mbse-basis/docs/capabilities/README.md#CAP-308) | committed: `{"head", "journal", "after"}`, the change feed's position once it has, what the store's follow gave of it, a `Changes.Journal`, and the feed's position just before it |
 | `DELETE /transactions/{id}` | [CAP-308: stacking by mutation transactions, in one round trip](mbse:mbse-basis/docs/capabilities/README.md#CAP-308) | dropped, nothing written: `{}` |
 | `GET /changes?after=id&feed=id&wait=s` | [CAP-290: a service's store stacked, with no snapshot](mbse:mbse-basis/docs/capabilities/README.md#CAP-290) | `{"feed", "head", "journal"}`: the transactions the store committed after the one of id `after`, in order, a `Changes.Journal` as plain data; `head`, the id of the last |
@@ -419,8 +419,9 @@ class Service:
     def exec(self, transaction: str, body: PlainData) -> list[str]:
         """Executes, within the client's transaction of id `transaction`, `body`'s `expression`, a transaction's
         expression, from the subterm its `remainder` names (the whole of it where none), over its input `frames`, each
-        a `References.OfFrame` (one, empty, where none are given), writing where `write` (the default): the stream
-        `txn.exec` gives, each item as JSON text (`Frames.item`), then `{"end": {}}`. Refused (400) where the store
+        a `References.OfFrame` (one, empty, where none are given), writing where `write` (the default), its terminal
+        frames given too where `terminal` (not by default), as a layer above asks for them: the stream `txn.exec`
+        gives, each item as JSON text (`Frames.item`), then `{"end": {}}`. Refused (400) where the store
         refuses what no one frame met, or the body is malformed; the transaction stays open, for the client to abort.
         Where the store fails otherwise, the transaction is dropped (503)."""
         with self._lock:
@@ -428,7 +429,8 @@ class Service:
             held.last = time.monotonic()
             try:
                 if not isinstance(body, dict) or not isinstance(body.get("expression"), dict):
-                    raise ValueError("an exec is {\"expression\", \"remainder\", \"frames\", \"write\"}, its expression "
+                    raise ValueError("an exec is {\"expression\", \"remainder\", \"frames\", \"write\", \"terminal\"}, its "
+                                     "expression "
                                      "a transaction's, a JSON object")
                 plain = stamp(body["expression"], held.session, self.user, lambda: held.when, lambda: held.uid)
                 if held.first is None:
@@ -441,9 +443,9 @@ class Service:
                     expression = _read(self.store, held.txn, plain)
                 subterm = body.get("remainder")
                 given = expression if subterm is None else Remainder(expression, Frames.at(subterm))
-                inputs = [Frames.read_frame(self.store, frame) for frame in (body.get("frames") or [{}])]
+                inputs = [Frames.read_frame(self.store, frame, given=True) for frame in (body.get("frames") or [{}])]
                 items = [JSON.dumps(Frames.item(self.store, x)) for x in held.txn.exec(
-                    inputs, given, bool(body.get("write", True)))]
+                    inputs[0] if len(inputs) == 1 else inputs, given, bool(body.get("write", True)), bool(body.get("terminal", False)))]
             except REFUSALS as error:
                 raise Refused(400, _describe(error)) from error
             except Exception as error:  # the store's own, a layer below it for one, whatever it raises

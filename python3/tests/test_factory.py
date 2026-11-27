@@ -12,7 +12,7 @@ from fastapi.testclient import TestClient
 from mbse.Schemas.Framework import Builders, Plain, References
 
 from mbse.Demos.Apps.WorkTracker import Schemas, Seed
-from mbse.Services.Rest import Service
+from mbse.Services.Rest import Service, Views
 
 from library import install, seed
 
@@ -29,9 +29,8 @@ def frames(response):
 
 
 def assigned(frame, symbol="x"):
-    """The properties the frame assigns the object `symbol` binds, each its value."""
-    [found] = [a for a in frame["assigns"] if a["object"] == frame["binds"][symbol]]
-    return {name: next(iter(value.values())) for name, value in found["properties"].items()}
+    """The properties the frame's journal sets of the object `symbol` binds, each its value."""
+    return Views.properties(frame, symbol)
 
 
 def test_another_app_serves_its_schemas(library):
@@ -62,15 +61,15 @@ def test_another_app_detail_and_adjacency(library):
     detail = Plain.ToPlain(store).Transaction(store.Mutations.OfTransaction(lambda t: t.mutations([lambda mu: mu.map(
         lambda m: m.symbols([lambda p: p.symbols({"x": sicp})]))])))
     [frame] = frames(library.post("/views/detail", json=detail))
-    assert len(frame["entries"]) == 2  # its owning entry, and what it cites
-    assert [a["properties"].get("name") for a in frame["assigns"]] == [
-        {"str": "SICP"}, {"str": "LISP 1.5"}]  # the shelf holds no property, so nothing is assigned it
+    assert len(Views.entries(frame)) == 2  # its owning entry, and what it cites
+    assert [Views.properties(frame, symbol).get("name") for symbol in frame["journal"]["symbols"]] == [
+        "SICP", "LISP 1.5"]  # the shelf holds no property: no symbol of the journal's own, linked by its reference
     cites = Plain.ToPlain(store).Transaction(store.Mutations.OfTransaction(lambda t: t.mutations([lambda mu: mu.map(
         lambda m: m.symbols([lambda p: p.symbols({"x": sicp, "y": store.lib.Book}).spec([
             lambda _: _.x.cites([_.y])])]))])))
     [frame] = frames(library.post("/views/adjacency", json=cites))
-    [entry] = frame["entries"]
-    assert entry["properties"] == {"page": {"int": 12}}
+    [entry] = Views.entries(frame)
+    assert entry["properties"] == {"page": 12}
     assert assigned(frame, "y") == {"name": "LISP 1.5", "pages": 106}
 
 

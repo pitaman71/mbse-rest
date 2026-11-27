@@ -25,16 +25,19 @@ client's requests, and its `exec`; the change feed; the install transactions it 
 | Request | What it does | Answer |
 |---|---|---|
 | `POST /transactions` | opens a transaction of the store for the client's, once no other is open | `{"transaction": id, "feed", "head"}` |
-| `POST /transactions/{id}/exec` | `txn.exec` within it: `{"expression", "remainder", "frames", "write"}`, the expression as `Plain.ToPlain(store).Transaction` writes it, the subterm the remainder starts at, the input frames, each a `References.OfFrame` | the stream of frames, one `References.OfItem` a line (NDJSON), as mbse-schemas writes it, the last `{"end": {}}` |
+| `POST /transactions/{id}/exec` | `txn.exec` within it: `{"expression", "remainder", "frames", "write", "terminal"}`, the expression as `Plain.ToPlain(store).Transaction` writes it, the subterm the remainder starts at, the input frames, each a `References.OfFrame`, and whether terminal frames are asked for, as a layer above asks | the stream of frames, one `References.OfItem` a line (NDJSON), as mbse-schemas writes it, each frame its journal, the last `{"end": {}}` |
 | `POST /transactions/{id}/commit` | commits it, the layers below the store first | `{"head", "journal", "after"}`: what the store's follow gave of it, a `Changes.Journal` |
 | `DELETE /transactions/{id}` | drops it, nothing written | `{}` |
 | `GET /changes?feed=f&after=id&wait=s` | the change feed: each committed transaction as mbse-schemas' `follow` gives it, a one-transaction `Changes.Journal`, read after a position, a transaction's `id`, with [mbse-journals](https://github.com/pitaman71/mbse-journals) | `{"feed", "head", "journal"}` |
 | `GET /schemas` | the install transactions the service was given | a list of transactions' expressions |
 
 One client's transaction is open at a time: another's waits for it, up to 30 seconds, else is refused (503), and one
-left idle (`MBSE_REST_LEASE`, 60 seconds) is dropped. A frame crosses as mbse-schemas writes it, with its scope, its
-remainder, its errors and its journal; what has no reference, a counted object, crosses refused: the frame comes over
-with that symbol left out and an error annotated, which the transaction raises at its end. The contract is what
+left idle (`MBSE_REST_LEASE`, 60 seconds) is dropped. A frame crosses as mbse-schemas writes it (0.38): it is its
+journal, a `Changes.Transaction` whose symbols are its bindings and whose changes the state its path's clauses
+referenced or changed, with its scope, its remainder, its errors and, where it is one, its terminal mark; a completion
+marker, `{"end": {"scope"}}`, carries nothing else. What has no reference, a counted object, crosses refused: the frame
+comes over with that symbol left out of its journal and an error annotated, which the transaction raises at its end. A
+frame written before a frame was its journal, with `binds` or `assigns`, is refused. The contract is what
 mbse-basis' features and capabilities say, as built; the [golden corpus](conformance/README.md) holds real requests and
 responses of the logical views for clients to develop against.
 

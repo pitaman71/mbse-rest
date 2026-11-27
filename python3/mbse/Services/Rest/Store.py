@@ -9,10 +9,10 @@ written against mbse-schemas' public interface alone
 `Builders.Store` holding the schemas alone, whose transaction is one of the service's store, held open by the service
 for as long as its own (`Service`'s request sequence):
 
-- `transaction()` opens one (`POST /transactions`); its `exec(frame, remainder, allow_write)` is a request
-  (`POST /transactions/{id}/exec`) carrying the expression, the subterm the remainder starts at and the input frames,
-  answered with the stream of frames, each read back as a frame of this store's (`Frames`), its remainder a position in
-  the expression given; the scope's end commits it (`POST /transactions/{id}/commit`), a refusal raised as the error
+- `transaction()` opens one (`POST /transactions`); its `exec(frame, remainder, allow_write, terminal)` is a request
+  (`POST /transactions/{id}/exec`) carrying the expression, the subterm the remainder starts at, the input frames and
+  whether terminal frames are asked for, answered with the stream of frames, each its journal, read back as a frame of
+  this store's (`Frames`), its remainder a position in the expression given; the scope's end commits it (`POST /transactions/{id}/commit`), a refusal raised as the error
   the service's store raised (`ValueError`, `TypeError` or `LookupError`), or, where it raises, drops it
   (`DELETE /transactions/{id}`). What the service's follow gave of it as it committed is given to this store's
   followers within the commit, so that a cache layer over it takes it into its own transaction; where the change feed
@@ -197,11 +197,12 @@ class Transaction:
         self._remote, self.id, self._local = remote, id, local
         self.ended = False
 
-    def exec(self, frame: Any, remainder: Any, allow_write: bool) -> Iterator[Any]:
+    def exec(self, frame: Any, remainder: Any, allow_write: bool, terminal: bool = False) -> Iterator[Any]:
         """Executes the suffix of a transaction's expression over input frames within the service's transaction, as
         `Transactions.Transaction.exec` does in a process: `frame`, a frame or a stream of them; `remainder`, a
-        `Transactions.Remainder` or a whole transaction's expression, of this store's. Gives the stream the service
-        gave, each item read as this store's, a frame's remainder a position in the same expression; an error of no one
+        `Transactions.Remainder` or a whole transaction's expression, of this store's; terminal frames given where
+        `terminal`, as a cache layer above asks for them. Gives the stream the service gave, each item read as this
+        store's, each frame its journal, a frame's remainder a position in the same expression; an error of no one
         frame raised as the service's store raised it."""
         if self.ended:
             raise ValueError("a transaction's exec runs within it: this one has ended (store.transaction)")
@@ -214,7 +215,8 @@ class Transaction:
             failed = next((each for each in made if each.errors), None)
             if failed is not None and failed.errors[0].error is not None:
                 raise failed.errors[0].error
-        body = {"expression": plain, "frames": [Frames.frame(remote, given) for given in inputs], "write": allow_write}
+        body = {"expression": plain, "frames": [Frames.frame(remote, given) for given in inputs], "write": allow_write,
+                "terminal": terminal}
         if isinstance(remainder, Remainder):
             body["remainder"] = remainder.subterm
         text = remote._rest.send("POST", f"/transactions/{self.id}/exec", body)

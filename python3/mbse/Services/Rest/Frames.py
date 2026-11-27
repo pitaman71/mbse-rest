@@ -10,18 +10,25 @@ line, `{"frame": ...}` or `{"end": ...}`; the stream's last item is the completi
 `References.OfFrame` as plain data. What crosses is carried as written
 ([PRI-024: the plain form, carried as written](mbse:mbse-basis/docs/PRINCIPLES.md#PRI-024)).
 
-Reading one back gives a `Transactions.Frame` of the reading store's: each symbol's object by its reference (a
-`References.OfObject` of that store), a schema object, by its path from the root module, as the schema object the
-store holds; what it assigns, by symbol, each value read by the schema the reading store gives it; its errors, each
-error as its kind names it (`ValueError`, `TypeError`, `LookupError`, else `RuntimeError`); its scope; its remainder, a
-position in the expression the reader gave (`Transactions.Remainder`); and its journal, a one-transaction
-`Changes.Journal`. A completion marker is `{"end": scope}`, with its `journal` where it carries one.
+Each frame is its journal (mbse-schemas 0.38, mbse-basis
+[CAP-318: support for decoupled code](mbse:mbse-basis/docs/capabilities/README.md#CAP-318)): `{"frame": {"journal", "scope",
+"remainder", "errors", "terminal"}}`, its journal a `Changes.Transaction` whose `symbols` are the frame's bindings,
+an object by its `References.OfObject`, a schema object by its `References.OfSchema`, and whose `changes` are the
+state its path's clauses referenced or changed. A completion marker is `{"end": {"scope"}}`, and carries nothing else.
+A frame written before a frame was its journal, with `binds` and `assigns`, is refused where it is read.
 
-What cannot cross is refused, not lost: a frame binding an object that has no reference, a counted one, or that the
-store reading it does not hold, a schema object, has that symbol left out, and is annotated with the error saying why
-(`LookupError`), as a term's error is annotated (mbse-basis
-[CAP-309: errors annotated on frames](mbse:mbse-basis/docs/capabilities/README.md#CAP-309)), so that the transaction
-raises it at its end.
+Reading one back gives a `Transactions.Frame` of the reading store's: each symbol's object by its reference (a
+`References.OfObject` of that store, a schema object's a `References.OfSchema`), read from its journal; its errors, each error as its kind names it (`ValueError`, `TypeError`, `LookupError`, else
+`RuntimeError`); its scope; its remainder, a position in the expression the reader gave (`Transactions.Remainder`);
+its journal, a `Changes.Transaction` of the reading store's; and whether it is terminal, a routing mark passed through
+to the layer that commits.
+
+What cannot cross is refused, not lost: a frame binding an object that has no reference, a counted one, has that
+symbol left out of its journal, and is annotated with the error saying why (`LookupError`), as mbse-schemas writes it
+(`References.of`), so that the transaction raises it at its end (mbse-basis
+[CAP-309: errors annotated on frames](mbse:mbse-basis/docs/capabilities/README.md#CAP-309)). A schema object crosses by
+its reference from the root module, a `References.OfSchema`, data, which the layer it goes to resolves where it holds
+what it designates.
 """
 
 from __future__ import annotations
@@ -34,7 +41,7 @@ from typing import Any
 from mbse.Schemas.Framework import Errors, Plain, References, Transactions
 from mbse.Schemas.Framework.Transactions import Frame, FrameError, Remainder
 
-__all__ = ["ERRORS", "END", "item", "frame", "read_frame", "read_item", "at", "error_of", "crossing"]
+__all__ = ["ERRORS", "END", "item", "frame", "read_frame", "read_item", "at", "error_of", "is_frame"]
 
 PlainData = Any
 
@@ -71,105 +78,55 @@ def error_of(kind: str, message: str) -> Exception:
     return ERRORS.get(kind, RuntimeError)(message)
 
 
-def _refusal(name: str, error: LookupError) -> str:
-    message = str(error)
-    return message if message.startswith(f"symbol {name!r} of the frame") else f"symbol {name!r} of the frame: {message}"
-
-
-def crossing(given: Frame) -> Frame:
-    """A frame as it crosses: where a symbol binds what has no reference, a counted object, it is left out, and the
-    frame annotated with why (`LookupError`), at its remainder, else at `$`."""
-    bound: dict[str, Any] = {}
-    errors = list(given.errors)
-    for name in dict.keys(given):
-        try:
-            bound[name] = given[name]
-        except LookupError as error:
-            message = _refusal(name, error)
-            errors.append(FrameError(given.remainder.subterm if given.remainder is not None else "$",
-                                     "LookupError", message, LookupError(message)))
-    if len(bound) == len(given):
-        return given
-    assigns = {name: values for name, values in given.assigns.items() if name in bound}
-    return Frame(bound, errors, assigns, given.remainder, given.scope, given.journal)
-
-
 def frame(store: Any, given: Mapping[str, Any]) -> PlainData:
-    """An input frame as plain data, a `References.OfFrame` of `store`'s, refused where it binds what has no
-    reference."""
+    """An input frame as plain data, a `References.OfFrame` of `store`'s: its journal, its bindings each by its
+    reference, and whether it is terminal; a symbol binding what has no reference left out, and annotated."""
     return Plain.ToPlain(store)(store.registered("References.OfFrame"), References.of(store, given))
 
 
 def item(store: Any, given: Mapping[str, Any]) -> PlainData:
-    """An item of a frame stream `txn.exec` gave, as plain data: a `References.OfItem` holding the frame
-    (`crossing`) or the completion marker."""
-    if isinstance(given, Frame):
-        reference = References.of(store, crossing(given))
-        wrapped = store.References.OfItem(lambda u: u.frame(reference))
-    else:
-        reference = References.of(store, given)
-        wrapped = store.References.OfItem(lambda u: u.end(reference))
+    """An item of a frame stream `txn.exec` gave, as plain data: a `References.OfItem` holding the frame, its journal,
+    or the completion marker."""
+    reference = References.of(store, given)
+    wrapped = store.References.OfItem(lambda u: u.frame(reference) if isinstance(given, Frame) else u.end(reference))
     return Plain.ToPlain(store)(store.registered("References.OfItem"), wrapped)
 
 
-def _object(store: Any, plain: PlainData) -> Any:
-    """What a symbol binds, read in `store`: a schema object by its path from the root module, as the schema object
-    it holds, None where it holds none; else the object's reference, a `References.OfObject` of the store's."""
-    path = plain.get("path") if isinstance(plain, Mapping) else None
-    if isinstance(path, Mapping) and path.get("singleton") == ".":
-        return store.held(path)
-    return Plain.FromPlain(store)(store.registered("References.OfObject"), plain)
+_OLD = ("binds", "assigns", "entries", "variables")  # a frame's parts before it was its journal (mbse-schemas 0.38)
 
 
-def _value(store: Any, plain: PlainData) -> Any:
-    """A value of any schema, as `References.OfValue` reads one in `store`."""
-    holder = Plain.FromPlain(store)(store.registered("References.OfValue"), {"value": plain})
-    return store.member(holder, "value")
-
-
-def _journal(store: Any, plain: PlainData) -> Any:
-    """A frame's or a marker's journal, a `Changes.Transaction` as plain data, as the one-transaction `Changes.Journal`
-    a frame carries in a process."""
-    return Plain.FromPlain(store)(store.registered("Changes.Journal"), [plain])
-
-
-def read_frame(store: Any, plain: PlainData, transaction: Any = None) -> Frame:
-    """A `References.OfFrame`, as plain data, as a frame of `store`'s (`Transactions.Frame`): its bindings, errors,
-    scope, what it assigns, its journal and, where `transaction` is the expression it was executed over, its
-    remainder in it. A symbol binding a schema object the store does not hold is left out, and the frame annotated."""
-    if not (isinstance(plain, Mapping) and isinstance(plain.get("binds", {}), Mapping)
-            and all(isinstance(plain.get(name, []), list) for name in ("assigns", "errors"))):
-        raise ValueError("a frame is a References.OfFrame, a JSON object: its binds an object, its assigns and its "
-                         "errors lists")
-    bound: dict[str, Any] = {}
+def read_frame(store: Any, plain: PlainData, transaction: Any = None, given: bool = False) -> Frame:
+    """A `References.OfFrame`, as plain data, as a frame of `store`'s (`Transactions.Frame`): its bindings, read from its
+    journal's symbols, each a reference, data, a schema object's a `References.OfSchema`, which the layer it goes to
+    resolves; its errors, scope, journal and whether it is terminal; and, where `transaction` is the expression it was
+    executed over, its remainder in it. An input frame, `given` to `txn.exec`, carries no journal, as a layer above
+    gives one in a process: its journal is how its bindings cross. One written before a frame was its journal, with
+    `binds` or `assigns`, is refused (`ValueError`)."""
+    if not isinstance(plain, Mapping) or not isinstance(plain.get("errors", []), list):
+        raise ValueError("a frame is a References.OfFrame, a JSON object: its journal a Changes.Transaction, its "
+                         "errors a list")
+    old = [name for name in _OLD if name in plain]
+    if old:
+        raise ValueError(f"a frame is a References.OfFrame, its journal a Changes.Transaction (mbse-schemas 0.38): "
+                         f"its {', '.join(old)} are gone")
+    journal_plain = plain.get("journal") or {}
+    if not isinstance(journal_plain, Mapping) or not isinstance(journal_plain.get("symbols", {}), Mapping):
+        raise ValueError("a frame's journal is a Changes.Transaction, a JSON object: its symbols an object")
     errors = [FrameError(e.get("subterm", "$"), e.get("kind", "RuntimeError"), e.get("message", ""),
                          error_of(e.get("kind", "RuntimeError"), e.get("message", "")))
               for e in (plain.get("errors") or [])]
-    paths: list[tuple[str, str]] = []
-    for name, reference in (plain.get("binds") or {}).items():
-        found = _object(store, reference)
-        if found is None:
-            message = f"symbol {name!r} of the frame: a schema object the layer it goes to does not hold"
-            errors.append(FrameError(plain.get("remainder") or "$", "LookupError", message, LookupError(message)))
-            continue
-        bound[name] = found
-        paths.append((name, json.dumps(reference, sort_keys=True)))
-    assigns: dict[str, dict[str, Any]] = {}
-    for witnessed in plain.get("assigns") or []:
-        key = json.dumps(witnessed.get("object"), sort_keys=True)
-        values = {name: _value(store, value) for name, value in (witnessed.get("properties") or {}).items()}
-        for name, path in paths:
-            if path == key:
-                assigns.setdefault(name, {}).update(values)
+    journal = Plain.FromPlain(store)(store.registered("Changes.Transaction"), journal_plain)
+    reference = store.registered("References.OfObject")
+    bound = {name: Plain.FromPlain(store)(reference, (symbol or {}).get("reference"))
+             for name, symbol in (journal_plain.get("symbols") or {}).items()}
     remainder = plain.get("remainder")
-    return Frame(bound, errors, assigns,
-                 None if remainder is None or transaction is None else Remainder(transaction, at(remainder)),
-                 plain.get("scope"), None if plain.get("journal") is None else _journal(store, plain["journal"]))
+    return Frame(bound, errors, None if remainder is None or transaction is None else Remainder(transaction, at(remainder)),
+                 plain.get("scope"), None if given else journal, bool(plain.get("terminal", False)))
 
 
 def read_item(store: Any, plain: PlainData, transaction: Any) -> Frame | dict[str, Any]:
     """An item of a frame stream, a `References.OfItem` as plain data, as `txn.exec` gives it in a process: a frame
-    (`read_frame`), or the completion marker `{"end": scope}`, with its `journal` where it carries one."""
+    (`read_frame`), or the completion marker `{"end": scope}`, which carries nothing else."""
     if not isinstance(plain, Mapping) or len(plain) != 1:
         raise ValueError("an item of a frame stream is a References.OfItem: {\"frame\": ...} or {\"end\": ...}")
     if "frame" in plain:
@@ -177,10 +134,7 @@ def read_item(store: Any, plain: PlainData, transaction: Any) -> Frame | dict[st
     end = plain.get("end")
     if not isinstance(end, Mapping):
         raise ValueError("an item of a frame stream is a References.OfItem: {\"frame\": ...} or {\"end\": ...}")
-    marker: dict[str, Any] = {"end": end.get("scope")}
-    if end.get("journal") is not None:
-        marker["journal"] = _journal(store, end["journal"])
-    return marker
+    return {"end": end.get("scope")}
 
 
 def is_frame(x: Any) -> bool:

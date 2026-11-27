@@ -109,7 +109,7 @@ def test_a_stream_is_one_frame_a_line(client):
     with client.stream("POST", "/views/label", json=write_task(store_of(client), "TSK-009", "Streamed")) as response:
         assert response.status_code == 200
         lines = list(response.iter_lines())
-    assert len(lines) == 1 and json.loads(lines[0])["binds"]["x"]
+    assert len(lines) == 1 and json.loads(lines[0])["journal"]["symbols"]["x"]["reference"]
 
 
 def test_a_store_that_fails_writes_nothing_and_answers_503():
@@ -163,7 +163,8 @@ def test_a_transaction_the_store_refuses_names_the_kind_of_error():
 
 
 @pytest.mark.parametrize("body", [b"{bad", b"[]", b"{}", b'{"expression": []}', b'{"expression": {}, "remainder": "x"}',
-                                  b'{"expression": {}, "frames": [3]}', b'{"expression": {}, "frames": [{"binds": 3}]}'])
+                                  b'{"expression": {}, "frames": [3]}', b'{"expression": {}, "frames": [{"journal": 3}]}',
+                                  b'{"expression": {}, "frames": [{"binds": {}}]}'])
 def test_a_malformed_exec_is_a_400_and_the_transaction_stays_open(client, body):
     opened = client.post("/transactions").json()["transaction"]
     refusal(client.post(f"/transactions/{opened}/exec", content=body, headers={"content-type": "application/json"}), 400)
@@ -190,7 +191,8 @@ def test_an_exec_answers_a_stream_of_items_its_last_the_end_of_the_stream(client
         lines = [json.loads(line) for line in response.iter_lines()]
     assert [list(line) for line in lines] == [["frame"]] * (len(lines) - 2) + [["end"], ["end"]]
     assert lines[-2] == {"end": {"scope": "0"}} and lines[-1] == {"end": {}} and len(lines) > 2
-    assert all(line["frame"]["scope"] == "0" and list(line["frame"]["binds"]) == ["x"] for line in lines[:-2])
+    assert all(line["frame"]["scope"] == "0" and list(line["frame"]["journal"]["symbols"]) == ["x"]
+               for line in lines[:-2])  # each frame its journal, its symbols its bindings
     client.delete(f"/transactions/{opened['transaction']}")
 
 

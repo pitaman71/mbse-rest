@@ -103,8 +103,9 @@ async function run(module: string): Promise<void> {
 
 /** BLW's setup, its layer below a cache layer over mbse-rest's client of a service of its own, which an install given to
  * the cache layer reaches through `exec` (mbse-schemas 0.35.0, BLW-15); BLW-11's count of what is forwarded, the cache
- * layer's alone; and BLW-12's frame binding a counted object, which crosses from the service refused, its symbol left
- * out. */
+ * layer's alone; BLW-12's frame binding a counted object, which crosses from the service refused, its symbol left
+ * out; and, in BLW-02, BLW-10 and BLW-17, what the layer below, itself a cache layer, neither holds nor gives within a
+ * transaction in mbse-schemas 0.38.0: a terminal frame its own layer below gave back, and an object a write made there. */
 const OVER_REST: [string, string, number][] = [
   ["const lower = seeded(new B.Store());", "const lower = seeded((globalThis as any).__servedOverRest());", 1],
   // BLW-11 counts what the cache layer forwards: the layer below, a cache layer too, forwards to the service besides
@@ -112,13 +113,30 @@ const OVER_REST: [string, string, number][] = [
   // BLW-12: a frame binding a counted object crosses from the service with that symbol left out, annotated with why
   [`    raises(LookupError, () => noted.get("n"), "symbol 'n' of the frame: a counted 'crm.Note' has no reference");`,
     `    assert(!noted.has("n") && noted.errors[0].message.startsWith("symbol 'n' of the frame: a counted 'crm.Note' has no reference"));`, 1],
+  // BLW-02: the layer below is itself a cache layer, and a cache layer gives a terminal frame that comes back from its
+  // own layer below to no caller, though a cache layer above asks for terminal frames (mbse-schemas 0.38.0,
+  // `_fromBelow`): the cache layer above does not apply its journal within the transaction; its follow brings it after
+  [`    assert(frames(all).length === 0 && equal([...cache.extent("crm.Person")].map((p: any) =>
+      [p.name.get(), cache.member(p, "age")]), [["Cy", 31n]])); // applied within it`,
+    `    assert(frames(all).length === 0); // not applied within it: the layer below, a cache layer, gave it no caller`, 1],
+  // BLW-10: what a write through the cache layer makes below, the layer below, a cache layer, does not hold within the
+  // transaction: the frame it is given back names it by its reference, and a cache layer applies a frame's journal to
+  // the objects it holds alone (mbse-schemas 0.38.0); its follow brings it once committed
+  [`    assert(lower.singleton("crm.TheBook").contacts({ key: "gus" }).name.get() === "Gus"); // below, within it`,
+    `    // not read below within it: the layer below, a cache layer, holds what its own layer below made only once committed`, 1],
+  // BLW-17: as in BLW-02, the layer below, a cache layer, gives the terminal frames that come back to it to no caller:
+  // the cache layer above applies their journals only by its follow, once committed, and with no follow, not at all
+  [`    assert(equal([...cache.extent("crm.Person")].map((p: any) => [p.name.get(), cache.member(p, "age")]), [["Cy", 50n]])); // its journal`,
+    `    assert(equal([...cache.extent("crm.Person")].map((p: any) => [p.name.get(), cache.member(p, "age")]), [["Cy", null]])); // no journal given`, 1],
+  [`  assert(equal(people(cache), [["Cy", 51n, []]]) && people(lower).some((each: any) => equal(each, ["Cy", 51n, []])));`,
+    `  assert(equal(people(cache), [["Cy", 50n, []]]) && people(lower).some((each: any) => equal(each, ["Cy", 51n, []])));`, 1],
 ];
 
 describe("mbse-schemas' BLW, over REST", () => {
   test("BLW: each case as mbse-schemas wrote it, mbse-rest at the bottom of the stack", async () => {
     (globalThis as any).__servedOverRest = () => Store(nodeTransport(fresh()));
     await run(generated("mbse-schemas", "36_Below.ipynb", "BLW.ts", OVER_REST));
-    assert.equal((globalThis as any).__case, "BLW-15");
+    assert.equal((globalThis as any).__case, "BLW-17");
   });
 });
 
@@ -215,7 +233,12 @@ describe("the client", () => {
       assert.equal(halted.remainder.transaction, rename); // a position in the expression it was given
       const [resumed] = frames(txn.exec(halted, halted.remainder, true));
       const [found] = frames(txn.exec(new Frame(), find, true));
-      assert.ok(first.journal !== null && resumed.journal !== null && found.journal === null);
+      const sets = (frame: any): unknown[] => ((Plain.ToPlain(remote)(frame.journal.as_schema(), frame.journal) as
+        Map<string, any>).get("changes") as Map<string, any>[]).filter((change) => change.get("property")?.has("set"))
+        .map((change) => J.dumps(change.get("property").get("set")));
+      assert.deepEqual(sets(found), ['{"holder": "b", "name": "name", "value": "How to Design Programs"}']); // its journal
+      assert.deepEqual(sets(first), ['{"holder": "b", "name": "name", "value": "HtDP"}']);
+      assert.deepEqual(sets(resumed), sets(found));
       assert.equal(feed(url).length, before); // nothing committed yet
     });
     assert.deepEqual(made.map(([method]) => method), ["POST", "POST", "POST", "POST", "POST", "POST"]);
@@ -325,7 +348,7 @@ describe("the client", () => {
       { status: 200, body: "{}" }, { status: 200, body: "{\"transaction\": \"t4\"}" },
       { status: 503, body: "{\"error\": \"the database is unreachable\"}" }, { status: 503, body: "{}" },
       { status: 410, body: "{\"error\": \"restarted\"}" }, { status: 500, body: "not json" },
-      { status: 200, body: "{\"transaction\": \"t5\"}" }, { status: 200, body: "{\"frame\": {\"binds\": {}}}\n" },
+      { status: 200, body: "{\"transaction\": \"t5\"}" }, { status: 200, body: "{\"frame\": {\"journal\": {}}}\n" },
       { status: 200, body: "{}" }];
     const remote: any = new Remote(() => replies.shift()!);
     const expression = remote.Mutations.OfTransaction((t: any) => t.mutations([]));
