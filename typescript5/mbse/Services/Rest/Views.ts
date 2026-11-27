@@ -112,7 +112,8 @@ export interface Frame {
   readonly value: any;
   /** Each symbol's `References.OfObject`, the journal's own among them. */
   readonly binds: ReadonlyMap<string, unknown>;
-  /** The properties the journal sets, by symbol, each its value, in the order set. */
+  /** The properties the journal sets, by the key of the object it sets them of (`keyOf`), each its value, in the order
+   * set. */
   readonly properties: ReadonlyMap<string, ReadonlyMap<string, unknown>>;
   /** Each entry the journal inserts, in order. */
   readonly entries: readonly Entry[];
@@ -152,9 +153,10 @@ export function read(store: any, line: string): Frame {
   for (const change of (journal.get("changes") ?? []) as PlainMap[]) {
     const set = (change.get("property") as PlainMap | undefined)?.get("set") as PlainMap | undefined;
     if (set !== undefined) {
-      const held = properties.get(set.get("holder")) ?? new Map<string, unknown>();
+      const key = keyOf(store, binds.get(set.get("holder")));
+      const held = properties.get(key) ?? new Map<string, unknown>();
       held.set(set.get("name"), set.get("value"));
-      properties.set(set.get("holder"), held);
+      properties.set(key, held);
     }
     const insert = (change.get("entry") as PlainMap | undefined)?.get("insert") as PlainMap | undefined;
     if (insert === undefined) continue;
@@ -192,15 +194,10 @@ export function properties(store: any, frame: Frame, symbol = "x"): ReadonlyMap<
   return assignedTo(store, frame, frame.binds.get(symbol));
 }
 
-/** The properties `frame` carries of the object `reference` designates, by the symbol that binds it; empty where none
- * does, or it carries none. */
+/** The properties `frame` carries of the object `reference` designates; empty where it carries none. */
 function assignedTo(store: any, frame: Frame, reference: unknown): ReadonlyMap<string, unknown> {
   if (reference === undefined || reference === null) return new Map();
-  const key = keyOf(store, reference);
-  for (const [symbol, bound] of frame.binds) {
-    if (keyOf(store, bound) === key && frame.properties.has(symbol)) return frame.properties.get(symbol)!;
-  }
-  return new Map();
+  return frame.properties.get(keyOf(store, reference)) ?? new Map();
 }
 
 type Step = Map<string, any>;
