@@ -1,1 +1,1 @@
-{"binds": {"x": {"path": {"singleton": "work.Comments", "next": {"target": {}}}}}, "assigns": [], "entries": []}
+{"journal": {"symbols": {"x": {"reference": {"path": {"singleton": "work.Comments", "next": {"target": {}}}}}}, "changes": []}}

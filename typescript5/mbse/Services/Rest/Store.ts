@@ -10,9 +10,10 @@
  * `xhrTransport(base)` in a browser, or the URL, which chooses one): a store, a `Builders.Store` holding the schemas
  * alone, whose transaction is one of the service's store, held open by the service for as long as its own:
  *
- * - `transaction((txn = null) => ...)` opens one (`POST /transactions`); its `exec(frame, remainder, allowWrite)` is a
- *   request (`POST /transactions/{id}/exec`) carrying the expression, the subterm the remainder starts at and the input
- *   frames, answered with the stream of frames, each read back as a frame of this store's (`Frames.ts`), its remainder
+ * - `transaction((txn = null) => ...)` opens one (`POST /transactions`); its `exec(frame, remainder, allowWrite,
+ *   terminal)` is a request (`POST /transactions/{id}/exec`) carrying the expression, the subterm the remainder starts
+ *   at, the input frames and whether terminal frames are asked for, answered with the stream of frames, each its
+ *   journal, read back as a frame of this store's (`itemOf`), its remainder
  *   a position in the expression given; the scope's end commits it (`POST /transactions/{id}/commit`), a refusal
  *   thrown as the error the service's store raised (`ValueError`, `TypeError` or `LookupError`), or, where it throws,
  *   drops it (`DELETE /transactions/{id}`). What the service's follow gave of it as it committed is given to this
@@ -37,10 +38,9 @@
  * is a synchronous `XMLHttpRequest`, which blocks the page while the service answers, and is better made from a
  * worker. */
 
-import { Builders, JSON as J, Plain, Transactions } from "@mbse/schemas/Framework";
+import { Builders, Errors, JSON as J, Plain, References, Transactions } from "@mbse/schemas/Framework";
 import { LookupError, ValueError } from "@mbse/schemas/Framework/Errors";
 import { ServiceError, TransportError, Unavailable } from "./Client.js";
-import * as Frames from "./Frames.js";
 
 const { Frame, Observable, Remainder } = Transactions;
 type Frame = InstanceType<typeof Frame>;
@@ -256,6 +256,92 @@ function installs(remote: any, plain: unknown): boolean {
   return Array.isArray(plain) && plain.some((value) => installs(remote, value));
 }
 
+// --- A frame stream, as mbse-schemas writes and reads its values ---
+//
+// Each item of a stream is a `References.OfItem` value, written and read by mbse-schemas' own `JSON`, one a line: no
+// format of mbse-rest's own (mbse-basis [PRI-018: no model needs code to read or write](mbse:mbse-basis/docs/PRINCIPLES.md#PRI-018),
+// [PRI-024: the plain form, carried as written](mbse:mbse-basis/docs/PRINCIPLES.md#PRI-024)). What a frame is made of
+// in a process, a `Transactions.Frame`, is read from its value through the visitors: mbse-schemas gives `References.of`,
+// a frame's value, and no function giving the frame of a value (a gap of mbse-schemas 0.38.0); nor one reading a
+// subterm as the position a `Transactions.Remainder` holds, which `at` does. As Python's `Store.py`.
+
+const { FrameError } = Transactions;
+
+/** The errors a frame's error annotation is read back as, by the name of its kind; any other kind is an `Error`. */
+const ERRORS: Readonly<Record<string, new (message: string) => Error>> = { ValueError, TypeError, LookupError };
+
+const STEP = /^(?:\.([A-Za-z_][A-Za-z0-9_]*)|\[(\d+)\]|\[("(?:[^"\\]|\\.)*")\])/;
+
+/** The position a subterm names, `$.mutations[0].map.then[0].update`, as a `Transactions.Remainder` holds it, the
+ * inverse of mbse-schemas' `Errors.path`; refused (`ValueError`) where it is no subterm. */
+export function at(subterm: string): (string | number)[] {
+  const steps: (string | number)[] = [];
+  let rest = subterm.startsWith("$") ? subterm.slice(1) : null;
+  while (rest !== null && rest.length > 0) {
+    const match = STEP.exec(rest);
+    if (match === null) break;
+    steps.push(match[1] ?? (match[2] !== undefined ? Number(match[2]) : JSON.parse(match[3]!) as string));
+    rest = rest.slice(match[0].length);
+  }
+  if (rest === null || rest.length > 0 || Errors.path(...steps) !== subterm) {
+    throw new ValueError(`not a subterm: ${JSON.stringify(subterm)}`);
+  }
+  return steps;
+}
+
+/** The value object a member or an element holds, as its visitor; null where it holds none. */
+function object(member: any): any {
+  let found: any = null;
+  member.as_object((o: any) => { found = o; return o; });
+  return found !== null && found.as_schema() !== null && found.as_schema() !== undefined ? found : null;
+}
+
+/** The elements of the container a member holds, each with its index, in order; none where it holds none. */
+function elements(member: any): [unknown, any][] {
+  let found: [unknown, any][] = [];
+  member.as_value((a: any) => a.as_container((c: any) => {
+    if (c.as_schema() !== null && c.as_schema() !== undefined) {
+      c.as_entries((entries: Iterator<[unknown, any]>) => { found = [...{ [Symbol.iterator]: () => entries }]; });
+    }
+    return c;
+  }));
+  return found;
+}
+
+/** An item of a frame stream `txn.exec` gave, a frame or a completion marker, as a `References.OfItem` value. */
+export function item(store: any, given: unknown): any {
+  const reference = References.of(store, given);
+  return store.References.OfItem((u: any) => given instanceof Frame ? u.frame(reference) : u.end(reference));
+}
+
+/** The frame a `References.OfFrame` value of `store`'s is, read through its visitors: its bindings, its journal's
+ * symbols, each by its reference; its errors, each thrown as its kind names it; its scope; whether it is terminal; its
+ * journal, but where it is `given` to `txn.exec`; and, where `transaction` is the expression it was executed over, its
+ * remainder in it. */
+export function frameOf(_store: any, value: any, transaction: unknown = null, given = false): Frame {
+  const journal = object(value.journal);
+  const bound: [string, unknown][] = journal === null ? [] : elements(journal.symbols)
+    .map(([name, symbol]) => [name as string, object(object(symbol).reference)]);
+  const errors = elements(value.errors).map(([, element]) => {
+    const error = object(element);
+    const kind = (error.kind.get() ?? "Error") as string;
+    const message = (error.message.get() ?? "") as string;
+    return new FrameError((error.subterm.get() ?? "$") as string, kind, message, new (ERRORS[kind] ?? Error)(message));
+  });
+  const remainder = value.remainder.get();
+  return new Frame(bound, errors,
+    typeof remainder !== "string" || transaction === null ? null : new Remainder(transaction, at(remainder)),
+    (value.scope.get() ?? null) as string | null, given ? null : journal, value.terminal.get() === true);
+}
+
+/** What a `References.OfItem` value of `store`'s is, as `txn.exec` gives it in a process: a frame (`frameOf`), or the
+ * completion marker `{"end": scope}`. */
+export function itemOf(store: any, value: any, transaction: unknown): Item {
+  const held = value.frame;
+  if (held.as_schema() !== null && held.as_schema() !== undefined) return frameOf(store, held, transaction);
+  return new Map<string, unknown>([["end", value.end.scope.get() ?? null]]) as Item;
+}
+
 /** A transaction of the service's store, open for one of this store's: what a cache layer over the store is given by
  * `transaction(...)`. It lives as long as its scope. */
 export class Transaction {
@@ -265,14 +351,15 @@ export class Transaction {
 
   /** Executes the suffix of a transaction's expression over input frames within the service's transaction, as
    * `Transactions.Transaction.exec` does in a process: `frame`, a frame or a stream of them; `remainder`, a
-   * `Transactions.Remainder` or a whole transaction's expression, of this store's. Gives the stream the service gave, an
-   * observable, its request made as it is subscribed to, each item read as this store's, a frame's remainder a position
-   * in the same expression; an error of no one frame, the observable's error, as the service's store raised it. */
-  exec(frame: unknown, remainder: unknown, allowWrite: boolean): Transactions.Observable<Item> {
+   * `Transactions.Remainder` or a whole transaction's expression, of this store's; terminal frames given where
+   * `terminal`, as a cache layer above asks for them. Gives the stream the service gave, an observable, its request made
+   * as it is subscribed to, each item read as this store's, each frame its journal, a frame's remainder a position in
+   * the same expression; an error of no one frame, the observable's error, as the service's store raised it. */
+  exec(frame: unknown, remainder: unknown, allowWrite: boolean, terminal = false): Transactions.Observable<Item> {
     return new Observable<Item>((observer) => {
       let items: Item[];
       try {
-        items = this.items(frame, remainder, allowWrite);
+        items = this.items(frame, remainder, allowWrite, terminal);
       } catch (error) {
         observer.error!(error);
         return;
@@ -285,7 +372,7 @@ export class Transaction {
     });
   }
 
-  items(frame: unknown, remainder: unknown, allowWrite: boolean): Item[] {
+  items(frame: unknown, remainder: unknown, allowWrite: boolean, terminal = false): Item[] {
     if (this.ended) throw new ValueError("a transaction's exec runs within it: this one has ended (store.transaction)");
     const remote = this._remote;
     const expression = remainder instanceof Remainder ? remainder.transaction : remainder;
@@ -303,15 +390,19 @@ export class Transaction {
       if (failed !== undefined && failed.errors[0]!.error !== null) throw failed.errors[0]!.error;
     }
     const body = new Map<string, unknown>([["expression", plain],
-      ["frames", inputs.map((given) => Frames.frame(remote, given))], ["write", allowWrite]]);
+      ["frames", inputs.map((given) => Plain.ToPlain(remote)(remote.registered("References.OfFrame"),
+        References.of(remote, given)))], ["write", allowWrite], ["terminal", terminal]]);
     if (remainder instanceof Remainder) body.set("remainder", remainder.subterm);
     const text = remote._rest.send("POST", `/transactions/${encodeURIComponent(this.id)}/exec`, body);
     const lines = text.split("\n").filter((line) => line.trim() !== "");
-    if (lines.length === 0 || J.dumps(J.loads(lines[lines.length - 1]!) as any) !== Frames.END) {
+    const OfItem = remote.registered("References.OfItem");
+    const items = lines.map((line) => itemOf(remote, J.FromJSON(remote)(OfItem, line), expression));
+    const last = items[items.length - 1];
+    if (last === undefined || last instanceof Frame || (last as Map<string, unknown>).get("end") !== null) {
       throw new Unavailable(503, J.dumps(new Map([["error",
         "the service's stream ended before its completion marker: nothing it gave is whole"]])));
     }
-    return lines.slice(0, -1).map((line) => Frames.readItem(remote, J.loads(line), expression));
+    return items.slice(0, -1);
   }
 }
 

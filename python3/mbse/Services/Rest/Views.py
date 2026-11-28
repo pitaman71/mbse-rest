@@ -1,6 +1,6 @@
 """The logical view kinds (mbse-basis [FEA-003: no-code logical views](mbse:mbse-basis/docs/features/FEA-003.md)): what each includes, and its template ([CAP-004: logical view templates](mbse:mbse-basis/docs/capabilities/CAP-004.md)).
 
-One definition, shared by the server, which fills each frame's `assigns` and `entries` ([CAP-012: logical view endpoints](mbse:mbse-basis/docs/capabilities/CAP-012.md)), and the client
+One definition, shared by the server, which writes each frame's journal ([CAP-012: logical view endpoints](mbse:mbse-basis/docs/capabilities/CAP-012.md)), and the client
 (`typescript5/mbse/Services/Rest/Views.ts`), which reads them. [FEA-003: no-code logical views](mbse:mbse-basis/docs/features/FEA-003.md#view-kinds) is the prose; the golden corpus in
 `conformance/` checks that both agree.
 
@@ -24,16 +24,26 @@ Counted objects have no reference, so a frame that binds one, and an entry that 
 A frame a transaction gives back holds each object by its reference, and what reads an object lives only within a
 transaction ([CAP-315: every read within a transaction or through a follow](mbse:mbse-basis/docs/capabilities/CAP-315.md)):
 `witness` reads, within a transaction of its own, each object a frame binds again by its reference, found from its
-singleton through the keyed entries that own it, as its path names them.
+singleton through the keyed entries that own it, as its path names them: a store whose objects are read through its
+builders, one in memory. A store kept elsewhere (mbse-dynamodb's) is read only through its interpretation, `txn.exec`,
+whose frames carry what their clauses name, and no clause of mbse-schemas 0.38 names a property without the value it
+must hold: reading a view's properties that way waits on one (`variables`, mbse-basis
+[CAP-142: expressions evaluated in queries](mbse:mbse-basis/docs/capabilities/CAP-142.md)).
+
+What a frame of a view carries is its journal (mbse-schemas 0.38, [CAP-318: support for decoupled code](mbse:mbse-basis/docs/capabilities/README.md#CAP-318)), a
+`Changes.Transaction`, built through mbse-schemas' builders as a witness, as mbse-schemas allows: its symbols the frame's, `x` and `y`, by
+their references, then one of the journal's own, `o0`, `o1`, ..., for each other object whose properties it carries, in
+the order met (a linked object's label, a provenance record, its session and identity); each entry it includes
+inserted, its holder by its symbol, each other link by its symbol, else by its reference, with every property it
+holds; then each object's properties, each set to its value.
 """
 
 from __future__ import annotations
 
-import json
 from collections.abc import Mapping
 from typing import Any
 
-from mbse.Schemas.Framework import Plain, References
+from mbse.Schemas.Framework import JSON, Paths, Plain, References
 from mbse.Schemas.Framework import Schemas as S
 
 __all__ = ["KINDS", "SYMBOLS", "LABELS", "SUMMARIES", "CHIP_SCALARS", "template", "templates", "label_property",
@@ -125,37 +135,109 @@ def _owned(owner: Any, name: str, keys: Mapping[str, Any]) -> Any | None:
 
 
 class _Witness:
-    """What one frame witnesses: each object's assigned properties, once, and each entry, once, in the order met."""
+    """What one frame witnesses, built as its journal ([CAP-318: support for decoupled code](mbse:mbse-basis/docs/capabilities/README.md#CAP-318), a `Changes.Transaction`) through
+    mbse-schemas' builders: its symbols, the frame's own, by their references, then one of the journal's own for each
+    other object whose properties it carries (`o0`, `o1`, ... in the order met); each entry inserted, once, its holder
+    by its symbol, each other link by its symbol, else by its reference, with every property it holds; then each
+    object's properties, once, each set to its value."""
 
-    def __init__(self, store: Any) -> None:
+    def __init__(self, store: Any, binds: Mapping[str, Any]) -> None:
         self.store = store
-        self.assigns: list[Any] = []
-        self.entries: list[Any] = []
-        self._assigned: dict[int, int] = {}  # each object assigned, by id: its position in `assigns`
-        self._entered: set[str] = set()  # each entry witnessed, by its reference
+        self.symbols: dict[str, Any] = {}  # each symbol's spec, `Changes.Symbol`'s, by name, in order
+        self._named: dict[str, str] = {}  # each symbol, by its object's reference's key
+        self._others = 0
+        self._entries: list[tuple[Any, str, dict[str, Any], dict[str, Any]]] = []
+        self._entered: set[str] = set()  # each entry witnessed, by its reference's key
+        self._assigned: set[str] = set()  # each object assigned, by its reference's key
+        self._sets: list[tuple[str, str, Any]] = []  # (symbol, property, value), in order
+        for name, reference in binds.items():
+            self._name(name, reference)
+
+    def _key(self, reference: Any) -> str:
+        return JSON.ToJSON(self.store)(reference.as_schema(), reference)
+
+    def _name(self, name: str, reference: Any, schema: Any = None) -> str:
+        implied = None
+        if schema is not None:
+            try:
+                implied = References.implied(self.store, Plain.ToPlain(self.store)(reference.as_schema(), reference)["path"])
+            except LookupError:
+                pass
+        if schema is None or implied is schema:
+            self.symbols[name] = lambda s: s.reference(reference)
+        else:  # where its path does not imply it, as mbse-schemas writes a symbol
+            self.symbols[name] = lambda s: s.reference(reference).schema(
+                self.store.References.OfSchema(lambda r: r.path(Paths.of(schema))))
+        self._named.setdefault(self._key(reference), name)
+        return name
+
+    def symbol(self, obj: Any) -> str | None:
+        """The symbol that binds `obj`, one of the journal's own where none does; None where it has no reference."""
+        reference = _reference(self.store, obj)
+        if reference is None:
+            return None
+        found = self._named.get(self._key(reference))
+        if found is not None:
+            return found
+        name = f"o{self._others}"
+        while name in self.symbols:  # one the frame binds itself
+            self._others += 1
+            name = f"o{self._others}"
+        self._others += 1
+        return self._name(name, reference, obj.as_schema())
 
     def assign(self, obj: Any, kind: str) -> None:
-        if id(obj) in self._assigned:
-            return
         reference = _reference(self.store, obj)
         names = _properties(obj, kind)
         if reference is None or not names:
             return
-        values = {name: getattr(obj, name).get() for name in names}
-        self._assigned[id(obj)] = len(self.assigns)
-        self.assigns.append(lambda x: x.as_object(lambda p: p.object(reference).properties(values)))
+        key = self._key(reference)
+        if key in self._assigned:
+            return
+        self._assigned.add(key)
+        holder = self.symbol(obj)
+        self._sets += [(holder, name, getattr(obj, name).get()) for name in names]
 
-    def enter(self, entry: Any) -> bool:
-        """Witnesses `entry`, unless it links a counted object; whether it is witnessed."""
+    def enter(self, holder: Any, name: str, entry: Any) -> bool:
+        """Witnesses `entry`, held by `holder`'s adjacency `name`, unless it links a counted object; whether it is
+        witnessed."""
         try:
             reference = References.of(self.store, entry)
         except LookupError:
             return False
-        key = json.dumps(Plain.ToPlain(self.store)(reference.as_schema(), reference), sort_keys=True)
+        key = self._key(reference)
         if key not in self._entered:
             self._entered.add(key)
-            self.entries.append(reference)
+            adjacency = holder.as_schema().adjacencies[name]
+            relation = adjacency.relation.entry
+            links = {link: getattr(entry, link) for link in relation.links if link != adjacency.me}
+            values = {prop: getattr(entry, prop).get() for prop in relation.properties
+                      if getattr(entry, prop).get() is not None}
+            self._entries.append((holder, name, links, values))
         return True
+
+    def journal(self) -> Any:
+        """The journal, built: its symbols, each entry inserted, then each property set."""
+        inserts = [self._insert(*entry) for entry in self._entries]
+        sets = [lambda c, h=holder, n=name, v=value: c.property(lambda p: p.set(lambda s: s.holder(h).name(n).value(v)))
+                for holder, name, value in self._sets]
+        return self.store.Changes.Transaction(lambda t: t.symbols(self.symbols).changes([*inserts, *sets]))
+
+    def _insert(self, holder: Any, name: str, links: dict[str, Any], values: dict[str, Any]) -> Any:
+        symbol = self.symbol(holder)
+        linked = {link: self._link(obj) for link, obj in links.items()}
+
+        def written(i: Any) -> Any:
+            i = i.holder(lambda h: h.symbol(symbol)).adjacency(name).links(linked)
+            return i.properties(values) if values else i
+        return lambda c: c.entry(lambda e: e.insert(written))
+
+    def _link(self, obj: Any) -> Any:
+        """What an entry names a linked object by, a `Changes.OfLink`: its symbol, where one binds it; else its
+        reference."""
+        reference = References.of(self.store, obj)
+        found = self._named.get(self._key(reference))
+        return (lambda l: l.symbol(found)) if found is not None else (lambda l: l.reference(reference))
 
 
 def _history(store: Any, reference: Any) -> list[tuple[str, Mapping[str, Any]]]:
@@ -188,11 +270,11 @@ def _witness_history(seen: "_Witness", obj: Any, history: list[tuple[str, Mappin
             continue
         for entry in getattr(record, relation):
             if entry.object is obj:
-                seen.enter(entry)
+                seen.enter(record, relation, entry)
         for entry in record.session:
-            seen.enter(entry)
+            seen.enter(record, "session", entry)
         for entry in session.who:
-            seen.enter(entry)
+            seen.enter(session, "who", entry)
         seen.assign(record, "detail")
         seen.assign(session, "detail")
         seen.assign(identity, "detail")
@@ -204,8 +286,8 @@ def _linked(obj: Any, entry: Any, adjacency: Any) -> list[Any]:
 
 
 def witness(store: Any, kind: str, frame: Mapping[str, Any]) -> Any | None:
-    """The `References.OfFrame` of a frame a transaction gave back, each object it binds by its reference, its
-    `assigns` and `entries` filled as `kind` defines, read within a transaction of its own; None where it binds a
+    """The `References.OfFrame` of a frame a transaction gave back, its journal (`_Witness`): each object it binds by
+    its reference, and the properties and entries `kind` includes, read within a transaction of its own; None where it binds a
     counted object, which has no reference, or an object the store no longer holds."""
     try:
         binds = {name: frame[name] for name in frame}
@@ -217,7 +299,7 @@ def witness(store: Any, kind: str, frame: Mapping[str, Any]) -> Any | None:
         objects = {name: _found(store, reference) for name, reference in binds.items()}
         if any(obj is None for obj in objects.values()):
             return None
-        seen = _Witness(store)
+        seen = _Witness(store, binds)
         x = objects["x"]
         if kind in ("label", "chip", "detail"):
             seen.assign(x, kind)
@@ -225,7 +307,7 @@ def witness(store: Any, kind: str, frame: Mapping[str, Any]) -> Any | None:
             _witness_history(seen, x, history)
             for name, adjacency in x.as_schema().adjacencies.items():
                 for entry in getattr(x, name):
-                    if seen.enter(entry):
+                    if seen.enter(x, name, entry):
                         for other in _linked(x, entry, adjacency):
                             seen.assign(other, "label")
         if kind == "adjacency":
@@ -233,7 +315,9 @@ def witness(store: Any, kind: str, frame: Mapping[str, Any]) -> Any | None:
             for name, adjacency in x.as_schema().adjacencies.items():
                 for entry in getattr(x, name):
                     if any(other is y for other in _linked(x, entry, adjacency)):
-                        seen.enter(entry)
+                        seen.enter(x, name, entry)
             seen.assign(y, "chip")
             _witness_history(seen, y, history)
-        return store.References.OfFrame(lambda f: f.binds(binds).assigns(seen.assigns).entries(seen.entries))
+        journal = seen.journal()
+        return store.References.OfFrame(lambda f: f.journal(journal))
+

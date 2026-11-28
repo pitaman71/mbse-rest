@@ -19,17 +19,13 @@ OVER = "B.Store(lower)"
 CHANGED = {
     # The cache layer's layer below is the client, which the service serves `lower` to.
     "BLW-01": [("assert cache._below is lower and", "assert cache._below is served[lower] and")],
-    # What has no reference crosses refused: a frame binding a counted object comes over with that symbol left out,
-    # annotated with why, and one binding a schema object the client does not hold likewise, so that the transaction
-    # raises it at its end, where in a process the symbol is bound refused, raising where it is read.
+    # What has no reference crosses refused: a frame binding a counted object comes over with that symbol left out of
+    # its journal, annotated with why, so that the transaction raises it at its end, where in a process the symbol is
+    # bound refused, raising where it is read.
     "BLW-12": [
         ("""        with raises(LookupError, match="symbol 'n' of the frame: a counted 'crm.Note' has no reference"):
             noted["n"]""", """        assert "n" not in noted and noted.errors[0].message.startswith(
             "symbol 'n' of the frame: a counted 'crm.Note' has no reference")"""),
-        ("""(rack,) = cache.transaction(racks)
-with raises(LookupError, match="symbol 's' of the frame: a schema object the layer it goes to does not hold"):
-    rack["s"]""", """with raises(LookupError, match="symbol 's' of the frame: a schema object the layer it goes to does not hold"):
-    cache.transaction(racks)"""),
     ],
 }
 

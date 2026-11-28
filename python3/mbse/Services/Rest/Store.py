@@ -9,10 +9,10 @@ written against mbse-schemas' public interface alone
 `Builders.Store` holding the schemas alone, whose transaction is one of the service's store, held open by the service
 for as long as its own (`Service`'s request sequence):
 
-- `transaction()` opens one (`POST /transactions`); its `exec(frame, remainder, allow_write)` is a request
-  (`POST /transactions/{id}/exec`) carrying the expression, the subterm the remainder starts at and the input frames,
-  answered with the stream of frames, each read back as a frame of this store's (`Frames`), its remainder a position in
-  the expression given; the scope's end commits it (`POST /transactions/{id}/commit`), a refusal raised as the error
+- `transaction()` opens one (`POST /transactions`); its `exec(frame, remainder, allow_write, terminal)` is a request
+  (`POST /transactions/{id}/exec`) carrying the expression, the subterm the remainder starts at, the input frames and
+  whether terminal frames are asked for, answered with the stream of frames, each its journal, read back as a frame of
+  this store's (`item_of`), its remainder a position in the expression given; the scope's end commits it (`POST /transactions/{id}/commit`), a refusal raised as the error
   the service's store raised (`ValueError`, `TypeError` or `LookupError`), or, where it raises, drops it
   (`DELETE /transactions/{id}`). What the service's follow gave of it as it committed is given to this store's
   followers within the commit, so that a cache layer over it takes it into its own transaction; where the change feed
@@ -43,13 +43,13 @@ import urllib.request
 from collections.abc import Callable, Iterator, Mapping
 from typing import Any
 
-from mbse.Schemas.Framework import JSON, Builders, Plain
-from mbse.Schemas.Framework.Transactions import Frame, Remainder
+import re
 
-from . import Frames
+from mbse.Schemas.Framework import JSON, Builders, Errors, Plain, References
+from mbse.Schemas.Framework.Transactions import Frame, FrameError, Remainder
 
 __all__ = ["Transport", "Http", "Remote", "Store", "Transaction", "ServiceError", "Gone", "Unavailable", "REFUSALS",
-           "CATCH_UP", "POLLED"]
+           "CATCH_UP", "POLLED", "item", "end", "frame_of", "item_of", "at"]
 
 PlainData = Any
 
@@ -65,6 +65,94 @@ CATCH_UP = "catch-up"
 
 POLLED = "polled"
 """The follow mode that reads the change feed on `poll()` alone, the cache layer reading what it holds a poll behind."""
+
+
+# --- A frame stream, as mbse-schemas writes and reads its values ---
+#
+# Each item of a stream is a `References.OfItem` value, written and read by mbse-schemas' own `JSON`, one a line: no
+# format of mbse-rest's own (mbse-basis [PRI-018: no model needs code to read or write](mbse:mbse-basis/docs/PRINCIPLES.md#PRI-018),
+# [PRI-024: the plain form, carried as written](mbse:mbse-basis/docs/PRINCIPLES.md#PRI-024)). What a frame is made of
+# in a process, a `Transactions.Frame`, is read from its value through the visitors: mbse-schemas gives `References.of`,
+# a frame's value, and no function giving the frame of a value (reported as a gap of mbse-schemas 0.38.0); nor one
+# reading a subterm, `$.mutations[0].map`, as the position a `Transactions.Remainder` holds, which `at` does.
+
+
+def item(store: Any, given: Any) -> Any:
+    """An item of a frame stream `txn.exec` gave, a frame or a completion marker, as a `References.OfItem` value."""
+    reference = References.of(store, given)
+    return store.References.OfItem(lambda u: u.frame(reference) if isinstance(given, Frame) else u.end(reference))
+
+
+def end(store: Any) -> Any:
+    """The completion marker of a whole stream, `{"end": None}`, as a `References.OfItem` value: a stream's last item."""
+    return item(store, {"end": None})
+
+
+_STEP = re.compile(r'\.([A-Za-z_][A-Za-z0-9_]*)|\[(\d+)\]|\[("(?:[^"\\]|\\.)*")\]')
+
+
+def at(subterm: str) -> tuple[str | int, ...]:
+    """The position a subterm names, `$.mutations[0].map.then[0].update`, as `Transactions.Remainder` holds it, the
+    inverse of mbse-schemas' `Errors.path`; refused (`ValueError`) where it is no subterm."""
+    steps: list[str | int] = []
+    rest = subterm[1:] if subterm.startswith("$") else None
+    while rest:
+        match = _STEP.match(rest)
+        if match is None:
+            break
+        name, index, quoted = match.groups()
+        steps.append(name if name is not None else int(index) if index is not None else json.loads(quoted))
+        rest = rest[match.end():]
+    if rest is None or rest or Errors.path(*steps) != subterm:
+        raise ValueError(f"not a subterm: {subterm!r}")
+    return tuple(steps)
+
+
+def _object(member: Any) -> Any:
+    """The value object a member or an element holds, as its visitor; None where it holds none."""
+    found: list[Any] = []
+    member.as_object(lambda o: found.append(o) or o)
+    return found[0] if found and found[0].as_schema() is not None else None
+
+
+def _elements(member: Any) -> list[tuple[Any, Any]]:
+    """The elements of the container a member holds, each with its index, in order; none where it holds none (a visitor
+    of nothing has no schema)."""
+    found: list[tuple[Any, Any]] = []
+
+    def entries(c: Any) -> Any:
+        if c.as_schema() is not None:
+            c.as_entries(found.extend)
+        return c
+    member.as_value(lambda a: a.as_container(entries) or a)
+    return found
+
+
+def frame_of(store: Any, value: Any, transaction: Any = None, given: bool = False) -> Frame:
+    """The frame a `References.OfFrame` value of `store`'s is, read through its visitors: its bindings, its journal's
+    symbols, each by its reference; its errors, each raised as its kind names it (`REFUSALS`, else `RuntimeError`);
+    its scope; whether it is terminal; its journal, but where it is `given` to `txn.exec`, as a layer above gives one;
+    and, where `transaction` is the expression it was executed over, its remainder in it."""
+    journal = _object(value.journal)
+    bound = {} if journal is None else {
+        name: _object(_object(symbol).reference) for name, symbol in _elements(journal.symbols)}
+    errors = []
+    for _, element in _elements(value.errors):
+        error = _object(element)
+        kind, message = error.kind.get() or "RuntimeError", error.message.get() or ""
+        errors.append(FrameError(error.subterm.get() or "$", kind, message, REFUSALS.get(kind, RuntimeError)(message)))
+    remainder = value.remainder.get()
+    return Frame(bound, errors, None if remainder is None or transaction is None else Remainder(transaction, at(remainder)),
+                 value.scope.get(), None if given else journal, bool(value.terminal.get()))
+
+
+def item_of(store: Any, value: Any, transaction: Any) -> Frame | dict[str, Any]:
+    """What a `References.OfItem` value of `store`'s is, as `txn.exec` gives it in a process: a frame (`frame_of`), or
+    the completion marker `{"end": scope}`."""
+    held = value.frame
+    if held.as_schema() is not None:
+        return frame_of(store, held, transaction)
+    return {"end": value.end.scope.get()}
 
 
 class ServiceError(RuntimeError):
@@ -197,11 +285,12 @@ class Transaction:
         self._remote, self.id, self._local = remote, id, local
         self.ended = False
 
-    def exec(self, frame: Any, remainder: Any, allow_write: bool) -> Iterator[Any]:
+    def exec(self, frame: Any, remainder: Any, allow_write: bool, terminal: bool = False) -> Iterator[Any]:
         """Executes the suffix of a transaction's expression over input frames within the service's transaction, as
         `Transactions.Transaction.exec` does in a process: `frame`, a frame or a stream of them; `remainder`, a
-        `Transactions.Remainder` or a whole transaction's expression, of this store's. Gives the stream the service
-        gave, each item read as this store's, a frame's remainder a position in the same expression; an error of no one
+        `Transactions.Remainder` or a whole transaction's expression, of this store's; terminal frames given where
+        `terminal`, as a cache layer above asks for them. Gives the stream the service gave, each item read as this
+        store's, each frame its journal, a frame's remainder a position in the same expression; an error of no one
         frame raised as the service's store raised it."""
         if self.ended:
             raise ValueError("a transaction's exec runs within it: this one has ended (store.transaction)")
@@ -214,14 +303,17 @@ class Transaction:
             failed = next((each for each in made if each.errors), None)
             if failed is not None and failed.errors[0].error is not None:
                 raise failed.errors[0].error
-        body = {"expression": plain, "frames": [Frames.frame(remote, given) for given in inputs], "write": allow_write}
+        OfFrame, OfItem = remote.registered("References.OfFrame"), remote.registered("References.OfItem")
+        body = {"expression": plain, "frames": [Plain.ToPlain(remote)(OfFrame, References.of(remote, given))
+                                                for given in inputs], "write": allow_write, "terminal": terminal}
         if isinstance(remainder, Remainder):
             body["remainder"] = remainder.subterm
         text = remote._rest.send("POST", f"/transactions/{self.id}/exec", body)
-        lines = [JSON.loads(line) for line in text.splitlines() if line.strip()]
-        if not lines or lines[-1] != Frames.END:
+        items = [item_of(remote, JSON.FromJSON(remote)(OfItem, line), expression)
+                 for line in text.splitlines() if line.strip()]
+        if not items or items[-1] != {"end": None}:
             raise Unavailable(503, "the service's stream ended before its completion marker: nothing it gave is whole")
-        return iter([Frames.read_item(remote, line, expression) for line in lines[:-1]])
+        return iter(items[:-1])
 
     def commit(self) -> None:
         """Commits the service's transaction; what the service's follow gave of it given to the followers. A refusal

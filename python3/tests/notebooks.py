@@ -4,6 +4,7 @@ the notebook runs them, so that a case is run as its sibling wrote it."""
 from __future__ import annotations
 
 import contextlib
+import importlib.util
 import json
 import re
 import sys
@@ -39,8 +40,14 @@ def raises(*kinds: type[BaseException], match: str | None = None) -> Any:
         yield
 
 
-def namespace() -> dict[str, Any]:
-    support = types.ModuleType("support")
-    support.raises = raises  # type: ignore[attr-defined]
-    sys.modules.setdefault("support", support)
+def namespace(sibling: str = "mbse-schemas") -> dict[str, Any]:
+    """A notebook's namespace, its `support` the sibling's own helpers (`tests/support.py`), but `raises`, this one."""
+    if "support" not in sys.modules:
+        path = ROOT / sibling / "python3" / "tests" / "support.py"
+        spec = importlib.util.spec_from_file_location("support", path)
+        support = importlib.util.module_from_spec(spec) if spec is not None else types.ModuleType("support")
+        if spec is not None and spec.loader is not None:
+            spec.loader.exec_module(support)
+        support.raises = raises  # type: ignore[attr-defined]
+        sys.modules["support"] = support
     return {"__name__": "__notebook__"}

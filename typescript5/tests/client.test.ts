@@ -240,7 +240,7 @@ describe("responses: the client reads each stream the corpus holds", () => {
   test("CAP-008: each linked object's entry properties and chip", async () => {
     const [store, got] = await frames("adjacency-goal-capabilities");
     assert.deepEqual(got.map((f) => Views.label(store, f, "y")), ["No-code index view", "Logical view as chip"]);
-    assert.deepEqual([...Views.entryProperties(got[0]!.entries[0])],
+    assert.deepEqual([...Views.entryProperties(got[0]!.entries[0]!)],
       [["original", "2026-11-30"], ["forecast", "2026-12-07"], ["progress", 0.25]]);
   });
 });

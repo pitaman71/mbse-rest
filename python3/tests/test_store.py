@@ -111,7 +111,10 @@ def test_a_transaction_spans_several_exec_calls_in_one_transaction_of_the_servic
     assert [method for method, _ in made] == ["POST"] * 6  # open, four execs, commit: one transaction
     assert made[0][1] == "/transactions" and made[-1][1].endswith("/commit")
     assert names(service.store) == ["How to Design Programs", "LISP 1.5", "SICP"] and service.head != head
-    assert added_.journal is not None and resumed.journal is not None and found.journal is None
+    sets = lambda frame: [change["property"]["set"] for change in Plain.ToPlain(remote)(
+        frame.journal.as_schema(), frame.journal)["changes"] if "set" in change.get("property", {})]
+    assert sets(found) == [{"holder": "b", "name": "name", "value": "How to Design Programs"}]  # each frame its journal
+    assert sets(added_) == [{"holder": "b", "name": "name", "value": "HtDP"}] and sets(resumed) == sets(found)
 
 
 def test_a_refusal_below_aborts_both(api):
@@ -238,7 +241,7 @@ def test_a_refusal_kind_and_a_status_reach_the_client_as_errors():
                     (200, b'{"transaction": "t3"}'), (400, b'{"error": "malformed"}'), (200, b"{}"),
                     (200, b'{"transaction": "t4"}'), (503, b'{"error": "the database is unreachable"}'),
                     (503, b"{}"), (410, b'{"error": "restarted"}'), (500, b"not json"),
-                    (200, b'{"transaction": "t5"}'), (200, b'{"frame": {"binds": {}}}\n'), (200, b"{}")])
+                    (200, b'{"transaction": "t5"}'), (200, b'{"frame": {"journal": {}}}\n'), (200, b"{}")])
     remote = Store.Remote(lambda method, path, body: next(replies))
     expression = remote.Mutations.OfTransaction(lambda t: t.mutations([]))
     for error, match in ((TypeError, "^read-only$"), (LookupError, "^no such path$")):
