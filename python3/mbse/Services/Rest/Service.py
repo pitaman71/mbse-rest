@@ -27,7 +27,7 @@ client's is a `POST /transactions/{id}/exec`, whose body is the expression, `Pla
 subterm its `remainder` starts at (none: the whole of it), the input frames, each a `References.OfFrame` as plain
 data, and whether it writes; then `POST /transactions/{id}/commit`, or `DELETE /transactions/{id}` where the client's
 transaction raises. The service reads the expression in its store, stamps it where it writes (`stamp`), and executes it
-within the transaction open; its stream is written as `Frames` writes it. The store commits, the layers below it first,
+within the transaction open; its stream is written as mbse-schemas writes each item, a `References.OfItem` value. The store commits, the layers below it first,
 where the client commits: the client's layer below commits before the client does, as in a process. One transaction is
 open at a time: another client's waits for it, up to `WAIT` seconds, else is refused (503); one left idle for `lease`
 seconds is dropped, as a client gone away leaves it, and the next request on it is refused (410).
@@ -71,9 +71,9 @@ from starlette.exceptions import HTTPException
 
 from mbse.Journals.Framework import Journals
 from mbse.Schemas.Framework import JSON, Builders, Plain
-from mbse.Schemas.Framework.Transactions import Remainder
+from mbse.Schemas.Framework.Transactions import Frame, Remainder
 
-from . import Frames, Views
+from . import Store, Views
 
 __all__ = ["NDJSON", "Install", "Refused", "Unavailable", "Service", "app", "installs_of", "seed_of", "store_of", "fresh",
            "from_environment", "work_tracker", "writes", "stamp", "WINDOW", "WAIT", "LEASE"]
@@ -195,7 +195,7 @@ def _read(store: Any, txn: Any, plain: PlainData) -> Any:
                                      if isinstance(value, dict) else value)
         return t
 
-    stream = txn.exec(Frames.Frame(), build, False)
+    stream = txn.exec(Frame(), build, False)
     if not built:
         list(stream)
     return built[0]
@@ -421,7 +421,9 @@ class Service:
         expression, from the subterm its `remainder` names (the whole of it where none), over its input `frames`, each
         a `References.OfFrame` (one, empty, where none are given), writing where `write` (the default), its terminal
         frames given too where `terminal` (not by default), as a layer above asks for them: the stream `txn.exec`
-        gives, each item as JSON text (`Frames.item`), then `{"end": {}}`. Refused (400) where the store
+        gives, each item a `References.OfItem` value as mbse-schemas' `JSON` writes it (`Store.item`), then the end of
+        the whole stream, `{"end": {}}`. Each input frame is read as mbse-schemas reads a `References.OfFrame` value,
+        which refuses one written before a frame was its journal. Refused (400) where the store
         refuses what no one frame met, or the body is malformed; the transaction stays open, for the client to abort.
         Where the store fails otherwise, the transaction is dropped (503)."""
         with self._lock:
@@ -442,9 +444,11 @@ class Service:
                 else:
                     expression = _read(self.store, held.txn, plain)
                 subterm = body.get("remainder")
-                given = expression if subterm is None else Remainder(expression, Frames.at(subterm))
-                inputs = [Frames.read_frame(self.store, frame, given=True) for frame in (body.get("frames") or [{}])]
-                items = [JSON.dumps(Frames.item(self.store, x)) for x in held.txn.exec(
+                given = expression if subterm is None else Remainder(expression, Store.at(subterm))
+                OfFrame, OfItem = self.store.registered("References.OfFrame"), self.store.registered("References.OfItem")
+                inputs = [Store.frame_of(self.store, Plain.FromPlain(self.store)(OfFrame, frame), given=True)
+                          for frame in (body.get("frames") or [{}])]
+                items = [JSON.ToJSON(self.store)(OfItem, Store.item(self.store, x)) for x in held.txn.exec(
                     inputs[0] if len(inputs) == 1 else inputs, given, bool(body.get("write", True)), bool(body.get("terminal", False)))]
             except REFUSALS as error:
                 raise Refused(400, _describe(error)) from error
@@ -455,7 +459,7 @@ class Service:
                                   f"{type(error).__name__}: {error}") from error
             finally:
                 held.last = time.monotonic()
-            return [*items, JSON.dumps(Frames.END)]
+            return [*items, JSON.ToJSON(self.store)(OfItem, Store.end(self.store))]
 
     def commit(self, transaction: str) -> dict[str, Any]:
         """Commits the client's transaction of id `transaction`, the layers below the store first: `{"head",

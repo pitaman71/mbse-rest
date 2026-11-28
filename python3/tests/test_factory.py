@@ -15,6 +15,7 @@ from mbse.Demos.Apps.WorkTracker import Schemas, Seed
 from mbse.Services.Rest import Service, Views
 
 from library import install, seed
+import journals
 
 
 @pytest.fixture
@@ -30,7 +31,7 @@ def frames(response):
 
 def assigned(frame, symbol="x"):
     """The properties the frame's journal sets of the object `symbol` binds, each its value."""
-    return Views.properties(frame, symbol)
+    return journals.properties(frame, symbol)
 
 
 def test_another_app_serves_its_schemas(library):
@@ -61,14 +62,14 @@ def test_another_app_detail_and_adjacency(library):
     detail = Plain.ToPlain(store).Transaction(store.Mutations.OfTransaction(lambda t: t.mutations([lambda mu: mu.map(
         lambda m: m.symbols([lambda p: p.symbols({"x": sicp})]))])))
     [frame] = frames(library.post("/views/detail", json=detail))
-    assert len(Views.entries(frame)) == 2  # its owning entry, and what it cites
-    assert [Views.properties(frame, symbol).get("name") for symbol in frame["journal"]["symbols"]] == [
+    assert len(journals.entries(frame)) == 2  # its owning entry, and what it cites
+    assert [journals.properties(frame, symbol).get("name") for symbol in frame["journal"]["symbols"]] == [
         "SICP", "LISP 1.5"]  # the shelf holds no property: no symbol of the journal's own, linked by its reference
     cites = Plain.ToPlain(store).Transaction(store.Mutations.OfTransaction(lambda t: t.mutations([lambda mu: mu.map(
         lambda m: m.symbols([lambda p: p.symbols({"x": sicp, "y": store.lib.Book}).spec([
             lambda _: _.x.cites([_.y])])]))])))
     [frame] = frames(library.post("/views/adjacency", json=cites))
-    [entry] = Views.entries(frame)
+    [entry] = journals.entries(frame)
     assert entry["properties"] == {"page": 12}
     assert assigned(frame, "y") == {"name": "LISP 1.5", "pages": 106}
 

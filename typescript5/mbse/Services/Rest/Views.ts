@@ -2,7 +2,7 @@
  * frame of each kind carries read back ([CAP-005: label and summary view](mbse:mbse-basis/docs/capabilities/CAP-005.md) to [CAP-008: adjacency as a list of chips](mbse:mbse-basis/docs/capabilities/CAP-008.md)). The server's side is `python3/mbse/Services/Rest/Views.py`;
  * [FEA-003: no-code logical views](mbse:mbse-basis/docs/features/FEA-003.md#view-kinds) is the prose, and the golden corpus in `conformance/` checks that both agree. */
 
-import { JSON as J, Paths, Plain, References } from "@mbse/schemas/Framework";
+import { JSON as J, Plain, References } from "@mbse/schemas/Framework";
 
 export const KINDS = ["label", "chip", "detail", "adjacency"] as const;
 export type Kind = (typeof KINDS)[number];
@@ -119,66 +119,93 @@ export interface Frame {
   readonly entries: readonly Entry[];
 }
 
-type PlainMap = Map<string, any>;
-
-/** Each name, as a relation's path from the root module gives it, joined by dots: its registered name. */
-function pathName(path: Step | undefined): string {
-  const names: string[] = [];
-  for (let next = path?.get("next") as Step | undefined; next?.get("entry") !== undefined;
-    next = (next.get("entry") as Step).get("next") as Step | undefined) {
-    names.push(String(((next.get("entry") as Step).get("properties") as Step).get("name")));
-  }
-  return names.join(".");
+/** The value object a member or an element holds, as its visitor; null where it holds none (a visitor of nothing has
+ * no schema). */
+function object(member: any): any {
+  let found: any = null;
+  member.as_object((o: any) => { found = o; return o; });
+  return present(found) ? found : null;
 }
 
-/** The schema of the object a journal's symbol binds: its `schema` where the symbol gives one, else the one its
- * reference's path implies. */
-function schemaOf(store: any, symbol: PlainMap): any {
-  const given = symbol.get("schema") as PlainMap | undefined;
-  if (given !== undefined) return store.held(given.get("path"));
-  return References.implied(store, (symbol.get("reference") as PlainMap).get("path"));
+const present = (visitor: any): boolean =>
+  visitor !== null && visitor !== undefined && visitor.as_schema() !== null && visitor.as_schema() !== undefined;
+
+/** The elements of the container a member holds, each with its index, in order; none where it holds none. */
+function elements(member: any): [unknown, any][] {
+  let found: [unknown, any][] = [];
+  member.as_value((a: any) => a.as_container((c: any) => {
+    if (present(c)) c.as_entries((entries: Iterator<[unknown, any]>) => { found = [...{ [Symbol.iterator]: () => entries }]; });
+    return c;
+  }));
+  return found;
 }
 
-/** One line of a view's response read back: decoded as a `References.OfFrame` of the store's, which needs only the
- * framework's schemas, and the schemas of the objects whose entries it carries; its journal read as `Frame` gives it. */
+/** The union value an element holds, as its visitor. */
+function union(element: any): any {
+  let found: any = null;
+  element.as_union((u: any) => { found = u; return u; });
+  return found;
+}
+
+/** The value a payload holds, a member's or an element's: a scalar, else the visitor of the value. */
+function payload(member: any): unknown {
+  let found: unknown = null;
+  const read = (a: any): any => {
+    a.as_scalar((v: any) => { if (v.get() !== null && v.get() !== undefined) found = v.get(); return v; });
+    for (const select of ["as_object", "as_union", "as_intersection", "as_container"]) {
+      a[select]((v: any) => { if (found === null && present(v)) found = v; return v; });
+    }
+    return a;
+  };
+  if (typeof member.as_value === "function") member.as_value(read); else read(member);
+  return found;
+}
+
+/** One line of a view's response read back: decoded as a `References.OfFrame` value of the store's, by mbse-schemas'
+ * `JSON`, which needs the schemas of the objects whose values and entries it carries; its journal read through the
+ * visitors as `Frame` gives it. */
 export function read(store: any, line: string): Frame {
-  const value: any = J.FromJSON(store)(store.References.OfFrame.as_schema(), line);
-  const journal = ((J.loads(line) as PlainMap).get("journal") ?? new Map()) as PlainMap;
-  const symbols = (journal.get("symbols") ?? new Map()) as Map<string, PlainMap>;
-  const OfObject = store.registered("References.OfObject");
-  const binds = new Map([...symbols].map(([name, symbol]) =>
-    [name, Plain.FromPlain(store)(OfObject, symbol.get("reference"))] as [string, unknown]));
+  const value: any = J.FromJSON(store)(store.registered("References.OfFrame"), line);
+  const journal = object(value.journal);
+  const symbols = new Map(journal === null ? [] : elements(journal.symbols)
+    .map(([name, symbol]) => [name as string, object(symbol)] as [string, any]));
+  const binds = new Map([...symbols].map(([name, symbol]) => [name, object(symbol.reference)] as [string, unknown]));
+  const schemaOf = (symbol: any): any => { // its `schema` where the symbol gives one, else the one its path implies
+    const given = object(symbol.schema);
+    const path = (reference: any): unknown => (Plain.ToPlain(store)(reference.as_schema(), reference) as Map<string, any>)
+      .get("path");
+    return given !== null ? store.held(path(given)) : References.implied(store, path(object(symbol.reference)));
+  };
   const properties = new Map<string, Map<string, unknown>>();
   const entries: Entry[] = [];
-  for (const change of (journal.get("changes") ?? []) as PlainMap[]) {
-    const set = (change.get("property") as PlainMap | undefined)?.get("set") as PlainMap | undefined;
-    if (set !== undefined) {
-      const key = keyOf(store, binds.get(set.get("holder")));
+  for (const [, element] of journal === null ? [] : elements(journal.changes)) {
+    const change = union(element);
+    const set = present(change.property) ? change.property.set : null;
+    if (present(set)) {
+      const key = keyOf(store, binds.get(set.holder.get()));
       const held = properties.get(key) ?? new Map<string, unknown>();
-      held.set(set.get("name"), set.get("value"));
+      held.set(set.name.get(), payload(set.value));
       properties.set(key, held);
     }
-    const insert = (change.get("entry") as PlainMap | undefined)?.get("insert") as PlainMap | undefined;
-    if (insert === undefined) continue;
-    const holder = (insert.get("holder") as PlainMap).get("symbol") as string;
-    const adjacency = insert.get("adjacency") as string;
-    const declared = schemaOf(store, symbols.get(holder)!).adjacencies.get(adjacency);
-    const path: any = Paths.of(declared.relation);
-    const relation = pathName(Plain.ToPlain(store)(path.as_schema(), path) as Step);
-    const linksGiven = (insert.get("links") ?? new Map()) as Map<string, PlainMap>;
+    const insert = present(change.entry) ? change.entry.insert : null;
+    if (!present(insert)) continue;
+    const holder = insert.holder.symbol.get() as string;
+    const adjacency = insert.adjacency.get() as string;
+    const declared = schemaOf(symbols.get(holder)).adjacencies.get(adjacency);
+    const relation = store.name_of(declared.relation) as string;
+    const linksGiven = new Map(elements(insert.links).map(([link, given]) => [link as string, union(given)] as [string, any]));
     const links = new Map<string, unknown>();
     for (const link of declared.relation.entry.links.keys() as Iterable<string>) { // in the relation's order
       const linked = linksGiven.get(link);
       if (link === declared.me) links.set(link, binds.get(holder));
       else if (linked !== undefined) {
-        links.set(link, linked.has("symbol") ? binds.get(linked.get("symbol")) : Plain.FromPlain(store)(OfObject,
-          linked.get("reference")));
+        const symbol = linked.symbol.get();
+        links.set(link, symbol !== null && symbol !== undefined ? binds.get(symbol) : linked.reference); // a branch: its visitor
       }
     }
-    const given = new Map([...((insert.get("properties") ?? new Map()) as PlainMap)]);
-    const key = J.dumps(new Map<string, unknown>([["relation", relation], ["links", new Map([...links].sort(([a], [b]) =>
-      a < b ? -1 : a > b ? 1 : 0).map(([link, reference]) => [link, J.loads(keyOf(store, reference))]))],
-      ["properties", given]]) as any);
+    const given = new Map(elements(insert.properties).map(([name, v]) => [name as string, payload(v)] as [string, unknown]));
+    const key = J.dumps([relation, ...[...links].map(([link, reference]) => [link, keyOf(store, reference)]),
+      [...given]] as any);
     entries.push({ holder, adjacency, relation, links, properties: given, key });
   }
   return { value, binds, properties, entries };

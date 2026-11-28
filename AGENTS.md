@@ -26,7 +26,8 @@ directory that holds `mbse/`; npm: the package's directory), where the package s
 ## This repository
 
 - `Service.py` is the service, which serves a store's transaction, held open across a client's requests, and its
-  `exec`; `Frames.py` and `Frames.ts` write and read a frame stream as mbse-schemas writes it (`References.OfItem`);
+  `exec`, its stream each a `References.OfItem` value, written and read by mbse-schemas' own `JSON` (PRI-018,
+  PRI-024: no format of mbse-rest's own; a frame's value read through the visitors, `Store.frame_of`);
   `Store.py` and `Store.ts` the client, `Remote`, the service as a layer below (a `Builders.Store` holding the schemas
   alone, whose transaction is the service's), and `Store`, a cache layer over it, in a follow mode, the same in both
   languages: a change to one is made to the other. Both use mbse-schemas' public interface alone: no private name of

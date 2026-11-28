@@ -10,6 +10,8 @@ from mbse.Schemas.Framework import Builders, Plain, References
 
 from mbse.Services.Rest import Conformance, Service, Views
 
+import journals
+
 
 @pytest.fixture
 def client():
@@ -28,12 +30,12 @@ def frames(response):
 
 def label_of(frame, symbol="x"):
     """The label view's properties of the object the frame's `symbol` binds, as its journal sets them."""
-    return Views.properties(frame, symbol)
+    return journals.properties(frame, symbol)
 
 
 def adjacencies(frame):
     """The adjacency each entry the frame's journal inserts is held by, in order."""
-    return [entry["adjacency"] for entry in Views.entries(frame)]
+    return [entry["adjacency"] for entry in journals.entries(frame)]
 
 
 def test_the_corpus_is_current():
@@ -94,7 +96,7 @@ def test_chip_view_falls_back_to_the_first_scalars(client):
         {"text": "Not by default: a chip stays small. The inspector lists them.", "resolves_thread": False},
         {"text": "Agreed, *no adjacencies* on chips.", "resolves_thread": True},
     ]
-    assert all(Views.entries(f) == [] for f in got)
+    assert all(journals.entries(f) == [] for f in got)
 
 
 def test_detail_view_gives_every_adjacency_and_each_linked_label(client):
@@ -107,9 +109,9 @@ def test_detail_view_gives_every_adjacency_and_each_linked_label(client):
     assert adjacencies(frame) == ["directory", "schedule", "capabilities", "capabilities"]  # InGoals, HasGoal, Plans
     symbols = list(frame["journal"]["symbols"])
     assert symbols == ["x", "o0", "o1", "o2"]  # the frame's, then one of the journal's own for each other labelled
-    titles = [Views.properties(frame, symbol).get("title") for symbol in symbols]
+    titles = [journals.properties(frame, symbol).get("title") for symbol in symbols]
     assert titles == ["Demoable index site", "MVP", "No-code index view", "Logical view as chip"]
-    assert [entry["links"] for entry in Views.entries(frame)][1:] == [
+    assert [entry["links"] for entry in journals.entries(frame)][1:] == [
         {"schedule": {"symbol": "o0"}}, {"capability": {"symbol": "o1"}}, {"capability": {"symbol": "o2"}}]
 
 
@@ -123,13 +125,13 @@ def test_the_journals_own_symbols_skip_the_frames(client):
         lambda m: m.symbols([lambda p: p.symbols({"x": goal, "o0": other})]))])))
     [frame] = frames(client.post("/views/detail", json=body))
     assert list(frame["journal"]["symbols"]) == ["x", "o0", "o1", "o2", "o3"]
-    assert Views.properties(frame, "o0") == {} and Views.properties(frame, "o1")["title"] == "MVP"
+    assert journals.properties(frame, "o0") == {} and journals.properties(frame, "o1")["title"] == "MVP"
 
 
 def test_adjacency_view_gives_entry_properties_and_chips(client):
     [frame, _] = [json.loads(line) for line in
                   (Conformance.ROOT / "adjacency-goal-capabilities.response.ndjson").read_text().splitlines()]
-    [entry] = Views.entries(frame)
+    [entry] = journals.entries(frame)
     assert entry["properties"]["progress"] == 0.25 and entry["links"] == {"capability": {"symbol": "y"}}
     assert label_of(frame, "y")["title"] == "No-code index view"
 
@@ -160,7 +162,7 @@ def test_a_counted_object_is_left_out():
         book = References.of(store, store.singleton("t.TheBook"))
     detail = Views.witness(store, "detail", {"x": book})
     plain = Plain.ToPlain(store)(detail.as_schema(), detail)
-    assert Views.entries(plain) == [] and Views.properties(plain) == {"title": "Book"}
+    assert journals.entries(plain) == [] and journals.properties(plain) == {"title": "Book"}
     assert list(plain["journal"]["symbols"]) == ["x"]
 
 
@@ -220,7 +222,7 @@ def test_a_proposed_object_is_created_with_its_entry_and_owned():
         assert [str(e.reply.text) for e in thread.replies][-1] == "Closing this."
         reply = [e.reply for e in thread.replies][-1]
         assert [str(e.id) for e in reply.directory] == ["CMT-004"]
-    assert len(Views.entries(frame)) > 0
+    assert len(journals.entries(frame)) > 0
     with below.transaction():
         assert [str(e.reply.text) for e in below.singleton("work.Comments").comments({"id": "CMT-001"}).replies][-1] \
             == "Closing this."
@@ -253,7 +255,7 @@ def test_a_write_is_stamped_and_its_provenance_is_in_the_detail():
         assert [str(session.locale), [str(e.id) for e in session.directory]] == ["en-GB", ["tab-7"]]
     # CreatedBy and ModifiedBy, each from its record, InSession and Who
     assert {"created", "modified", "session", "who"} <= set(adjacencies(frame))
-    values = [Views.properties(frame, symbol) for symbol in frame["journal"]["symbols"]]
+    values = [journals.properties(frame, symbol) for symbol in frame["journal"]["symbols"]]
     assert {"when": "2026-10-26T09:15:00Z"} in values  # the edit's record
     assert any(v.get("locale") == "en-GB" for v in values)  # its session
 

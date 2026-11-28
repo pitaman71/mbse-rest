@@ -31,24 +31,23 @@ must hold: reading a view's properties that way waits on one (`variables`, mbse-
 [CAP-142: expressions evaluated in queries](mbse:mbse-basis/docs/capabilities/CAP-142.md)).
 
 What a frame of a view carries is its journal (mbse-schemas 0.38, [CAP-318: support for decoupled code](mbse:mbse-basis/docs/capabilities/README.md#CAP-318)), a
-`Changes.Transaction`, written by hand as a witness, as mbse-schemas allows: its symbols the frame's, `x` and `y`, by
+`Changes.Transaction`, built through mbse-schemas' builders as a witness, as mbse-schemas allows: its symbols the frame's, `x` and `y`, by
 their references, then one of the journal's own, `o0`, `o1`, ..., for each other object whose properties it carries, in
 the order met (a linked object's label, a provenance record, its session and identity); each entry it includes
 inserted, its holder by its symbol, each other link by its symbol, else by its reference, with every property it
-holds; then each object's properties, each set to its value. `properties` and `entries` read one back.
+holds; then each object's properties, each set to its value.
 """
 
 from __future__ import annotations
 
-import json
 from collections.abc import Mapping
 from typing import Any
 
-from mbse.Schemas.Framework import Paths, Plain, References
+from mbse.Schemas.Framework import JSON, Paths, Plain, References
 from mbse.Schemas.Framework import Schemas as S
 
 __all__ = ["KINDS", "SYMBOLS", "LABELS", "SUMMARIES", "CHIP_SCALARS", "template", "templates", "label_property",
-           "summary_property", "chip_properties", "witness", "properties", "entries"]
+           "summary_property", "chip_properties", "witness"]
 
 KINDS = ("label", "chip", "detail", "adjacency")
 SYMBOLS = {"label": ("x",), "chip": ("x",), "detail": ("x",), "adjacency": ("x", "y")}
@@ -136,41 +135,40 @@ def _owned(owner: Any, name: str, keys: Mapping[str, Any]) -> Any | None:
 
 
 class _Witness:
-    """What one frame witnesses, written as its journal ([CAP-318: support for decoupled code](mbse:mbse-basis/docs/capabilities/README.md#CAP-318), a `Changes.Transaction`): its
-    symbols, the frame's own, by their references, then one of the journal's own for each other object whose
-    properties it carries (`o0`, `o1`, ... in the order met); each entry inserted, once, its holder by its symbol, each
-    other link by its symbol, else by its reference, with every property it holds; then each object's properties,
-    once, each set to its value."""
+    """What one frame witnesses, built as its journal ([CAP-318: support for decoupled code](mbse:mbse-basis/docs/capabilities/README.md#CAP-318), a `Changes.Transaction`) through
+    mbse-schemas' builders: its symbols, the frame's own, by their references, then one of the journal's own for each
+    other object whose properties it carries (`o0`, `o1`, ... in the order met); each entry inserted, once, its holder
+    by its symbol, each other link by its symbol, else by its reference, with every property it holds; then each
+    object's properties, once, each set to its value."""
 
     def __init__(self, store: Any, binds: Mapping[str, Any]) -> None:
         self.store = store
-        self.symbols: dict[str, Any] = {}
+        self.symbols: dict[str, Any] = {}  # each symbol's spec, `Changes.Symbol`'s, by name, in order
         self._named: dict[str, str] = {}  # each symbol, by its object's reference's key
         self._others = 0
         self._entries: list[tuple[Any, str, dict[str, Any], dict[str, Any]]] = []
         self._entered: set[str] = set()  # each entry witnessed, by its reference's key
         self._assigned: set[str] = set()  # each object assigned, by its reference's key
-        self._sets: list[dict[str, Any]] = []
+        self._sets: list[tuple[str, str, Any]] = []  # (symbol, property, value), in order
         for name, reference in binds.items():
             self._name(name, reference)
 
-    def _plain(self, reference: Any) -> Any:
-        return Plain.ToPlain(self.store)(reference.as_schema(), reference)
+    def _key(self, reference: Any) -> str:
+        return JSON.ToJSON(self.store)(reference.as_schema(), reference)
 
     def _name(self, name: str, reference: Any, schema: Any = None) -> str:
-        plain = self._plain(reference)
-        symbol: dict[str, Any] = {"reference": plain}
+        implied = None
         if schema is not None:
             try:
-                implied = References.implied(self.store, plain["path"])
+                implied = References.implied(self.store, Plain.ToPlain(self.store)(reference.as_schema(), reference)["path"])
             except LookupError:
-                implied = None
-            if implied is not schema:  # where its path does not imply it, as mbse-schemas writes a symbol
-                symbol["schema"] = Plain.ToPlain(self.store)(self.store.registered("References.OfSchema"),
-                                                             self.store.References.OfSchema(lambda r: r.path(
-                                                                 Paths.of(schema))))
-        self.symbols[name] = symbol
-        self._named.setdefault(json.dumps(plain, sort_keys=True), name)
+                pass
+        if schema is None or implied is schema:
+            self.symbols[name] = lambda s: s.reference(reference)
+        else:  # where its path does not imply it, as mbse-schemas writes a symbol
+            self.symbols[name] = lambda s: s.reference(reference).schema(
+                self.store.References.OfSchema(lambda r: r.path(Paths.of(schema))))
+        self._named.setdefault(self._key(reference), name)
         return name
 
     def symbol(self, obj: Any) -> str | None:
@@ -178,7 +176,7 @@ class _Witness:
         reference = _reference(self.store, obj)
         if reference is None:
             return None
-        found = self._named.get(json.dumps(self._plain(reference), sort_keys=True))
+        found = self._named.get(self._key(reference))
         if found is not None:
             return found
         name = f"o{self._others}"
@@ -193,13 +191,12 @@ class _Witness:
         names = _properties(obj, kind)
         if reference is None or not names:
             return
-        key = json.dumps(self._plain(reference), sort_keys=True)
+        key = self._key(reference)
         if key in self._assigned:
             return
         self._assigned.add(key)
-        holder, schema = self.symbol(obj), obj.as_schema()
-        self._sets += [{"property": {"set": {"holder": holder, "name": name, "value": Plain.ToPlain(self.store)(
-            schema.properties[name].schema, getattr(obj, name).get())}}} for name in names]
+        holder = self.symbol(obj)
+        self._sets += [(holder, name, getattr(obj, name).get()) for name in names]
 
     def enter(self, holder: Any, name: str, entry: Any) -> bool:
         """Witnesses `entry`, held by `holder`'s adjacency `name`, unless it links a counted object; whether it is
@@ -208,36 +205,39 @@ class _Witness:
             reference = References.of(self.store, entry)
         except LookupError:
             return False
-        key = json.dumps(self._plain(reference), sort_keys=True)
+        key = self._key(reference)
         if key not in self._entered:
             self._entered.add(key)
             adjacency = holder.as_schema().adjacencies[name]
             relation = adjacency.relation.entry
             links = {link: getattr(entry, link) for link in relation.links if link != adjacency.me}
-            values = {prop: Plain.ToPlain(self.store)(relation.properties[prop].schema, getattr(entry, prop).get())
-                      for prop in relation.properties if getattr(entry, prop).get() is not None}
+            values = {prop: getattr(entry, prop).get() for prop in relation.properties
+                      if getattr(entry, prop).get() is not None}
             self._entries.append((holder, name, links, values))
         return True
 
     def journal(self) -> Any:
-        """The journal: its symbols, each entry inserted, then each property set."""
-        inserts = []
-        for holder, name, links, values in self._entries:
-            body: dict[str, Any] = {"holder": {"symbol": self.symbol(holder)}, "adjacency": name, "links": {
-                link: self._link(obj) for link, obj in links.items()}}
-            if values:
-                body["properties"] = values
-            inserts.append({"entry": {"insert": body}})
-        plain = {"symbols": self.symbols, "changes": [*inserts, *self._sets]}
-        return Plain.FromPlain(self.store)(self.store.registered("Changes.Transaction"), plain)
+        """The journal, built: its symbols, each entry inserted, then each property set."""
+        inserts = [self._insert(*entry) for entry in self._entries]
+        sets = [lambda c, h=holder, n=name, v=value: c.property(lambda p: p.set(lambda s: s.holder(h).name(n).value(v)))
+                for holder, name, value in self._sets]
+        return self.store.Changes.Transaction(lambda t: t.symbols(self.symbols).changes([*inserts, *sets]))
+
+    def _insert(self, holder: Any, name: str, links: dict[str, Any], values: dict[str, Any]) -> Any:
+        symbol = self.symbol(holder)
+        linked = {link: self._link(obj) for link, obj in links.items()}
+
+        def written(i: Any) -> Any:
+            i = i.holder(lambda h: h.symbol(symbol)).adjacency(name).links(linked)
+            return i.properties(values) if values else i
+        return lambda c: c.entry(lambda e: e.insert(written))
 
     def _link(self, obj: Any) -> Any:
         """What an entry names a linked object by, a `Changes.OfLink`: its symbol, where one binds it; else its
         reference."""
         reference = References.of(self.store, obj)
-        plain = self._plain(reference)
-        found = self._named.get(json.dumps(plain, sort_keys=True))
-        return {"symbol": found} if found is not None else {"reference": plain}
+        found = self._named.get(self._key(reference))
+        return (lambda l: l.symbol(found)) if found is not None else (lambda l: l.reference(reference))
 
 
 def _history(store: Any, reference: Any) -> list[tuple[str, Mapping[str, Any]]]:
@@ -321,20 +321,3 @@ def witness(store: Any, kind: str, frame: Mapping[str, Any]) -> Any | None:
         journal = seen.journal()
         return store.References.OfFrame(lambda f: f.journal(journal))
 
-
-def properties(frame: Mapping[str, Any], symbol: str = "x") -> dict[str, Any]:
-    """The properties a view's frame, a `References.OfFrame` as plain data, carries of the object `symbol` binds, one of
-    the journal's own among them: each property its journal sets, its value as plain data, in the order set."""
-    found: dict[str, Any] = {}
-    for change in (frame.get("journal") or {}).get("changes") or []:
-        body = change.get("property", {}).get("set")
-        if body is not None and body["holder"] == symbol:
-            found[body["name"]] = body["value"]
-    return found
-
-
-def entries(frame: Mapping[str, Any]) -> list[dict[str, Any]]:
-    """The relation entries a view's frame, a `References.OfFrame` as plain data, carries: each entry its journal
-    inserts, as plain data, its `holder`, `adjacency`, `links` and `properties`, in order."""
-    return [change["entry"]["insert"] for change in (frame.get("journal") or {}).get("changes") or []
-            if "insert" in change.get("entry", {})]
